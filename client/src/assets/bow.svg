@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 240 240" role="img" aria-label="Pink bow">
+  <g transform="translate(-46.4 3.1) scale(16.7)">
+    <path d="M9 6C5 3 3 5 4 9C5 11 7 11 10 9C12 12 15 10 16 7C17 3 13 3 10 6Z" fill="#ffb8cb" stroke="#633b22" stroke-width="0.75" stroke-linejoin="round"/>
+    <circle cx="10" cy="8" r="1.5" fill="#ffe2e8" stroke="#633b22" stroke-width="0.5"/>
+    <circle cx="5.5" cy="6.3" r="0.45" fill="#fffaf0"/>
+    <circle cx="7.5" cy="7" r="0.45" fill="#fffaf0"/>
+    <circle cx="5.9" cy="8.8" r="0.45" fill="#fffaf0"/>
+    <circle cx="14.1" cy="5.8" r="0.45" fill="#fffaf0"/>
+    <circle cx="12.8" cy="7.4" r="0.45" fill="#fffaf0"/>
+    <circle cx="13.4" cy="8.7" r="0.45" fill="#fffaf0"/>
+  </g>
+</svg>
