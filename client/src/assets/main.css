@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Coming+Soon&family=Geist:wght@400;500;600;700&family=Schoolbell&display=swap'); /*---break---*/
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+/*---break---*/
+/*---break---*/
 @import 'tailwindcss';
 @import './base.css';
 @import 'tw-animate-css';
