@@ -32,6 +32,14 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --color-badge-green: var(--badge-green);
+  --color-badge-green-foreground: var(--badge-green-foreground);
+  --color-badge-amber: var(--badge-amber);
+  --color-badge-amber-foreground: var(--badge-amber-foreground);
+  --color-badge-rose: var(--badge-rose);
+  --color-badge-rose-foreground: var(--badge-rose-foreground);
+  --color-badge-neutral: var(--badge-neutral);
+  --color-badge-neutral-foreground: var(--badge-neutral-foreground);
 }
 
 h1,
@@ -63,6 +71,15 @@ h6 {
   --border: #e4d4c4;
   --input: #633b22;
   --ring: #633b22;
+  --badge-green: #e3eee4;
+  --badge-green-foreground: #28553a;
+  --badge-amber: #fff0d5;
+  --badge-amber-foreground: #75520d;
+  --badge-rose: #f9e7e8;
+  --badge-rose-foreground: #8b2933;
+  --badge-neutral: #f3ece4;
+  --badge-neutral-foreground: #633b22;
+
 }
 
 @layer base {
@@ -82,11 +99,11 @@ h6 {
     @apply bg-background text-foreground;
   }
 }
-
+/*
 *{
   border: 1px red dotted;
 }
-
+*/
 @media (hover: hover) and (pointer: fine) {
   /*j > use these styles only in this situation*/
   /*j > https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover &&& https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer*/
