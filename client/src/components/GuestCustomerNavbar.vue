@@ -14,7 +14,7 @@ const status = ref(false);
         Adopt a Book
         <img :src="bow" alt="" width="48" height="48" />
       </a>
-      <!--j > hides element when the screen is 768px wide ||| wider-->
+      <!--j > hides element when screen is 768px wide ||| wider-->
       <button type="button" class="size-11 md:hidden" aria-controls="mobile" :aria-expanded="status" @click="status = !status">
         <HugeiconsIcon :icon="status ? Cancel01Icon : Menu01Icon" aria-hidden="true" />
       </button>

@@ -69,8 +69,9 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-@media (hover: hover) and (pointer: fine) {
+@media (hover: hover) and (pointer: fine) { /*j > use these styles only in this situation*/
+  /*j > https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover &&& https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer*/
   * {
-    cursor: url('./front.svg') 30 18, auto !important;
+    cursor: url('./front.svg') 30 18, auto !important; /*j > fallback cursor > overwrite*/
   }
 }
