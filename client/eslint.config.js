@@ -5,6 +5,7 @@ import pluginVue from 'eslint-plugin-vue'
 import pluginPlaywright from 'eslint-plugin-playwright'
 import pluginOxlint from 'eslint-plugin-oxlint'
 import skipFormatting from 'eslint-config-prettier/flat'
+import { fileURLToPath } from 'node:url'
 
 export default defineConfig([
   {
@@ -30,7 +31,12 @@ export default defineConfig([
     files: ['e2e/**/*.{test,spec}.{js,ts,jsx,tsx}'],
   },
 
-  ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
+  ...pluginOxlint.buildFromOxlintConfigFile(fileURLToPath(new URL('./.oxlintrc.json', import.meta.url))),
+
+  {
+    files: ['src/components/ui/**/*.vue'],
+    rules: { 'vue/multi-word-component-names': 'off' },
+  },
 
   skipFormatting,
 ])
