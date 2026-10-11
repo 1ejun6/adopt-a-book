@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Coming+Soon&family=Geist:wght@400;500;600;700&family=Schoolbell&display=swap'); /*---break---*/
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+/*---break---*/
+/*---break---*/
 @import 'tailwindcss';
 @import './base.css';
 @import "tw-animate-css";
@@ -57,7 +60,6 @@ h1, h2, h3, h4, h5, h6 {
   --ring: #633b22;
 }
 
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -65,10 +67,6 @@ h1, h2, h3, h4, h5, h6 {
   body {
     @apply bg-background text-foreground;
   }
-}
-
-*{
-  border: 1px white dotted;
 }
 
 @media (hover: hover) and (pointer: fine) {
