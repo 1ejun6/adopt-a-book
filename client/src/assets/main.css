@@ -4,7 +4,7 @@
 /*---break---*/
 @import 'tailwindcss';
 @import './base.css';
-@import "tw-animate-css";
+@import 'tw-animate-css';
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -34,7 +34,12 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Schoolbell', cursive; /*j> handwritten font > font fallback category is cursive*/
 }
 
@@ -61,6 +66,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer base {
+  h1 {
+    @apply text-3xl;
+  }
+  h2 {
+    @apply text-2xl;
+  }
+  h3 {
+    @apply text-xl;
+  }
   * {
     @apply border-border outline-ring/50;
   }
@@ -69,9 +83,16 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-@media (hover: hover) and (pointer: fine) { /*j > use these styles only in this situation*/
+*{
+  border: 1px red dotted;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /*j > use these styles only in this situation*/
   /*j > https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover &&& https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer*/
   * {
-    cursor: url('./front.svg') 30 18, auto !important; /*j > fallback cursor > overwrite*/
+    cursor:
+      url('./front.svg') 30 18,
+      auto !important; /*j > fallback cursor > overwrite*/
   }
 }
