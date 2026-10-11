@@ -34,7 +34,7 @@ export default defineConfig([
   ...pluginOxlint.buildFromOxlintConfigFile(fileURLToPath(new URL('./.oxlintrc.json', import.meta.url))),
 
   {
-    files: ['src/components/ui/**/*.vue'],
+    files: ['src/**/*.vue'],
     rules: { 'vue/multi-word-component-names': 'off' },
   },
 

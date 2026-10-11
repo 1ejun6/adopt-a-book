@@ -8,7 +8,7 @@ const status = ref(false);
 </script>
 
 <template>
-  <header>
+<header class="sticky top-0 z-50">
     <div class="mx-auto flex w-full items-center justify-between p-5"> <!--j > centers navbar horizontal > fills available width-->
       <a href="/" class="flex shrink-0 items-center gap-2 font-heading text-lg">
         Adopt a Book
