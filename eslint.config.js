@@ -6,5 +6,5 @@ module.exports = [
   { ignores: ["**/node_modules/**", "**/dist/**"] },
   { files: ["server/**/*.js"], ...js.configs.recommended, languageOptions: { ecmaVersion: "latest", sourceType: "commonjs", globals: globals.node }, rules: { "no-unused-vars": ["error", { caughtErrors: "none" }] } },
   ...vue.configs["flat/recommended"],
-  { files: ["client/**/*.{js,vue}"], languageOptions: { ecmaVersion: "latest", sourceType: "module", globals: globals.browser } }
+  { files: ["client/**/*.{js,vue}"], languageOptions: { ecmaVersion: "latest", sourceType: "module", globals: globals.browser }, rule : { "vue/multi-word-component-names": "off" } }
 ];
