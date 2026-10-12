@@ -9,7 +9,7 @@ import { ArrowRight01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 const props = defineProps({
     records: {type: Array},
     columns: {type: Array},
-    modelValue: {type: Array},
+    modelValue: {type: Array}, // lee-hlmilk > array of selected row IDs, for v-model
     loading: {type: Boolean, default: false},
     emptyTitle: {type: String, default: 'No matching records.'},
     emptyDescription: {type: String, default: 'Items will appear here when there is something to show.'},
@@ -23,6 +23,8 @@ const selectedCount = computed(() => {
     return props.records.filter((r) => props.modelValue.includes(r[props.rowKey])).length
 });
 
+
+// lee-hlmilk > master checkbox state helper
 const selectAllState = computed(() => {
     const total = props.records.length
     if (total === 0 || selectedCount.value ===  0) {return false}
@@ -30,6 +32,7 @@ const selectAllState = computed(() => {
     return 'indeterminate'
 });
 
+// lee-hlmilk > tick for one
 function toggleRow(recordId) {
   if (props.modelValue.includes(recordId)) {
     const next = props.modelValue.filter((id) => id !== recordId)
@@ -39,6 +42,7 @@ function toggleRow(recordId) {
   }
 };
 
+// lee-hlmilk > master checkbox, tick all visible
 function toggleSelectAll() {
   const visibleIds = props.records.map((r) => r[props.rowKey])
   if (selectAllState.value === true) {
@@ -58,7 +62,7 @@ function toggleSelectAll() {
 
 <template>
     <div class="w-full">
-        <!-- loading skeleton -->
+        <!-- lee-hlmilk > loading skeleton -->
         <div v-if="loading" class="overflow-hidden rounded-lg border border-border bg-card shadow-xs p-4" role="status" aria-busy="true">
             <div class="space-y-3">
                 <div class="flex items-center gap-4 pb-3 border-b border-border">
@@ -77,7 +81,7 @@ function toggleSelectAll() {
             </div>
         </div>
 
-        <!-- data table -->
+        <!-- lee-hlmilk > data table -->
         <div v-else-if="records.length > 0" class="overflow-hidden rounded-lg border border-border bg-card shadow-xs">
             <Table>
                 <TableHeader class="bg-muted/60">
@@ -127,6 +131,7 @@ function toggleSelectAll() {
             </Table>
         </div>
 
+        <!-- lee-hlmilk > no data seeded -->
         <div v-else class="rounded-lg border border-border bg-card p-8 text-center shadow-xs">
             <slot name="empty">
                 <h2 class="font-heading text-2xl text-foreground">{{ emptyTitle }}</h2>
