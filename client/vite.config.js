@@ -7,7 +7,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 const workspaceRoot = fileURLToPath(new URL('../', import.meta.url))
 
-// https://vite.dev/config/
+//@1ejun6 > https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const { clienturl, serverurl } = loadEnv(mode, workspaceRoot, '')
 

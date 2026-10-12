@@ -64,7 +64,6 @@ async function updateaccount(req, res) {
     const authfields = { email: normalizedemail, user_metadata: { name: updatefields.name } };
     if (password && password.trim()) authfields.password = password;
 
-    // the database trigger syncs the profile in the same auth transaction.
     const { error: autherror } = await supabase.auth.admin.updateUserById(req.user.id, authfields);
     if (autherror) throw autherror;
 

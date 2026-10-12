@@ -5,7 +5,6 @@ const path = require("path");
 const server = express();
 const dotenv = require("dotenv");
 
-//load environment
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const supabase = require("./supabase/supabase");
@@ -33,10 +32,9 @@ server.use(express.json());
 server.use(express.urlencoded({ extended: true }));
 server.use(cookieparser());
 
-//allow vue client to send authentication cookies to this api request
 server.use(cors({
     origin: process.env.clienturl,
-    credentials: true, //allow > send authentication information with cross-origin requests
+    credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
   })
 );

@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: 'Schoolbell', cursive; /*j > cursive is a fallback font category*/
+  --font-heading: 'Schoolbell', cursive; /*@1ejun6 > cursive is a fallback font category */
   --font-body: 'Coming Soon', cursive;
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -37,7 +37,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Schoolbell', cursive; /*j> handwritten font > font fallback category is cursive*/
+  font-family: 'Schoolbell', cursive; /*@1ejun6 > handwritten font > font fallback category is cursive */
 }
 
 :root {
@@ -80,11 +80,12 @@ h6 {
   }
 }
 
-/* * {
+/* @1ejun6 > debug borders
+* {
   border: 1px red dotted;
 } */
 
-@layer components { /*makes your reusable class easier to override with tailwind classes while regular css can override them instead*/
+@layer components { /*@1ejun6 > makes your reusable class easier to override with tailwind classes while regular css can override them instead */
   form {
     @apply space-y-5;
   }
@@ -95,11 +96,11 @@ h6 {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  /*j > use these styles only in this situation*/
-  /*j > https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover &&& https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer*/
+  /*@1ejun6 > use these styles only in this situation */
+  /*@1ejun6 > https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover &&& https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer */
   * {
     cursor:
       url('./front.svg') 26 15,
-      auto !important; /*j > fallback cursor > overwrite*/
+      auto !important; /*@1ejun6 > fallback cursor > overwrite */
   }
 }

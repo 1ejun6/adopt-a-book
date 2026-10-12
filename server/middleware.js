@@ -88,7 +88,6 @@ async function loadcurrentuser(req, res, next) {
 }
 
 function setauthcookies(res, session) {
-  //cross site production cookies require > none &&& secure
   const onehour = 60 * 60 * 1000;
 
   const options = {

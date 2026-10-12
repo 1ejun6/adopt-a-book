@@ -138,7 +138,6 @@ async function searchuser(req, res) {
     const searchterm = req.query.user || "";
     const statusfilter = req.query.statusfilter || "all";
     const searchedusers = await user.searchcustomerbyname(searchterm);
-    // retrieve all user ids that match the search query
 
     const allappointments = await appointment.searchappointmentsbyusers(
       searchedusers.map((item) => item.id), statusfilter
