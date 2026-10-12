@@ -1,5 +1,5 @@
 <script setup>
-//j > dropdown box that appears under a navbar item
+//@1ejun6 > dropdown box that appears under a navbar item
 import { reactiveOmit } from "@vueuse/core";
 import { NavigationMenuContent, useForwardPropsEmits } from "reka-ui";
 import { cn } from "@/lib/utils";
@@ -11,15 +11,15 @@ const props = defineProps({
   as: { type: null, required: false },
   class: { type: null, required: false },
 });
-const emits = defineEmits([ //j >  dropdown component is allowed to tell its parent when these four things happen > escape &&& click outside of dropdown &&& keyboard focus leave dropdown &&& interacts outside it
+const emits = defineEmits([ //@1ejun6 >  dropdown component is allowed to tell its parent when these four things happen > escape &&& click outside of dropdown &&& keyboard focus leave dropdown &&& interacts outside it
   "escapeKeyDown",
   "pointerDownOutside",
   "focusOutside",
   "interactOutside",
 ]);
 
-const delegatedProps = reactiveOmit(props, "class"); //j > ~class~ is combined below with components base tailwind classes
-const forwarded = useForwardPropsEmits(delegatedProps, emits); //j > vue wrapper component pass its props &&& emitted events through to component inside it
+const delegatedProps = reactiveOmit(props, "class"); //@1ejun6 > ~class~ is combined below with components base tailwind classes
+const forwarded = useForwardPropsEmits(delegatedProps, emits); //@1ejun6 > vue wrapper component pass its props &&& emitted events through to component inside it
 </script>
 
 <template>
@@ -29,7 +29,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits); //j > vue wrapper
     props.class,
   )
     ">
-    <!--j > dropdown links &&& other content are inserted here-->
+    <!--@1ejun6 > dropdown links &&& other content are inserted here-->
     <slot />
   </NavigationMenuContent>
 </template>

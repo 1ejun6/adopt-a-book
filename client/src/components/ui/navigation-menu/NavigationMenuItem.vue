@@ -1,5 +1,5 @@
 <script setup>
-//j > groups one trigger ||| link &&& its optional dropdown content
+//@1ejun6 > groups one trigger ||| link &&& its optional dropdown content
 import { reactiveOmit } from "@vueuse/core";
 import { NavigationMenuItem } from "reka-ui";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,7 @@ const props = defineProps({
   class: { type: null, required: false },
 });
 
-const delegatedProps = reactiveOmit(props, "class"); //j > forward reka ui props but keep ~class~ for ~cn()~ below
+const delegatedProps = reactiveOmit(props, "class"); //@1ejun6 > forward reka ui props but keep ~class~ for ~cn()~ below
 </script>
 
 <template>

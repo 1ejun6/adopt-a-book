@@ -1,5 +1,5 @@
 <script setup>
-//j > renders an accessible label for a form control
+//@1ejun6 > renders an accessible label for a form control
 import { reactiveOmit } from "@vueuse/core";
 import { Label } from "reka-ui";
 import { cn } from "@/lib/utils";

@@ -1,5 +1,5 @@
 <script setup>
-//j > displays a short title for a field
+//@1ejun6 > displays a short title for a field
 import { cn } from "@/lib/utils";
 
 const props = defineProps({

@@ -4,6 +4,10 @@ const supabaseauth = require("../supabase/supabaseauth");
 const user = require("../models/users");
 const { setauthcookies, clearauthcookies } = require("../middleware");
 
+function session(req, res) {
+  return res.json({ user: req.user });
+}
+
 async function logout(req, res) {
   // revoke the supabase session before clearing its cookies
   if (req.accesstoken) {
@@ -109,4 +113,4 @@ async function login(req, res) {
   }
 }
 
-module.exports = { logout, register, login };
+module.exports = { session, logout, register, login };

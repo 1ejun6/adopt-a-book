@@ -99,7 +99,7 @@ h6 {
   /*j > https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover &&& https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer*/
   * {
     cursor:
-      url('./front.svg') 30 18,
+      url('./front.svg') 26 15,
       auto !important; /*j > fallback cursor > overwrite*/
   }
 }
