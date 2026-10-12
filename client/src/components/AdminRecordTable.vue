@@ -2,6 +2,7 @@
 import { CheckboxRoot, CheckboxIndicator } from 'reka-ui';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { computed } from 'vue';
 import { ArrowRight01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 
@@ -58,8 +59,22 @@ function toggleSelectAll() {
 <template>
     <div class="w-full">
         <!-- loading skeleton -->
-        <div v-if="loading" class="rounded-lg border border-border bg-muted p-6 text-sm text-foreground" role="status" aria-busy="true">
-            <p>Loading records...</p>
+        <div v-if="loading" class="overflow-hidden rounded-lg border border-border bg-card shadow-xs p-4" role="status" aria-busy="true">
+            <div class="space-y-3">
+                <div class="flex items-center gap-4 pb-3 border-b border-border">
+                    <Skeleton class="size-4.5 rounded"></Skeleton>
+                    <Skeleton class="h-4 w-28"></Skeleton>
+                    <Skeleton class="h-4 w-36"></Skeleton>
+                    <Skeleton class="h-4 w-20 ml-auto"></Skeleton>
+                </div>
+
+                <div v-for="i in 4" :key="i" class="flex items-center gap-4 py-3 border-b border-border/50 last:border-0">
+                    <Skeleton class="size-4.5 rounded"></Skeleton>
+                    <Skeleton class="h-4 w-32"></Skeleton>
+                    <Skeleton class="h-4 w-48"></Skeleton>
+                    <Skeleton class="h-4 w-16 ml-auto"></Skeleton>
+                </div>
+            </div>
         </div>
 
         <!-- data table -->
