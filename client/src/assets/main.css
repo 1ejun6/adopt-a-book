@@ -32,6 +32,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* lee-hlmilk > for badges */
   --color-badge-green: var(--badge-green);
   --color-badge-green-foreground: var(--badge-green-foreground);
   --color-badge-amber: var(--badge-amber);
@@ -71,6 +72,7 @@ h6 {
   --border: #e4d4c4;
   --input: #633b22;
   --ring: #633b22;
+  /* lee-hlmilk > for badges */
   --badge-green: #e3eee4;
   --badge-green-foreground: #28553a;
   --badge-amber: #fff0d5;
