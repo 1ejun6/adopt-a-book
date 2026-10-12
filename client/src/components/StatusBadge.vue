@@ -7,6 +7,8 @@ const props = defineProps({
   variant: {type: String},
 });
 
+
+// lee-hlmilk > handle case and hyphens, status mapping
 const computedVariant = computed(() => {
   const normalized = props.status.toLowerCase().replace(/-/g, ' ').trim();
   if (['available', 'approved', 'pickup confirmed', 'confirmed', 'open'].includes(normalized)) {return 'green'};
@@ -17,6 +19,7 @@ const computedVariant = computed(() => {
 </script>
 
 <template>
+  <!-- lee-hlmilk > automated status styling -->
   <Badge :variant="computedVariant" :data-status="status">
     <slot>{{ status }}</slot>
   </Badge>
