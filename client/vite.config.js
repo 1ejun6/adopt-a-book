@@ -7,12 +7,16 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 const workspaceRoot = fileURLToPath(new URL('../', import.meta.url))
 
-// https://vite.dev/config/
+//@1ejun6 > https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const { clienturl } = loadEnv(mode, workspaceRoot, '')
+  const { clienturl, serverurl } = loadEnv(mode, workspaceRoot, '')
 
   if (!clienturl) {
     throw new Error('clienturl must be set in the root .env file')
+  }
+
+  if (!serverurl) {
+    throw new Error('serverurl must be set in the root .env file')
   }
 
   const clientUrl = new URL(clienturl)
@@ -24,6 +28,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     envDir: workspaceRoot,
+    define: {
+      'import.meta.env.VITE_SERVER_URL': JSON.stringify(serverurl),
+    },
     plugins: [vue(), vueDevTools(), tailwindcss()],
     resolve: {
       alias: {

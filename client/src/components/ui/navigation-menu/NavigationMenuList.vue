@@ -1,5 +1,5 @@
 <script setup>
-//j > horizontal row that holds all menu items
+//@1ejun6 > horizontal row that holds all menu items
 import { reactiveOmit } from "@vueuse/core";
 import { NavigationMenuList, useForwardProps } from "reka-ui";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,7 @@ const props = defineProps({
   class: { type: null, required: false },
 });
 
-//j > remove ~class~ before forwarding props because ~cn()~ handles it below
+//@1ejun6 > remove ~class~ before forwarding props because ~cn()~ handles it below
 const delegatedProps = reactiveOmit(props, "class");
 const forwardedProps = useForwardProps(delegatedProps);
 </script>

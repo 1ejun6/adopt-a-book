@@ -1,5 +1,4 @@
 const { errorstatus } = require("../utils/errors");
-// appointments
 
 const user = require("../models/users");
 const appointment = require("../models/appointments");

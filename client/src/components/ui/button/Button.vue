@@ -1,5 +1,5 @@
 <script setup>
-//j > renders a styled button ||| another element through reka ui primitive-
+//@1ejun6 > renders a styled button ||| another element through reka ui primitive-
 import { Primitive } from "reka-ui";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from ".";

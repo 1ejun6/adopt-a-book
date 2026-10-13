@@ -1,6 +1,6 @@
-import { cva } from 'class-variance-authority'; //j > a helper for creating reusable > variant based css class strings
+import { cva } from 'class-variance-authority'; //@1ejun6 > a helper for creating reusable > variant based css class strings
 
-//j > export every piece from one file so pages can use one import path
+//@1ejun6 > export every piece from one file so pages can use one import path
 export { default as NavigationMenu } from './NavigationMenu.vue';
 export { default as NavigationMenuContent } from './NavigationMenuContent.vue';
 export { default as NavigationMenuIndicator } from './NavigationMenuIndicator.vue';

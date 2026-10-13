@@ -4,7 +4,8 @@ const { authenticated } = require("../middleware");
 
 const router = express.Router();
 
-router.post("/logout", authenticated, authcontroller.logout);
+router.get("/session", authenticated, authcontroller.session);
+router.post("/logout", authcontroller.logout);
 router.post("/register", authcontroller.register);
 router.post("/login", authcontroller.login);
 

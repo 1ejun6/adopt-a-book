@@ -1,5 +1,5 @@
 <script setup>
-//j > displays legend for a fieldset
+//@1ejun6 > displays legend for a fieldset
 import { cn } from "@/lib/utils";
 
 const props = defineProps({

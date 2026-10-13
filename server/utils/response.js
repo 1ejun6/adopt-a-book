@@ -1,5 +1,3 @@
-//keep endpoint-specific fields and omit empty message/error fields.
-//a response with an error must not report http success.
 function normalizeresponse(req, res, next) {
   const sendjson = res.json.bind(res);
 

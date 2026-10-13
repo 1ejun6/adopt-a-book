@@ -1,5 +1,5 @@
 <script setup>
-//j > small arrow under active item
+//@1ejun6 > small arrow under active item
 import { reactiveOmit } from "@vueuse/core";
 import { NavigationMenuIndicator, useForwardProps } from "reka-ui";
 import { cn } from "@/lib/utils";
@@ -11,8 +11,8 @@ const props = defineProps({
   class: { type: null, required: false },
 });
 
-const delegatedProps = reactiveOmit(props, "class"); //j > creates props without user class
-const forwardedProps = useForwardProps(delegatedProps); //j > makes those remaining props safe to pass down to inner component reactively
+const delegatedProps = reactiveOmit(props, "class"); //@1ejun6 > creates props without user class
+const forwardedProps = useForwardProps(delegatedProps); //@1ejun6 > makes those remaining props safe to pass down to inner component reactively
 </script>
 
 <template>

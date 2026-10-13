@@ -1,5 +1,5 @@
 <script setup>
-//j > displays helper text for a form field
+//@1ejun6 > displays helper text for a form field
 import { cn } from "@/lib/utils";
 
 const props = defineProps({

@@ -12,7 +12,6 @@ async function renderindex(
   status = 200
 ) {
   try {
-    //find returns a promise
     const accounts = await user.findadminaccounts();
     return res.status(status).json({ message, error, deleted, accounts });
   } catch (error) {
@@ -111,10 +110,8 @@ async function deleteaccounts(req, res) {
         400
       );
     }
-    //$in > match any value inside of sids array
     const deleteaccounts = await user.findadminsbyids(sids);
 
-    //convert object to select value to array
     const arrayids = deleteaccounts.map((a) => a._id);
     const emailaddresses = deleteaccounts.map((a) => a.email);
     if (arrayids.length === 0) {
@@ -134,7 +131,6 @@ async function saveupdate(req, res) {
   try {
     const { name, email, password } = req.body;
     if (!name || !email) {
-      //value taken from url path
       return update(
         req,
         res,
@@ -155,7 +151,6 @@ async function saveupdate(req, res) {
       return res.status(422).json({ error: "password must be text" });
     }
     const normalizedemail = updatefields.email;
-    //not equal to
     const existinguser = await user.findonebyemailexcludingid(normalizedemail, req.params.id);
     if (existinguser) {
       return update(
@@ -170,7 +165,6 @@ async function saveupdate(req, res) {
 
     const authfields = { email: normalizedemail, user_metadata: { name: updatefields.name } };
     if (password && password.trim()) authfields.password = password;
-    // the database trigger syncs the profile in the same auth transaction.
     const { error: autherror } = await supabase.auth.admin.updateUserById(req.params.id, authfields);
     if (autherror) throw autherror;
     const account = { ...currentaccount, ...updatefields };

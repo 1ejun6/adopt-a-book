@@ -1,5 +1,5 @@
 <script setup>
-//j > renders a styled input with vue model binding
+//@1ejun6 > renders a styled input with vue model binding
 import { useVModel } from "@vueuse/core";
 import { cn } from "@/lib/utils";
 

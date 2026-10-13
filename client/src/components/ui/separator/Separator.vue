@@ -1,5 +1,5 @@
 <script setup>
-//j > renders a horizontal ||| vertical divider
+//@1ejun6 > renders a horizontal ||| vertical divider
 import { reactiveOmit } from "@vueuse/core";
 import { Separator } from "reka-ui";
 import { cn } from "@/lib/utils";
