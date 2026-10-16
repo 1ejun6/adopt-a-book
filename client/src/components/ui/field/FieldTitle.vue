@@ -1,6 +1,6 @@
 <script setup>
 //@1ejun6 > displays a short title for a field
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 const props = defineProps({
   class: { type: null, required: false },
@@ -8,11 +8,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <div data-slot="field-label" :class="cn(
-    'flex w-fit items-center gap-2 text-sm leading-snug font-medium group-data-[disabled=true]/field:opacity-50',
-    props.class,
-  )
-    ">
+  <div data-slot="field-label" :class="cn('text-sm font-medium', props.class)">
     <slot />
   </div>
 </template>

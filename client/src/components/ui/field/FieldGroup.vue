@@ -1,6 +1,6 @@
 <script setup>
 //@1ejun6 > arranges related form fields in one group
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 const props = defineProps({
   class: { type: null, required: false },
@@ -8,11 +8,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <div data-slot="field-group" :class="cn(
-    'group/field-group @container/field-group flex w-full flex-col gap-7 data-[slot=checkbox-group]:gap-3 [&>[data-slot=field-group]]:gap-4',
-    props.class,
-  )
-    ">
+  <div data-slot="field-group" :class="cn('flex flex-col gap-5', props.class)">
     <slot />
   </div>
 </template>

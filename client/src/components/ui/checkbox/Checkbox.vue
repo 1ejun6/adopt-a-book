@@ -1,8 +1,8 @@
 <script setup>
-import { Tick02Icon } from '@hugeicons/core-free-icons';
-import { reactiveOmit } from "@vueuse/core";
-import { CheckboxIndicator, CheckboxRoot, useForwardPropsEmits } from "reka-ui";
-import { cn } from "@/lib/utils";
+import { MinusSignIcon, Tick02Icon } from '@hugeicons/core-free-icons';
+import { reactiveOmit } from '@vueuse/core';
+import { CheckboxIndicator, CheckboxRoot, useForwardPropsEmits } from 'reka-ui';
+import { cn } from '@/lib/utils';
 
 const props = defineProps({
   defaultValue: { type: null, required: false },
@@ -18,34 +18,27 @@ const props = defineProps({
   required: { type: Boolean, required: false },
   class: { type: null, required: false },
 });
-const emits = defineEmits(["update:modelValue"]);
 
-const delegatedProps = reactiveOmit(props, "class");
-
+const emits = defineEmits(['update:modelValue']);
+const delegatedProps = reactiveOmit(props, 'class');
 const forwarded = useForwardPropsEmits(delegatedProps, emits);
+
+//@1ejun6 > indeterminate is from reka ui > partially checked > some visible rows selected
 </script>
 
 <template>
-  <!-- lee-hlmilk > changed shadcn defaults to size-4.5, rounded corners and card background to match original table checkboxes, checked and indeterminate states use our main.css -->
-  <CheckboxRoot
-    v-slot="slotProps"
-    data-slot="checkbox"
-    v-bind="forwarded"
-    :class="
-      cn(
-        'peer border-input data-[state=checked]:bg-foreground data-[state=checked]:text-background data-[state=indeterminate]:bg-foreground data-[state=indeterminate]:text-background focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4.5 shrink-0 rounded bg-card border shadow-xs transition-shadow outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50',
-        props.class,
-      )
-    "
-  >
-    <CheckboxIndicator
-      data-slot="checkbox-indicator"
-      class="grid place-content-center text-current transition-none"
-    >
+  <!--@lee-hlmilk > changed shadcn defaults to size-4.5 > rounded-lg corners &&& card background to match original table checkboxes > checked &&& indeterminate states use our main.css -->
+  <CheckboxRoot v-slot="slotProps" data-slot="checkbox" v-bind="forwarded" :class="cn(
+    'size-4.5 rounded-lg border border-foreground bg-foreground text-background data-[state=unchecked]:bg-card',
+    props.class,
+  )
+    ">
+    <CheckboxIndicator data-slot="checkbox-indicator" class="grid place-content-center">
       <slot v-bind="slotProps">
-        <!-- lee-hlmilk > added dash for partial selection and render tick through HugeiconsIcon, shared checkbox handles both symbols so table does not repeat indicator markup -->
-        <span v-if="slotProps.state === 'indeterminate'" class="h-0.5 w-2.5 rounded-full bg-current"></span>
-        <HugeiconsIcon v-else :icon="Tick02Icon" class="size-3.5" aria-hidden="true"></HugeiconsIcon>
+        <!--@lee-hlmilk > added dash for partial selection &&& render tick through hugeiconsicon > shared checkbox handles both symbols so table does not repeat indicator markup-->
+        <HugeiconsIcon v-if="slotProps.state === 'indeterminate'" :icon="MinusSignIcon" class="size-3.5"
+          aria-hidden="true"></HugeiconsIcon> <!--@1ejun6 > highest check box is dash icon-->
+        <HugeiconsIcon v-else :icon="Tick02Icon" class="size-3.5" aria-hidden="true"></HugeiconsIcon> <!--@1ejun6 > highest check box is tick icon-->
       </slot>
     </CheckboxIndicator>
   </CheckboxRoot>

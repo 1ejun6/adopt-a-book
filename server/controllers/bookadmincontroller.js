@@ -1,5 +1,6 @@
 const { errorstatus } = require("../utils/errors");
 const book = require("../models/books");
+const { z } = require("zod");
 
 function normalizestringarray(value) {
   if (Array.isArray(value)) {
@@ -95,7 +96,7 @@ const createbook = async (req, res) => {
 };
 
 const showupdatebook = async (req, res) => {
-  const bookid = req.query.bookid;
+  const bookid = req.params.bookid;
   if (!bookid) {
     return res.status(400).json({ error: "please select a book!" });
   }
@@ -116,22 +117,19 @@ const showupdatebook = async (req, res) => {
 
 const deletebooks = async (req, res) => {
   try {
-    let bookids = req.query.bookid;
-    if (!bookids) {
-      return res.status(400).json({
-        error: "select at least one book to delete!"
-      });
+    const input = req.params.bookid ? [req.params.bookid] : req.body?.bookids;
+    if (!z.array(z.uuid()).min(1).safeParse(input).success) {
+      return res.status(400).json({ error: "select at least one book with a valid uuid to delete!" });
     }
-    if (!Array.isArray(bookids)) bookids = [bookids];
+    const bookids = [...new Set(input)];
 
     const bookstodelete = await book.getbooksbyids(bookids);
-    if (bookstodelete.length === 0) return res.status(404).json({ error: "books not found" });
+    if (bookstodelete.length !== bookids.length) return res.status(404).json({ error: "one or more books not found" });
     const booktitles = bookstodelete.map((item) => item.title);
     await book.deletebooksbyids(bookids);
 
-    const books = await book.getallbooks();
     return res.json({
-      books,
+      deletedids: bookids,
       message: `you have deleted ${booktitles.join(", ")} successfully!`,
       error: null,
       filters: []
@@ -139,19 +137,6 @@ const deletebooks = async (req, res) => {
   } catch (error) {
     return res.status(errorstatus(error)).json({ error: "error deleting book(s)!" });
   }
-};
-
-const handlebookaction = async (req, res) => {
-  const action = req.query.action;
-  if (action === "update") {
-    return showupdatebook(req, res);
-  }
-  if (action === "delete") {
-    return deletebooks(req, res);
-  }
-  return res.status(400).json({
-    error: "invalid book action. please use update or delete."
-  });
 };
 
 const updatebook = async (req, res) => {
@@ -179,4 +164,4 @@ const updatebook = async (req, res) => {
   }
 };
 
-module.exports = { managebook, displaycreatebook, createbook, showupdatebook, deletebooks, handlebookaction, updatebook };
+module.exports = { managebook, displaycreatebook, createbook, showupdatebook, deletebooks, updatebook };

@@ -1,87 +1,48 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
-/*---break---*/
-/*---break---*/
 @import 'tailwindcss';
 @import './base.css';
-@import 'tw-animate-css';
-@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --font-heading: 'Schoolbell', cursive; /*@1ejun6 > cursive is a fallback font category */
   --font-body: 'Coming Soon', cursive;
-  --color-ring: var(--ring);
-  --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  /* lee-hlmilk > for badges */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-border: var(--success-border);
+  /*@1ejun6 > @lee-hlmilk > for badges*/
   --color-badge-green: var(--badge-green);
-  --color-badge-green-foreground: var(--badge-green-foreground);
   --color-badge-amber: var(--badge-amber);
-  --color-badge-amber-foreground: var(--badge-amber-foreground);
   --color-badge-rose: var(--badge-rose);
   --color-badge-rose-foreground: var(--badge-rose-foreground);
   --color-badge-neutral: var(--badge-neutral);
-  --color-badge-neutral-foreground: var(--badge-neutral-foreground);
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: 'Schoolbell', cursive; /*@1ejun6 > handwritten font > font fallback category is cursive */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
 }
 
 :root {
-  --radius: 0.625rem;
   --background: #fffdf9;
   --foreground: #633b22;
   --card: #ffffff;
-  --card-foreground: #633b22;
-  --popover: #ffffff;
-  --popover-foreground: #633b22;
-  --primary: #fff0f0;
-  --primary-foreground: #633b22;
-  --secondary: #fff0f0;
-  --secondary-foreground: #633b22;
-  --muted: #fffdf9;
+  --primary: #e9e8f8;
   --muted-foreground: #75604f;
-  --accent: #fff0f0;
-  --accent-foreground: #633b22;
-  --destructive: #8b2933;
   --border: #e4d4c4;
-  --input: #633b22;
-  --ring: #633b22;
-  /* lee-hlmilk > for badges */
+  --destructive: #a3333b;
+  --success: #e9f2e7;
+  --success-foreground: #30513a;
+  --success-border: #c0d3c0;
+  /*@1ejun6 >  lee-hlmilk > for badges */
   --badge-green: #e3eee4;
-  --badge-green-foreground: #28553a;
   --badge-amber: #fff0d5;
-  --badge-amber-foreground: #75520d;
   --badge-rose: #f9e7e8;
   --badge-rose-foreground: #8b2933;
   --badge-neutral: #f3ece4;
-  --badge-neutral-foreground: #633b22;
-
 }
 
 @layer base {
@@ -95,25 +56,79 @@ h6 {
     @apply text-xl;
   }
   * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
+    border-color: var(--border);
   }
 }
 
-/* @1ejun6 > debug borders
-* {
-  border: 1px red dotted;
-} */
+:focus-visible {
+  outline: 2px solid var(--muted-foreground);
+  outline-offset: 2px;
+}
 
-@layer components { /*@1ejun6 > makes your reusable class easier to override with tailwind classes while regular css can override them instead */
+:disabled,
+[aria-disabled='true'] {
+  opacity: 0.5;
+}
+
+[aria-invalid='true'],
+[data-invalid='true'] {
+  border-color: var(--destructive);
+}
+
+@layer components {
+  /*@1ejun6 > makes your reusable class easier to override with tailwind classes while regular css can override them instead */
+  .washi-tape {
+    position: relative; /*@1ejun6 > anchor shared tape shape*/
+  }
+
+  .washi-tape-hover:hover, /*@1ejun6 > purple background on hover for navbar items, tabs, and rows*/
+  .washi-tape-hover[data-active], /*@1ejun6 > selected navbar item*/
+  .washi-tape-hover[data-state='active'], /*@1ejun6 > selected tab*/
+  .washi-row[data-state='selected'] { /*@1ejun6 > checked table row*/
+    background: var(--primary);
+  }
+
+  .washi-tape::before {
+    position: absolute; /*@1ejun6 > place decoration without moving other content*/
+    pointer-events: none; /*@1ejun6 > let clicks pass through to buttons &&& checkboxes &&& rows*/
+    top: 0; /*@1ejun6 > position tape at top edge*/
+    left: 50%; /*@1ejun6 > start at horizontal center*/
+    width: min(60%, 66px); /*@1ejun6 > use 60% of element width > capped at 66px*/
+    height: 15px; /*@1ejun6 > tape thickness*/
+    background: #bcb8ff80; /*@1ejun6 > purple with about 50% opacity*/
+    transform: translate(-50%, -50%) rotate(-7deg); /*@1ejun6 > center tape on that point &&& tilt it slightly*/
+  }
+
+  /*@1ejun6 > center row tape across table left border*/
+  .washi-left::before {
+    z-index: 1;
+    top: 50%; /*@1ejun6 > halfway down first table cell*/
+    left: 0; /*@1ejun6 > half tape sits on each side of border*/
+    width: 14px; /*@1ejun6 > narrow strip for rows*/
+    height: 40px; /*@1ejun6 > taller strip so it looks vertical*/
+  }
+
+  .washi-tape:hover::before, /*@1ejun6 > mouse over element*/
+  .washi-tape:focus-visible::before, /*@1ejun6 > visible keyboard focus*/
+  .washi-tape[data-active]::before, /*@1ejun6 > selected navbar item or checked row first cell*/
+  .washi-tape[data-state='active']::before, /*@1ejun6 > selected tab*/
+  .washi-row:hover .washi-tape::before, /*@1ejun6 > mouse anywhere over row*/
+  .washi-row[data-state='selected'] .washi-tape::before,
+  .washi-row:focus-within .washi-tape::before { /*@1ejun6 > something inside row has focus*/
+    content: ''; /*@1ejun6 > create empty decoration so its purple shape appears*/
+  }
+
+  .washi-tape:disabled::before, /*@1ejun6 > disabled button*/
+  .washi-tape[aria-disabled='true']::before { /*@1ejun6 > element marked disabled for accessibility*/
+    content: none; /*@1ejun6 > do not create tape for disabled controls*/
+  }
+
   form {
     @apply space-y-5;
   }
 
   .carddupe {
-    @apply rounded-md border border-border p-5 space-y-5;
+    @apply rounded-md p-5 space-y-5;
   }
 }
 

@@ -1,7 +1,7 @@
 <script setup>
 //@1ejun6 > renders a styled input with vue model binding
-import { useVModel } from "@vueuse/core";
-import { cn } from "@/lib/utils";
+import { useVModel } from '@vueuse/core';
+import { cn } from '@/lib/utils';
 
 const props = defineProps({
   defaultValue: { type: [String, Number], required: false },
@@ -9,9 +9,9 @@ const props = defineProps({
   class: { type: null, required: false },
 });
 
-const emits = defineEmits(["update:modelValue"]);
+const emits = defineEmits(['update:modelValue']);
 
-const modelValue = useVModel(props, "modelValue", emits, {
+const modelValue = useVModel(props, 'modelValue', emits, {
   passive: true,
   defaultValue: props.defaultValue,
 });
@@ -19,9 +19,7 @@ const modelValue = useVModel(props, "modelValue", emits, {
 
 <template>
   <input v-model="modelValue" data-slot="input" :class="cn(
-    'file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 h-9 w-full min-w-0 rounded-md border border-foreground bg-transparent px-3 py-1 text-base shadow-none transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-    'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-3',
-    'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
+    'h-9 w-full min-w-0 rounded-lg border border-border bg-background px-3 text-base placeholder:text-muted-foreground transition-colors hover:border-muted-foreground focus-visible:border-foreground md:text-sm',
     props.class,
   )
     " />
