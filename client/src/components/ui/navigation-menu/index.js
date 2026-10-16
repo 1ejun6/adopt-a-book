@@ -1,15 +1,13 @@
-import { cva } from 'class-variance-authority'; //@1ejun6 > a helper for creating reusable > variant based css class strings
-
 //@1ejun6 > export every piece from one file so pages can use one import path
 export { default as NavigationMenu } from './NavigationMenu.vue';
 export { default as NavigationMenuContent } from './NavigationMenuContent.vue';
-export { default as NavigationMenuIndicator } from './NavigationMenuIndicator.vue';
 export { default as NavigationMenuItem } from './NavigationMenuItem.vue';
 export { default as NavigationMenuLink } from './NavigationMenuLink.vue';
 export { default as NavigationMenuList } from './NavigationMenuList.vue';
 export { default as NavigationMenuTrigger } from './NavigationMenuTrigger.vue';
 export { default as NavigationMenuViewport } from './NavigationMenuViewport.vue';
 
-export const navigationMenuTriggerStyle = cva(
-  'group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[state=open]:hover:bg-accent data-[state=open]:text-accent-foreground data-[state=open]:focus:bg-accent data-[state=open]:bg-accent/50 focus-visible:ring-ring/50 outline-none transition-[color,box-shadow] focus-visible:ring-3 focus-visible:outline-1',
-);
+export const navigationMenuTriggerStyle = () =>
+  'washi-tape washi-tape-hover inline-flex h-9 items-center rounded-lg px-4 text-sm';
+//@1ejun6 > keeps it inline while arranging its contents with flex
+//@1ejun6 > 36px

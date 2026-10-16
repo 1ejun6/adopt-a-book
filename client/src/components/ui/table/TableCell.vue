@@ -1,5 +1,5 @@
 <script setup>
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 const props = defineProps({
   class: { type: null, required: false },
@@ -7,15 +7,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <td
-    data-slot="table-cell"
-    :class="
-      cn(
-        'p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 *:[[role=checkbox]]:translate-y-0.5',
-        props.class,
-      )
-    "
-  >
+  <td data-slot="table-cell" :class="cn('p-2.5 align-middle whitespace-nowrap', props.class)"> <!--@1ejun6 > vertically centers cell content > keeps text on one line instead of wrapping-->
     <slot />
   </td>
 </template>

@@ -1,9 +1,7 @@
 const { timingSafeEqual } = require("node:crypto");
-const { readFile } = require("node:fs/promises");
-const path = require("node:path");
-const { Client } = require("pg");
-const supabase = require("../supabase/supabase");
 const { errorstatus } = require("../utils/errors");
+const { runsql } = require("../services/database");
+const { loadbooks } = require("../seeds/books");
 
 function requirebasetoken(req, res, next) {
   const token = process.env.basetoken;
@@ -21,63 +19,52 @@ function requirebasetoken(req, res, next) {
 }
 
 async function base(req, res) {
-  const databaseurl = process.env.databaseurl;
-  if (!databaseurl) {
-    return res.status(503).json({
-      error: "base endpoint is not configured",
-      message: "set databaseurl in .env, then restart server"
-    });
-  }
-
-  const client = new Client({ connectionString: databaseurl, connectionTimeoutMillis: 10000 });
-  let connected = false;
   try {
-    const sql = await readFile(path.resolve(__dirname, "../../rawr/base.sql"), "utf8");
-    await client.connect();
-    connected = true;
-    await client.query(sql);
+    await runsql("base.sql");
     return res.json({ message: "base sql applied" });
   } catch (error) {
     console.error("base sql failed >", error);
-    return res.status(errorstatus(error)).json({
-      error: "could not apply base sql",
-      ...(["ENOTFOUND", "EHOSTUNREACH", "ENETUNREACH"].includes(error.code) && {
-        message: "database host is unreachable; use the supabase session pooler connection string in databaseurl"
-      })
-    });
-  } finally {
-    if (connected) {
-      await client.end().catch((error) => console.error("base sql disconnect failed >", error));
-    }
+    return res.status(errorstatus(error)).json({ error: "could not apply base sql" });
   }
 }
 
 async function seed(req, res) {
   try {
-    const { data, error } = await supabase.rpc("seed_demo_data", { selected_customer: null });
-    if (error) throw error;
-    return res.json({ message: "demo data seeded", result: data });
+    const books = await loadbooks();
+    if (books.length < 5) {
+      return res.status(502).json({ error: "Open Library must return at least five books for demo data" });
+    }
+    const result = await runsql("seed.sql", books);
+    return res.json({ message: "demo data seeded from Open Library", result: result.seed_result });
   } catch (error) {
-    console.error("seed_demo_data failed > ", error);
-    return res.status(errorstatus(error)).json({
-      error: "could not seed demo data",
-      ...(error.code === "PGRST202" && { message: "database setup is incomplete" })
-    });
+    console.error("demo seed failed >", error);
+    return res.status(errorstatus(error)).json({ error: "could not seed demo data" });
   }
 }
 
 async function clear(req, res) {
   try {
-    const { error } = await supabase.rpc("clear_app_data");
-    if (error) throw error;
+    await runsql("clear.sql");
     return res.json({ message: "application data cleared" });
   } catch (error) {
-    console.error("clear_app_data failed > ", error);
-    return res.status(errorstatus(error)).json({
-      error: "could not clear database",
-      ...(error.code === "PGRST202" && { message: "database setup is incomplete" })
-    });
+    console.error("clear sql failed >", error);
+    return res.status(errorstatus(error)).json({ error: "could not clear database" });
   }
 }
 
-module.exports = { requirebasetoken, base, seed, clear };
+async function seedbooks(req, res) {
+  const query = req.body?.q;
+  if (query !== undefined && (typeof query !== "string" || !query.trim())) {
+    return res.status(400).json({ error: "q must be a non-empty search string" });
+  }
+  try {
+    const books = await loadbooks(query?.trim());
+    const result = await runsql("books.sql", books);
+    return res.json({ message: `${result.inserted} books added from Open Library`, result });
+  } catch (error) {
+    console.error("book seed failed >", error);
+    return res.status(errorstatus(error)).json({ error: "could not seed books" });
+  }
+}
+
+module.exports = { requirebasetoken, base, seed, seedbooks, clear };

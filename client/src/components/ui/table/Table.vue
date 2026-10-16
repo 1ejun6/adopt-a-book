@@ -1,5 +1,5 @@
 <script setup>
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 const props = defineProps({
   class: { type: null, required: false },
@@ -7,12 +7,11 @@ const props = defineProps({
 </script>
 
 <template>
-  <div data-slot="table-container" class="relative w-full overflow-auto">
-    <table
-      data-slot="table"
-      :class="cn('w-full caption-bottom text-sm', props.class)"
-    >
-      <slot />
-    </table>
+  <div class="-m-3 overflow-x-auto p-3"> <!--@1ejun6 > room for tape; negative margin keeps table aligned-->
+    <div class="min-w-max rounded-lg border">
+      <table :class="cn('w-full text-sm', props.class)">
+        <slot />
+      </table>
+    </div>
   </div>
 </template>
