@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const router = useRouter();
 const showPassword = ref(false);
@@ -51,8 +52,8 @@ async function register() {
                     <FieldLabel for="password">Password</FieldLabel>
                     <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="Create a password" required />
                 </Field>
-                <label class="block">
-                    <input type="checkbox" v-model="showPassword" /> show password
+                <label class="flex items-center gap-2.5">
+                    <Checkbox v-model="showPassword" /> show password
                 </label>
                 <Button type="submit" class="w-full" :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
             </form>

@@ -1,6 +1,6 @@
 <script setup>
 //@1ejun6 > arranges text &&& controls inside a field
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 const props = defineProps({
   class: { type: null, required: false },
@@ -8,11 +8,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <div data-slot="field-content" :class="cn(
-    'group/field-content flex flex-1 flex-col gap-1.5 leading-snug',
-    props.class,
-  )
-    ">
+  <div data-slot="field-content" :class="cn('flex-1 space-y-2.5', props.class)">
     <slot />
   </div>
 </template>

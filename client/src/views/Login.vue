@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const router = useRouter();
 const showPassword = ref(false);
@@ -54,8 +55,8 @@ async function login() {
                     <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
                         autocomplete="current-password" placeholder="Enter your password" required />
                 </Field>
-                <label class="block">
-                    <input type="checkbox" v-model="showPassword" /> show password
+                <label class="flex items-center gap-2.5">
+                    <Checkbox v-model="showPassword" /> show password
                 </label>
                 <Button type="submit" class="w-full" :disabled="form.loading">{{ form.loading ? 'Logging in…' : 'Login'
                     }}</Button>
