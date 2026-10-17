@@ -1,5 +1,5 @@
 <script setup>
-import { DialogTrigger } from "reka-ui";
+import { DialogClose } from "reka-ui";
 
 const props = defineProps({
   asChild: { type: Boolean, required: false },
@@ -8,7 +8,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <DialogTrigger data-slot="sheet-trigger" v-bind="props">
+  <DialogClose data-slot="dialog-close" v-bind="props">
     <slot />
-  </DialogTrigger>
+  </DialogClose>
 </template>

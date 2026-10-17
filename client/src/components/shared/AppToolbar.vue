@@ -15,7 +15,7 @@ const search = defineModel('search', { type: String, default: '' });
 
         <!--@lee-hlmilk > search &&& page filters-->
         <div class="flex flex-col gap-2.5 sm:flex-row">
-            <Input type="search" v-model="search" :placeholder="props.searchPlaceholder" />
+            <Input type="search" v-model="search" class="h-auto text-sm leading-4" :placeholder="props.searchPlaceholder" />
             <div v-if="$slots.filters || $slots.actions" class="flex gap-2.5">
                 <slot name="filters" />
                 <slot name="actions" />
