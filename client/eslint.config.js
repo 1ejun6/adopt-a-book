@@ -24,6 +24,7 @@ export default defineConfig([
   },
 
   js.configs.recommended,
+  { rules: { curly: ['error', 'all'] } },
   ...pluginVue.configs['flat/essential'],
 
   {

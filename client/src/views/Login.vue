@@ -1,8 +1,9 @@
 <script setup>
+import { toast } from 'vue-sonner';
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/lib/api'
-import { auth } from '@/lib/auth'
+import { auth, homeRoute } from '@/lib/auth'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -13,9 +14,7 @@ const showPassword = ref(false);
 const form = reactive({ email: '', password: '', loading: false });
 
 async function login() {
-    if (form.loading) {
-        return;
-    }
+    if (form.loading) { return; }
 
     form.loading = true;
 
@@ -24,16 +23,17 @@ async function login() {
             method: 'POST',
             body: { email: form.email.trim(), password: form.password }
         };
-        const response = await api('/login', data);
 
+        const response = await api('/login', data);
         auth.user = response.user;
         auth.ready = true;
 
         console.log(response.message || 'login successful');
         form.password = '';
-        await router.push('/');
+        
+        await router.push(homeRoute.value);
     } catch (error) {
-        console.error(error.message);
+        toast.error(error.message);
     } finally {
         form.loading = false;
     }
@@ -48,12 +48,12 @@ async function login() {
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>
                     <Input id="email" v-model="form.email" type="email" autocomplete="email"
-                        placeholder="Enter your email" class="h-11" required />
+                        placeholder="enter your email" class="h-11" required />
                 </Field>
                 <Field>
                     <FieldLabel for="password">Password</FieldLabel>
                     <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
-                        autocomplete="current-password" placeholder="Enter your password" required />
+                        autocomplete="current-password" placeholder="enter your password" required />
                 </Field>
                 <label class="flex items-center gap-2.5">
                     <Checkbox v-model="showPassword" /> show password
