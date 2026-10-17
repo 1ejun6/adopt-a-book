@@ -1,4 +1,5 @@
 <script setup>
+import { toast } from 'vue-sonner';
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/lib/api'
@@ -12,9 +13,7 @@ const showPassword = ref(false);
 const form = reactive({ name: '', email: '', password: '', loading: false });
 
 async function register() {
-    if (form.loading){
-        return;
-    }
+    if (form.loading) { return; }
     form.loading = true;
 
     try {
@@ -22,13 +21,14 @@ async function register() {
             method: 'POST',
             body: { name: form.name.trim(), email: form.email.trim(), password: form.password }
         };
+
         const response = await api('/register', data);
         console.log(response.message || 'registration successful');
-        
         form.password = '';
+
         await router.push('/login');
     } catch (error) {
-        console.error(error.message);
+        toast.error(error.message);
     } finally {
         form.loading = false;
     }
@@ -42,15 +42,15 @@ async function register() {
             <form @submit.prevent="register">
                 <Field>
                     <FieldLabel for="name">Name</FieldLabel>
-                    <Input id="name" v-model="form.name" type="text" autocomplete="name" placeholder="Enter your name" required />
+                    <Input id="name" v-model="form.name" type="text" autocomplete="name" placeholder="enter your name" required />
                 </Field>
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>
-                    <Input id="email" v-model="form.email" type="email" autocomplete="email" placeholder="Enter your email" required />
+                    <Input id="email" v-model="form.email" type="email" autocomplete="email" placeholder="enter your email" required />
                 </Field>
                 <Field>
                     <FieldLabel for="password">Password</FieldLabel>
-                    <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="Create a password" required />
+                    <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="create a password" required />
                 </Field>
                 <label class="flex items-center gap-2.5">
                     <Checkbox v-model="showPassword" /> show password

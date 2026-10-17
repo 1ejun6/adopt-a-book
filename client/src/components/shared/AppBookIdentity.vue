@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Book02Icon } from '@hugeicons/core-free-icons';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -10,7 +10,9 @@ const props = defineProps({
     coverClass: { type: String, default: 'w-1/4 max-w-12' },
     loading: { type: Boolean } //@lee-hlmilk > for loading skeleton if we using
 });
+
 const coverFailed = ref(false);
+watch(() => props.cover, () => { coverFailed.value = false; });
 </script>
 
 <template>
@@ -29,7 +31,9 @@ const coverFailed = ref(false);
     <!--@lee-hlmilk > book cover  title &&& author-->
     <div v-else class="flex w-full min-w-0 items-center gap-2.5">
         <div :class="props.coverClass" class="grid place-items-center shrink-0 aspect-[2/3] rounded-lg">
-            <img v-if="props.cover && !coverFailed" :key="props.cover" :src="props.cover" draggable="false" @error="coverFailed = true" />
+            <img v-if="props.cover && !coverFailed" :key="props.cover" :src="props.cover" alt="" width="48" height="72"
+                loading="lazy" decoding="async" class="w-full object-contain" draggable="false"
+                @error="coverFailed = true" /> <!--@1ejun6 > download covers when you scroll near them > let other content render while preparing image-->
             <HugeiconsIcon v-else :icon="Book02Icon" class="size-5" aria-hidden="true" />
         </div>
         <div class="min-w-0 flex-1">
