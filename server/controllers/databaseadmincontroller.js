@@ -1,5 +1,5 @@
 const { timingSafeEqual } = require("node:crypto");
-const { errorstatus } = require("../utils/errors");
+const { errorstatus, errormessage } = require("../utils/errors");
 const { runsql } = require("../services/database");
 const { loadbooks } = require("../seeds/books");
 
@@ -24,21 +24,7 @@ async function base(req, res) {
     return res.json({ message: "base sql applied" });
   } catch (error) {
     console.error("base sql failed >", error);
-    return res.status(errorstatus(error)).json({ error: "could not apply base sql" });
-  }
-}
-
-async function seed(req, res) {
-  try {
-    const books = await loadbooks();
-    if (books.length < 5) {
-      return res.status(502).json({ error: "Open Library must return at least five books for demo data" });
-    }
-    const result = await runsql("seed.sql", books);
-    return res.json({ message: "demo data seeded from Open Library", result: result.seed_result });
-  } catch (error) {
-    console.error("demo seed failed >", error);
-    return res.status(errorstatus(error)).json({ error: "could not seed demo data" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not apply base sql") });
   }
 }
 
@@ -48,7 +34,7 @@ async function clear(req, res) {
     return res.json({ message: "application data cleared" });
   } catch (error) {
     console.error("clear sql failed >", error);
-    return res.status(errorstatus(error)).json({ error: "could not clear database" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not clear database") });
   }
 }
 
@@ -58,13 +44,16 @@ async function seedbooks(req, res) {
     return res.status(400).json({ error: "q must be a non-empty search string" });
   }
   try {
-    const books = await loadbooks(query?.trim());
+    require("../utils/validation").rejectfields(req.body, ["q", "mrtstationid"]);
+    const stationid = require("zod").z.uuid({ error: "choose an MRT station for the imported books" }).parse(req.body?.mrtstationid);
+    await require("../models/mrtstations").validatewrite(stationid);
+    const books = (await loadbooks(query?.trim())).map(book => ({ ...book, mrtstationid: stationid }));
     const result = await runsql("books.sql", books);
     return res.json({ message: `${result.inserted} books added from Open Library`, result });
   } catch (error) {
     console.error("book seed failed >", error);
-    return res.status(errorstatus(error)).json({ error: "could not seed books" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not seed books") });
   }
 }
 
-module.exports = { requirebasetoken, base, seed, seedbooks, clear };
+module.exports = { requirebasetoken, base, seedbooks, clear };

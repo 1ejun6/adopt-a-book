@@ -1,65 +1,22 @@
-const { errorstatus } = require("../utils/errors");
-const adoptiondrive = require("../models/adoptiondrives");
-
-async function handledriversvp(req, res, driveids) {
-  try {
-    const userid = req.user.id;
-
-    if (!driveids) {
-      return res.status(400).json({ error: "please select at least one drive to rsvp" });
-    }
-
-    if (!Array.isArray(driveids)) {
-      driveids = [driveids];
-    }
-
-    const successdrives = [];
-    const alreadyregistereddrives = [];
-    const closeddrives = [];
-    const cancelleddrives = [];
-    const missingdrives = [];
-
-    for (const id of driveids) {
-      const drive = await adoptiondrive.rsvpdrive(id, userid);
-      if (drive.result === "missing") missingdrives.push(id);
-      if (drive.result === "cancelled") cancelleddrives.push(drive.title);
-      if (drive.result === "closed") closeddrives.push(drive.title);
-      if (drive.result === "registered") alreadyregistereddrives.push(drive.title);
-      if (drive.result === "success") successdrives.push(drive.title);
-    }
-
-    const resultparts = [];
-    if (successdrives.length > 0)
-      resultparts.push(`rsvp successful: ${successdrives.join(", ")}`);
-    if (alreadyregistereddrives.length > 0)
-      resultparts.push(`already rsvped: ${alreadyregistereddrives.join(", ")}`);
-    if (closeddrives.length > 0)
-      resultparts.push(`closed: ${closeddrives.join(", ")}`);
-    if (cancelleddrives.length > 0)
-      resultparts.push(`cancelled: ${cancelleddrives.join(", ")}`);
-    if (missingdrives.length > 0)
-      resultparts.push(`not found: ${missingdrives.join(", ")}`);
-
-    if (resultparts.length === 0) {
-      return res.status(400).json({ error: "could not rsvp. please try again." });
-    }
-
-    if (successdrives.length === 0) {
-      return res.status(missingdrives.length === driveids.length ? 404 : 409).json({ error: resultparts.join(" | ") });
-    }
-    return res.json({ message: resultparts.join(" | ") });
-  } catch (err) {
-    console.log("multiple rsvp error:", err);
-    return res.status(errorstatus(err)).json({ error: "could not rsvp. please try again." });
-  }
-}
-
-async function rsvpmultiple(req, res) {
-  return handledriversvp(req, res, req.body.driveids);
-}
+const drives = require("../models/adoptiondrives");
+const { errorstatus, errormessage } = require("../utils/errors");
 
 async function rsvpsingle(req, res) {
-  return handledriversvp(req, res, req.params.id);
+  try {
+    const result = await drives.rsvpdrive(req.params.id, req.user.id);
+    if (result.result === "missing") return res.status(404).json({ error: "drive not found" });
+    if (!["success", "registered"].includes(result.result)) return res.status(409).json({ error: "drive is closed or cancelled" });
+    return res.status(result.result === "success" ? 201 : 200).json({ registered: true });
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not register for drive") });
+  }
 }
-
-module.exports = { rsvpmultiple, rsvpsingle };
+async function cancel(req, res) {
+  try {
+    await drives.cancelrsvp(req.params.id, req.user.id);
+    return res.status(204).send();
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not cancel registration") });
+  }
+}
+module.exports = { rsvpsingle, cancel };
