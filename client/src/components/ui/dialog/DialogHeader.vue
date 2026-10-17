@@ -7,7 +7,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <div data-slot="dialog-header" :class="cn('space-y-2.5', props.class)">
+  <div data-slot="dialog-header" :class="cn('space-y-2.5 pr-10', props.class)">
     <slot />
   </div>
 </template>

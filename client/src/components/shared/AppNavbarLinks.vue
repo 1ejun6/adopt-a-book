@@ -16,13 +16,13 @@ const route = useRoute();
 <template>
   <!--@1ejun6 > * > every direct child element of element with these classes-->
   <nav v-if="mobile" id="mobile"
-    class="grid gap-2.5 p-5 text-right md:hidden *:rounded-lg *:px-2.5 *:py-2.5">
+    class="grid gap-2.5 p-5 md:hidden *:rounded-lg *:p-2.5 *:text-right">
     <!--@1ejun6 > each link sits on its own row-->
     <RouterLink v-for="link in links" :key="link.name" :to="{ name: link.name }" class="washi-tape washi-tape-hover"
       :data-active="route.name === link.name ? true : undefined" @click="emit('navigate')">
       {{ link.label }}
     </RouterLink>
-    <button v-if="auth.ready && auth.user" type="button" class="washi-tape washi-tape-hover text-right" :disabled="logoutLoading"
+    <button v-if="auth.ready && auth.user" type="button" class="washi-tape washi-tape-hover" :disabled="logoutLoading"
       @click="emit('logout')">
       Logout
     </button>
