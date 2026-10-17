@@ -1,5 +1,5 @@
-// Existing unpaginated endpoints retain their array contract without silently stopping
-// at Supabase's row limit. A unique final sort key makes page boundaries deterministic.
+
+
 async function readall(query) {
   const rows = [];
   query = query.order("id");
