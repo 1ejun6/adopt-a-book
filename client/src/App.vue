@@ -6,5 +6,5 @@ import { RouterView } from 'vue-router';
 
 <template>
   <RouterView />
-  <Toaster position="top-center" />
+  <Toaster />
 </template>
