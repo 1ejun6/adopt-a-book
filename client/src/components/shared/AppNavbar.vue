@@ -38,8 +38,8 @@ async function logout() {
 </script>
 
 <template>
-  <header class="sticky top-0 z-50 border-b border-border bg-background">
-    <div class="mx-auto flex w-full items-center justify-between p-5">
+  <header class="sticky top-0 z-50 border-b bg-background">
+    <div class="flex items-center justify-between p-5">
       <!--@1ejun6 > centers navbar horizontal > fills available width-->
       <RouterLink :to="homeRoute" class="flex shrink-0 items-center gap-2.5 font-heading text-lg" @click="status = false">
         Adopt a Book
