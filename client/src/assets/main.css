@@ -39,6 +39,8 @@ h1, h2, h3, h4, h5, h6 {
   --success-foreground: #30513a;
   --success-border: #c0d3c0;
   /*@1ejun6 >  lee-hlmilk > for badges */
+  --toast-success-stripe: #d8efdf;
+  --toast-error-stripe: #fbe0e6;
   --badge-green: #e3eee4;
   --badge-amber: #fff0d5;
   --badge-rose: #f9e7e8;
