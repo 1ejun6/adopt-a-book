@@ -5,11 +5,14 @@ import { api } from '@/lib/api';
 import AppFilters from '@/components/shared/AppFilters.vue'
 import AppPagination from '@/components/shared/AppPagination.vue'
 import AdminTable from '@/components/admin/AdminTable.vue'
+import BookDetailsDialog from '@/components/admin/BookDetailsDialog.vue'
 import BookIdentity from '@/components/shared/AppBookIdentity.vue'
 import StatusBadge from '@/components/shared/AppStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 
 const books = ref([]);
+const selectedBook = ref(null);
+const dialogOpen = ref(false);
 const selectedIds = ref([]);
 const filters = reactive({ search: '', status: 'all', genre: 'all' });
 const loading = ref(false);
@@ -23,8 +26,33 @@ const loadError = ref('');
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
 let requestId = 0;
 
+const bookDetails = new Map();
+let bookRequestId = 0;
+//@1ejun6 > fetch full details on click > cache request for repeat opens &&& ignore older clicks
+async function openBook(book) {
+    if (loading.value || deleting.value) { return; }
+    const id = ++bookRequestId;
+    let request = bookDetails.get(book.id);
+    try {
+        if (!request) {
+            request = api(`/admin/books/${book.id}`).then(response => response.currentbook);
+            bookDetails.set(book.id, request);
+        }
+        const details = await request;
+        if (id !== bookRequestId) { return; }
+        selectedBook.value = { ...book, ...details };
+        dialogOpen.value = true;
+    } catch (error) {
+        if (bookDetails.get(book.id) === request) { bookDetails.delete(book.id); }
+        if (id === bookRequestId) { toast.error(error.message); }
+    }
+}
+
 async function fetchBooks() {
     const id = ++requestId;
+    //@1ejun6 > refresh details cache when inventory page ||| filters change
+    bookDetails.clear();
+    bookRequestId++;
     loading.value = true;
     loadError.value = '';
     selectedIds.value = [];
@@ -48,6 +76,7 @@ async function fetchBooks() {
         //@1ejun6 > a deletion may remove last row on current page
         if (page.value > pageCount.value) { page.value = pageCount.value; return; }
         books.value = (Array.isArray(response.books) ? response.books : []).map(book => ({
+            ...book,
             id: book.id,
             title: book.title || 'Untitled',
             author: (Array.isArray(book.authors) ? book.authors.join(', ') : '') || book.author || 'Unknown Author',
@@ -73,6 +102,7 @@ async function deleteBooks() {
     deleting.value = true;
     try {
         const { deletedids = [], withdrawnids = [] } = await api('/admin/books', { method: 'DELETE', body: { ids: bookids } });
+        for (const id of [...deletedids, ...withdrawnids]) { bookDetails.delete(id); }
         //@1ejun6 > update current refs after server confirms > only reload if view changed ||| page becomes empty
         if (version !== requestId) { await fetchBooks(); }
         else {
@@ -96,7 +126,7 @@ async function deleteBooks() {
             else if (!books.value.length && total.value > 0) { await fetchBooks(); }
         }
         const message = [deletedids.length ? `${deletedids.length} deleted` : '', withdrawnids.length ? `${withdrawnids.length} withdrawn; history kept` : ''].filter(Boolean).join(' · ');
-        toast.success(message, {
+        toast.info(message, {
             description: titles.map((title, index) => `${index + 1}. ${title}`).join('\n'),
             style: { whiteSpace: 'pre-line' }
         });
@@ -146,7 +176,7 @@ const columns = [
 
         <AdminTable v-if="!loadError" :rows="books" :columns="columns" :selectedIds="selectedIds" :isLoading="loading"
             emptyTitle="No books in this view" emptyDescription="Try another Status Tab, Genre, Search term"
-            @selectedRows="selectedIds = $event">
+            @selectedRows="selectedIds = $event" @openRow="openBook">
             <template #cellBook="{ row }">
                 <BookIdentity :title="row.title" :author="row.author" :cover="row.cover" />
             </template>
@@ -157,7 +187,7 @@ const columns = [
                 <StatusBadge :status="value" />
             </template>
         </AdminTable>
-
+        <BookDetailsDialog v-model:open="dialogOpen" :book="selectedBook" />
         <AppPagination itemLabel="books" v-if="!loadError && total > 0" v-model:page="page" :total="total"
             :visibleCount="books.length" :pageSize="pageSize" :pageCount="pageCount" :loading="loading" :disabled="loading || deleting" />
     </main>
