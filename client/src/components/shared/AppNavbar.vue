@@ -46,7 +46,7 @@ async function logout() {
         <img :src="bow" alt="" width="48" height="48" />
       </RouterLink>
       <!--@1ejun6 > hides element when screen is 768px wide ||| wider-->
-      <button type="button" class="washi-tape washi-tape-hover size-11 rounded-lg md:hidden" aria-controls="mobile"
+      <button type="button" class="washi-tape washi-tape-hover grid size-11 shrink-0 place-items-center rounded-lg md:hidden" aria-controls="mobile"
         :aria-expanded="status" @click="status = !status">
         <HugeiconsIcon :icon="status ? Cancel01Icon : Menu01Icon" aria-hidden="true" />
       </button>

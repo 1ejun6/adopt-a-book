@@ -43,7 +43,7 @@ function handleInteractOutside(event) {
   <DialogPortal>
     <DialogOverlay class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/50 p-5">
       <DialogContent @interactOutside="handleInteractOutside" :class="cn(
-        'relative w-full max-w-xl space-y-2.5 bg-background p-5 text-sm rounded-lg',
+        'relative w-full max-w-xl [overflow-wrap:anywhere] space-y-2.5 bg-background p-5 text-sm rounded-lg',
         props.class,
       )
         " v-bind="{ ...$attrs, ...forwarded }" @pointerDownOutside="
