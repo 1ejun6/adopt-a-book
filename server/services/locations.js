@@ -1,4 +1,4 @@
-// Place lookups are cached in memory; the stable station catalogue lives in SQL.
+
 const cache = new Map();
 const pending = new Map();
 let token;
@@ -28,7 +28,7 @@ async function request(url, options = {}) {
   try {
     const response = await fetch(url, { ...options, signal: AbortSignal.timeout(8000) });
     const data = await response.json();
-    // OneMap can return HTTP 200 with an authentication error in the body.
+
     if (!response.ok || data.error) {
       const status = response.status === 429 ? 429 : 503;
       const message = status === 429
@@ -119,7 +119,7 @@ async function cached(key, ttl, load) {
   }
   const task = Promise.resolve().then(load).then(value => {
     if (!cache.has(key) && cache.size >= 100) {
-      const oldest = [...cache.keys()].find(key => key !== "stations");
+      const oldest = cache.keys().next().value;
       cache.delete(oldest);
     }
     cache.set(key, { value, expires: Date.now() + ttl });
@@ -131,70 +131,6 @@ async function cached(key, ttl, load) {
 
 function point(row) {
   return { lat: Number(row.LATITUDE), lng: Number(row.LONGITUDE) };
-}
-
-function mapstations(rows) {
-  const stations = new Map();
-  for (const row of rows) {
-    const name = String(row.BUILDING || row.SEARCHVAL || "").toUpperCase();
-    const coords = point(row);
-    // Exclude exits, depots, LRT and explicitly labelled future/construction entries.
-    if (!/\bMRT STATION\b/.test(name) || /\b(EXIT|DEPOT|LRT|PROPOSED|FUTURE|CONSTRUCTION)\b|U\/C/.test(name)) {
-      continue;
-    }
-    const codes = [...new Set(name.match(/\b(?:NS|EW|CG|NE|CC|CE|DT|TE|JS|JE|JW|CR|CP)\d+\b/g) || [])];
-    if (!codes.length) {
-      continue;
-    }
-    if (!supported(coords.lat, coords.lng)) {
-      throw failure("OneMap returned invalid station coordinates; catalogue was not refreshed");
-    }
-    const label = name.split(" MRT STATION")[0].trim();
-    const id = label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const previous = stations.get(id);
-    if (previous) {
-      previous.codes = [...new Set([...previous.codes, ...codes])];
-    } else {
-      stations.set(id, {
-        id,
-        name: `${label.replace(/\b\w+/g, word => word[0] + word.slice(1).toLowerCase())} MRT`,
-        codes,
-        lines: [],
-        ...coords
-      });
-    }
-  }
-  return [...stations.values()];
-}
-
-async function loadstations() {
-  return cached("stations", 24 * 60 * 60 * 1000, async () => {
-    const first = await search("MRT STATION");
-    // Reject excessive or incomplete pagination rather than silently returning a partial list.
-    if (first.totalNumPages > 100 || !first.results.length) {
-      throw failure("OneMap station list could not be loaded completely");
-    }
-    const rows = [...first.results];
-    // Fetch three pages at a time, keeping the original page order.
-    for (let page = 2; page <= first.totalNumPages; page += 3) {
-      const requests = [];
-      for (let next = page; next < page + 3 && next <= first.totalNumPages; next++) {
-        requests.push(search("MRT STATION", next));
-      }
-      const pages = await Promise.all(requests);
-      for (const next of pages) {
-        if (next.totalNumPages !== first.totalNumPages || !next.results.length) {
-          throw failure("OneMap station list changed; please retry");
-        }
-        rows.push(...next.results);
-      }
-    }
-    const stations = mapstations(rows);
-    if (!stations.length) {
-      throw failure("OneMap returned no usable MRT stations; please retry");
-    }
-    return stations;
-  });
 }
 
 async function resolveplaces(query) {
@@ -267,4 +203,4 @@ async function nearby(input) {
   };
 }
 
-module.exports = { nearby, supported, distancekm, rankedstations, loadstations, mapstations };
+module.exports = { nearby };

@@ -255,7 +255,7 @@ revoke all on function public.check_drive_capacity() from public, anon, authenti
 grant execute on function public.check_pending_application() to service_role;
 grant execute on function public.check_drive_capacity() to service_role;
 
--- Preserve all existing copies as organisation inventory; never infer ownerid from createdby.
+
 alter table public.books add column if not exists ownerid uuid references public.users(id) on delete restrict;
 alter table public.books add column if not exists condition text check (condition in ('like new', 'good', 'fair'));
 alter table public.books add column if not exists collectionarea text;
@@ -264,12 +264,12 @@ alter table public.books add constraint books_status_check check (status in ('av
 alter table public.adoptionapplications drop constraint if exists adoptionapplications_status_check;
 alter table public.adoptionapplications add constraint adoptionapplications_status_check check (status in ('pending','approved','rejected','cancelled'));
 
--- All lifecycle writers lock books first. Bulk writers use ascending book IDs.
+
 create index if not exists books_owner_idx on public.books(ownerid);
 create unique index if not exists appointments_active_book_idx on public.appointments(bookid)
   where status in ('pending confirmation', 'appointment confirmed');
 
--- Replace the old admin-only signature and unguarded completion function.
+
 drop function if exists public.decide_book_application(uuid, uuid, text);
 drop function if exists public.complete_book_collection(uuid);
 
@@ -343,7 +343,7 @@ begin
 end;
 $$;
 
--- MRT catalogue is populated by npm run sync:mrt, never by bundled location data.
+
 create table if not exists public.mrtstations (
   id uuid primary key default gen_random_uuid(),
   name text not null check (length(trim(name)) > 0),
@@ -369,7 +369,7 @@ begin
   if jsonb_typeof(station_rows) is distinct from 'array' or jsonb_array_length(station_rows) = 0 then
     raise exception 'station sync requires a complete nonempty list' using errcode = 'PT422';
   end if;
-  -- Serialize refreshes and reject all conflicts before committing any changes.
+
   lock table public.mrtstations in exclusive mode;
   if exists (
     select code from jsonb_to_recordset(station_rows) as r(codes text[]), unnest(r.codes) code
@@ -389,7 +389,7 @@ begin
     selected_id := matches[1];
     if selected_id = any(seen) then raise exception 'one station matched multiple entries' using errcode = 'PT422'; end if;
     if selected_id is null then
-      -- A renamed/re-coded entry must not silently create a second identity.
+
       if exists (select 1 from public.mrtstations where lower(name) = lower(item.name)) then
         raise exception 'station name has different codes; review catalogue' using errcode = 'PT422';
       end if;
@@ -402,7 +402,7 @@ begin
     seen := array_append(seen, selected_id);
     count_rows := count_rows + 1;
   end loop;
-  -- Missing source rows do not imply closure. Retirement is an explicit catalogue correction.
+
   return count_rows;
 end;
 $$;
@@ -454,7 +454,7 @@ begin
      or changes - array['title','authors','description','condition','mrtstationid','isbn','subjects','publicationyear','coverurl','openlibraryid'] <> '{}'::jsonb then
     raise exception 'unsupported book fields' using errcode = 'PT422';
   end if;
-  -- Explicit assignment prevents status and ownership changes.
+
   selectedbook := jsonb_populate_record(selectedbook, changes - array['id','ownerid','createdby','source','status','createdat','updatedat']);
   update public.books set title = selectedbook.title, authors = selectedbook.authors,
     description = selectedbook.description, condition = selectedbook.condition,
@@ -523,7 +523,7 @@ begin
 end;
 $$;
 
--- Bulk removal validates the whole selection before writing anything.
+
 create or replace function public.remove_customer_records(resource text, record_ids uuid[], actor_id uuid)
 returns integer language plpgsql set search_path = '' as $$
 declare affected integer; book_ids uuid[];
@@ -587,7 +587,7 @@ begin
   if not found then raise exception 'drive not found' using errcode = 'PT404'; end if;
   update public.adoptiondrives set userids = array_remove(userids, customer_id), updatedat = now()
     where id = drive_id;
-  -- Explicitly closed events stay closed until an organiser reopens them.
+
 end;
 $$;
 
@@ -606,7 +606,7 @@ drop trigger if exists protect_last_admin on public.users;
 create trigger protect_last_admin before delete or update of role on public.users
   for each row execute function public.protect_last_admin();
 
--- New RPCs are server-only. Supabase service calls still pass the authenticated actor explicitly.
+
 revoke all on function public.can_manage_book(uuid,uuid), public.decide_book_application(uuid,uuid,text),
   public.withdraw_books(uuid[],uuid), public.edit_book(uuid,uuid,jsonb),
   public.book_collection_appointment(uuid,uuid,text,date,text), public.change_collection(uuid,uuid,jsonb),
@@ -619,8 +619,8 @@ grant execute on function public.can_manage_book(uuid,uuid), public.decide_book_
   public.cancel_drive_rsvp(uuid,uuid), public.protect_last_admin() to service_role;
 notify pgrst, 'reload schema';
 
--- Preserve adoption history even if another server writer attempts a physical delete.
--- Search before paging; strpos treats punctuation and SQL wildcards literally.
+
+
 create index if not exists books_title_id_idx on public.books (lower(title), id);
 create index if not exists books_public_title_id_idx on public.books (lower(title), id) where status <> 'withdrawn';
 
@@ -744,7 +744,7 @@ alter table public.appointments drop constraint if exists appointments_bookid_fk
 alter table public.appointments add constraint appointments_bookid_fkey
   foreign key (bookid) references public.books(id) on delete restrict;
 
--- Return both outcomes so clients keep withdrawn records visible as history.
+
 drop function if exists public.delete_books(uuid[],uuid);
 create function public.delete_books(book_ids uuid[], actor_id uuid)
 returns jsonb language plpgsql set search_path = '' as $$
@@ -785,7 +785,7 @@ revoke all on function public.delete_books(uuid[],uuid) from public, anon, authe
 grant execute on function public.delete_books(uuid[],uuid) to service_role;
 notify pgrst, 'reload schema';
 
--- Public drive summaries are aggregated before PostgREST's row cap can truncate them.
+
 create or replace function public.browse_drives(station_ids uuid[] default null, sort_by text default 'date', customer_id uuid default null)
 returns jsonb language plpgsql stable set search_path = '' as $$
 declare result jsonb;

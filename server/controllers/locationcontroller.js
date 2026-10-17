@@ -41,7 +41,7 @@ const nearby = async (req, res) => {
     return res.json(results);
   } catch (error) {
     const status = errorstatus(error);
-    // Do not log users' postcodes, coordinates, or upstream URLs.
+
     return res.status(status).json({ error: status === 500 ? "location search unavailable" : error.message });
   }
 };
