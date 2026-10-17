@@ -1,12 +1,8 @@
-const { validateid } = require("../utils/validation");
 const express = require("express");
-const bookcustomercontroller = require("../controllers/bookcustomercontroller");
-const { authenticated, customer } = require("../middleware");
-
+const controller = require("../controllers/bookcustomercontroller");
+const { validateid } = require("../utils/validation");
 const router = express.Router();
 router.param("id", validateid);
-
-router.get("/", authenticated, customer, bookcustomercontroller.readbook);
-router.get("/:id", authenticated, customer, bookcustomercontroller.readbookbyid);
-
-module.exports = {router};
+router.get("/", controller.readbook);
+router.get("/:id", controller.readbookbyid);
+module.exports = { router };

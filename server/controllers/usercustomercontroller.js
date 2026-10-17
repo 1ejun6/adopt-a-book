@@ -1,4 +1,4 @@
-const { errorstatus } = require("../utils/errors");
+const { errorstatus, errormessage } = require("../utils/errors");
 const user = require("../models/users");
 const supabase = require("../supabase/supabase");
 
@@ -10,21 +10,10 @@ async function read(req, res, id, message = null, error = null) {
     }
     return res.json({ message, error, account });
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error loading your account" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "error loading your account") });
   }
 }
 
-async function update(req, res, id, message = null, error = null) {
-  try {
-    const account = await user.findcustomerbyid(id);
-    if (!account) {
-      return res.status(404).json({ error: "customer account not found" });
-    }
-    return res.json({ message, error, account });
-  } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error loading your account" });
-  }
-}
 
 async function home(req, res) {
   return res.json({ email: req.user.email });
@@ -34,15 +23,13 @@ async function readaccount(req, res) {
   return read(req, res, req.user.id, null, null);
 }
 
-async function updateview(req, res) {
-  return update(req, res, req.user.id, null, null);
-}
 
 async function updateaccount(req, res) {
   try {
+    require("../utils/validation").rejectfields(req.body, ["name", "email", "password"]);
     const { name, email, password } = req.body;
     if (!name || !email) {
-      return res.status(400).json({ error: "name and email are required" });
+      return res.status(422).json({ error: "name and email are required" });
     }
 
     const currentaccount = await user.findcustomerbyid(req.user.id);
@@ -73,8 +60,8 @@ async function updateaccount(req, res) {
     req.user.email = account.email;
     return res.status(200).json({ message: "account updated" });
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error updating account" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "error updating account") });
   }
 }
 
-module.exports = { home, readaccount, updateview, updateaccount };
+module.exports = { home, readaccount, updateaccount };

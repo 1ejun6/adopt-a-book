@@ -1,6 +1,6 @@
-const { errorstatus } = require("../utils/errors");
+const { errorstatus, errormessage } = require("../utils/errors");
 const book = require("../models/books");
-const { z } = require("zod");
+const { requestids } = require("../utils/validation");
 
 function normalizestringarray(value) {
   if (Array.isArray(value)) {
@@ -9,11 +9,11 @@ function normalizestringarray(value) {
   if (typeof value === "string") {
     return value.split(",").map((item) => item.trim()).filter(Boolean);
   }
-  return [];
+  return value === undefined ? [] : value;
 }
 
 function normalizeoptionalstring(value) {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
+  return typeof value === "string" ? value.trim() || null : value === undefined ? null : value;
 }
 
 function buildbookdata(body, partial = false) {
@@ -26,61 +26,38 @@ function buildbookdata(body, partial = false) {
       body.publicationyear === "" || body.publicationyear == null
         ? null
         : Number(body.publicationyear),
-    description: body.description || "",
+    description: body.description === undefined ? "" : body.description,
     coverurl: normalizeoptionalstring(body.coverurl),
     openlibraryid: normalizeoptionalstring(body.openlibraryid),
-    status: body.status || "available"
+    condition: body.condition,
+    mrtstationid: body.mrtstationid
   };
   return partial
     ? Object.fromEntries(Object.entries(data).filter(([key]) => Object.hasOwn(body, key)))
     : data;
 }
 
-function buildbookfilters(filters) {
-  return {
-    titlesearch: filters.search || filters.title,
-    author: filters.author,
-    subject: filters.subject,
-    isbn: filters.isbn,
-    status: filters.status
-  };
-}
-
 const managebook = async (req, res) => {
   try {
-    const filters = req.query;
-    const books = await book.getallbooks({ query: buildbookfilters(filters) });
-    return res.json({
-      books,
-      message: null,
-      error: null,
-      filters
-    });
+    return res.json(await book.inventory(req.query));
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error loading books" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "error loading books") });
   }
-};
-
-const displaycreatebook = (req, res) => {
-  return res.json({
-    formdata: {},
-    message: null,
-    error: null,
-    filters: []
-  });
 };
 
 const createbook = async (req, res) => {
   const formdata = {
     ...buildbookdata(req.body),
-    source: "manual",
-    createdby: req.user.id
+    source: req.body.source === undefined ? "manual" : req.body.source,
+    ownerid: null,
+    createdby: req.user.id,
+    status: "available"
   };
   try {
-    await book.createbook(formdata);
-    const books = await book.getallbooks();
+    require("../utils/validation").rejectfields(req.body, ["title", "authors", "isbn", "subjects", "publicationyear", "description", "coverurl", "openlibraryid", "condition", "mrtstationid", "source"]);
+    const created = await book.createbook(formdata);
     return res.status(201).json({
-      books,
+      book: created,
       message: `you have created book ${formdata.title} successfully!`,
       error: null,
       filters: []
@@ -88,7 +65,7 @@ const createbook = async (req, res) => {
   } catch (error) {
     return res.status(errorstatus(error)).json({
       message: null,
-      error: "error creating book",
+      error: errormessage(error, "error creating book"),
       filters: [],
       formdata
     });
@@ -111,31 +88,25 @@ const showupdatebook = async (req, res) => {
       error: null
     });
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error loading book" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "error loading book") });
   }
 };
 
 const deletebooks = async (req, res) => {
   try {
-    const input = req.params.bookid ? [req.params.bookid] : req.body?.bookids;
-    if (!z.array(z.uuid()).min(1).safeParse(input).success) {
-      return res.status(400).json({ error: "select at least one book with a valid uuid to delete!" });
-    }
-    const bookids = [...new Set(input)];
-
-    const bookstodelete = await book.getbooksbyids(bookids);
-    if (bookstodelete.length !== bookids.length) return res.status(404).json({ error: "one or more books not found" });
-    const booktitles = bookstodelete.map((item) => item.title);
-    await book.deletebooksbyids(bookids);
-
-    return res.json({
-      deletedids: bookids,
-      message: `you have deleted ${booktitles.join(", ")} successfully!`,
-      error: null,
-      filters: []
-    });
+    const ids = requestids(req);
+    const result = await book.deletebooks(ids, req.user.id);
+    return res.json(result);
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error deleting book(s)!" });
+    console.error("book deletion failed >", error);
+    if (error.code === "PGRST202" || error.code === "42883" || error.code === "42703") {
+      return res.status(503).json({ error: "Book deletion needs the latest database setup. Apply /base, then try again." });
+    }
+    const status = errorstatus(error);
+    if ([400, 403, 404, 409, 422].includes(status)) {
+      return res.status(status).json({ error: error.message });
+    }
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "error deleting book(s)!") });
   }
 };
 
@@ -147,10 +118,13 @@ const updatebook = async (req, res) => {
     if (!currentbook) {
       return res.status(404).json({ error: "book not found" });
     }
-    await book.updatebook(bookid, formdata);
-    const books = await book.getallbooks();
+    if (Object.hasOwn(req.body, "status")) return res.status(422).json({ error: "status changes use the application, collection or withdrawal endpoints" });
+    const allowed = new Set(["title", "authors", "isbn", "subjects", "publicationyear", "description", "coverurl", "openlibraryid", "condition", "mrtstationid"]);
+    if (Object.keys(req.body).some((key) => !allowed.has(key))) return res.status(422).json({ error: "unsupported book field" });
+    const fields = book.bookupdateschema.parse(formdata);
+    const updated = await book.editbook(bookid, req.user.id, Object.fromEntries(Object.entries(fields).filter(([key]) => Object.hasOwn(formdata, key))));
     return res.json({
-      books,
+      book: updated,
       message: `you have updated book ${formdata.title || currentbook.title} successfully!`,
       error: null,
       filters: []
@@ -159,9 +133,9 @@ const updatebook = async (req, res) => {
     return res.status(errorstatus(error)).json({
       currentbook: { ...formdata, _id: bookid },
       message: null,
-      error: "error updating book"
+      error: errormessage(error, "error updating book")
     });
   }
 };
 
-module.exports = { managebook, displaycreatebook, createbook, showupdatebook, deletebooks, updatebook };
+module.exports = { managebook, createbook, showupdatebook, deletebooks, updatebook };

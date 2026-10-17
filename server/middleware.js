@@ -1,5 +1,5 @@
 const { errorstatus } = require("./utils/errors");
-const supabaseauth = require("./supabase/supabaseauth");
+const createauthclient = require("./supabase/supabaseauth");
 const user = require("./models/users");
 
 function authenticated(req, res, next) {
@@ -45,6 +45,7 @@ function customer(req, res, next) {
 async function loadcurrentuser(req, res, next) {
   try {
     const cookies = req.cookies || {};
+    const supabaseauth = createauthclient();
     let accesstoken = cookies.access_token;
 
     if (!accesstoken && !cookies.refresh_token) {
@@ -58,7 +59,9 @@ async function loadcurrentuser(req, res, next) {
       const refreshed = await supabaseauth.auth.refreshSession({
         refresh_token: cookies.refresh_token
       });
-      if (!refreshed.error && refreshed.data.session) {
+      if (refreshed.error) {
+        authenicationresult = { data: {}, error: refreshed.error };
+      } else if (refreshed.data.session) {
         const session = refreshed.data.session;
         accesstoken = session.access_token;
         setauthcookies(res, session);
@@ -69,6 +72,7 @@ async function loadcurrentuser(req, res, next) {
     if (authenicationresult.error && [429, 503].includes(errorstatus(authenicationresult.error))) {
       return res.status(errorstatus(authenicationresult.error)).json({ error: "authentication service unavailable; please try again" });
     }
+    if (authenicationresult.error) clearauthcookies(res);
     if (!authenicationresult.error && authenicationresult.data.user) {
       const profile = await user.findbyid(authenicationresult.data.user.id);
       if (profile) {
@@ -88,7 +92,7 @@ async function loadcurrentuser(req, res, next) {
 }
 
 function setauthcookies(res, session) {
-  const onehour = 60 * 60 * 1000;
+  const refreshlifetime = 7 * 24 * 60 * 60 * 1000;
 
   const options = {
     httpOnly: true,
@@ -99,12 +103,12 @@ function setauthcookies(res, session) {
 
   res.cookie("access_token", session.access_token, {
     ...options,
-    maxAge: onehour
+    maxAge: Math.max(1, session.expires_in || 3600) * 1000
   });
 
   res.cookie("refresh_token", session.refresh_token, {
     ...options,
-    maxAge: onehour
+    maxAge: refreshlifetime
   });
 }
 

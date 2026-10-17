@@ -1,45 +1,20 @@
-const { errorstatus } = require("../utils/errors");
-const book = require("../models/books");
+const books = require("../models/books");
+const { errorstatus, errormessage } = require("../utils/errors");
 
-function buildbookfilters(filters) {
-  return {
-    titlesearch: filters.search || filters.title,
-    author: filters.author,
-    subject: filters.subject,
-    isbn: filters.isbn,
-    status: filters.status
-  };
+async function readbook(req, res) {
+  try {
+    return res.json(await books.catalogue(req.query));
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not load books") });
+  }
 }
-
-const readbook = async (req, res) => {
+async function readbookbyid(req, res) {
   try {
-    const filters = req.query;
-    const books = await book.getallbooks({ query: buildbookfilters(filters) });
-    return res.json({
-      books,
-      message: null,
-      error: null,
-      filters
-    });
+    const book = await books.publicbooks(req.params.id);
+    if (!book) return res.status(404).json({ error: "book not found" });
+    return res.json({ book });
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error loading books" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not load book") });
   }
-};
-
-const readbookbyid = async (req, res) => {
-  try {
-    const selectedbook = await book.getbookbyid(req.params.id);
-    if (!selectedbook) {
-      return res.status(404).json({ error: "book not found" });
-    }
-    return res.json({
-      book: selectedbook,
-      message: null,
-      error: null
-    });
-  } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error loading book" });
-  }
-};
-
+}
 module.exports = { readbook, readbookbyid };

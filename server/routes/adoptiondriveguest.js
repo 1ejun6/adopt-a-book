@@ -1,8 +1,8 @@
 const express = require("express");
-const adoptiondriveguestcontroller = require("../controllers/adoptiondriveguestcontroller");
-
+const controller = require("../controllers/adoptiondriveguestcontroller");
+const { validateid } = require("../utils/validation");
 const router = express.Router();
-
-router.get("/", adoptiondriveguestcontroller.getguestalldrives);
-
-module.exports = {router};
+router.param("id", validateid);
+router.get("/", controller.getguestalldrives);
+router.get("/:id", controller.getguestdrive);
+module.exports = { router };
