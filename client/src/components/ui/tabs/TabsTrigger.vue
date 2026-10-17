@@ -2,6 +2,7 @@
 import { reactiveOmit } from '@vueuse/core';
 import { TabsTrigger, useForwardProps } from 'reka-ui';
 import { cn } from '@/lib/utils';
+import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
 
 const props = defineProps({
   value: { type: [String, Number], required: true },
@@ -18,7 +19,7 @@ const forwardedProps = useForwardProps(delegatedProps);
 
 <template>
   <TabsTrigger data-slot="tabs-trigger" :class="cn(
-    'washi-tape washi-tape-hover flex items-center rounded-lg px-3 py-1.5 text-sm',
+    navigationMenuTriggerStyle(),
     props.class,
   )
     " v-bind="forwardedProps">

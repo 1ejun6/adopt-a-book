@@ -1,8 +1,10 @@
 <script setup>
 import { reactiveOmit } from "@vueuse/core";
-import { DialogTitle } from "reka-ui";
+import { cn } from '@/lib/utils';
+import { DialogOverlay } from "reka-ui";
 
 const props = defineProps({
+  forceMount: { type: Boolean, required: false },
   asChild: { type: Boolean, required: false },
   as: { type: null, required: false },
   class: { type: null, required: false },
@@ -12,11 +14,11 @@ const delegatedProps = reactiveOmit(props, "class");
 </script>
 
 <template>
-  <DialogTitle
-    data-slot="sheet-title"
-    :class="props.class"
-    v-bind="delegatedProps"
-  >
+  <DialogOverlay data-slot="dialog-overlay" v-bind="delegatedProps" :class="cn(
+    'fixed inset-0 z-50 bg-black/50',
+    props.class,
+  )
+    ">
     <slot />
-  </DialogTitle>
+  </DialogOverlay>
 </template>

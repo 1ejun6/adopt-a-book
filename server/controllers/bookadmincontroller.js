@@ -1,5 +1,6 @@
 const { errorstatus, errormessage } = require("../utils/errors");
 const book = require("../models/books");
+const openlibrary = require("../services/openlibrary");
 const { requestids } = require("../utils/validation");
 
 function normalizestringarray(value) {
@@ -55,6 +56,11 @@ const createbook = async (req, res) => {
   };
   try {
     require("../utils/validation").rejectfields(req.body, ["title", "authors", "isbn", "subjects", "publicationyear", "description", "coverurl", "openlibraryid", "condition", "mrtstationid", "source"]);
+    //@1ejun6 > fill missing description on API imports > keep any description entered by admin
+    if (formdata.source === "open_library" && formdata.openlibraryid
+        && typeof formdata.description === "string" && !formdata.description.trim()) {
+      formdata.description = await openlibrary.getdescription(formdata.openlibraryid);
+    }
     const created = await book.createbook(formdata);
     return res.status(201).json({
       book: created,

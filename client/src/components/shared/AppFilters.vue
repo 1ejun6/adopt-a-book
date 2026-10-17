@@ -40,9 +40,9 @@ const genre = defineModel('genre', { type: String, default: 'all' });
             </slot>
         </template>
 
-        <template v-if="genres.length || $slots.filters" #filters>
+        <template #filters>
             <slot name="filters">
-                <select v-model="genre" class="border p-2.5">
+                <select v-model="genre" class="rounded-lg border p-2.5 text-sm leading-4">
                     <option value="all">All genres</option>
                     <option v-for="item in genres" :key="item" :value="item">{{ item }}</option>
                 </select>

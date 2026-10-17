@@ -92,7 +92,9 @@ function toggleAllRows() {
 
           <!--@lee-hlmilk > arrow for opening row-->
           <TableCell class="text-center">
-            <HugeiconsIcon class="mx-auto" :icon="ArrowRight01Icon" aria-hidden="true" />
+            <button type="button" class="mx-auto block" @click.stop="emit('openRow', row)">
+              <HugeiconsIcon :icon="ArrowRight01Icon" aria-hidden="true" />
+            </button>
           </TableCell>
         </TableRow>
       </TableBody>
