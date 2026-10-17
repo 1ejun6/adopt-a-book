@@ -1,19 +1,13 @@
-const { validateid } = require("../utils/validation");
 const express = require("express");
-const adoptionapplicationcustomercontroller = require("../controllers/adoptionapplicationcustomercontroller");
+const controller = require("../controllers/adoptionapplicationcustomercontroller");
+const { validateid } = require("../utils/validation");
 const { authenticated, customer } = require("../middleware");
-
 const router = express.Router();
+router.use(authenticated, customer);
 router.param("id", validateid);
-router.param("bookid", validateid);
-
-router.get("/create/:bookid", authenticated, customer, adoptionapplicationcustomercontroller.getcreateadoptionapplication);
-router.get("/create", authenticated, customer, adoptionapplicationcustomercontroller.getcreateadoptionapplication);
-router.post("/create", authenticated, customer, adoptionapplicationcustomercontroller.createadoptionapplication);
-router.post("/", authenticated, customer, adoptionapplicationcustomercontroller.createadoptionapplication);
-router.get("/", authenticated, customer, adoptionapplicationcustomercontroller.readadoptionapplications);
-router.get("/action", authenticated, customer, adoptionapplicationcustomercontroller.handleaction);
-router.post("/delete/:id", authenticated, customer, adoptionapplicationcustomercontroller.deleteadoptionapplication);
-router.delete("/:id", authenticated, customer, adoptionapplicationcustomercontroller.deleteadoptionapplication);
-
-module.exports = {router};
+router.get("/", controller.readadoptionapplications);
+router.post("/", controller.createadoptionapplication);
+router.delete("/", controller.deleteadoptionapplication);
+router.get("/:id", controller.readadoptionapplication);
+router.delete("/:id", controller.deleteadoptionapplication);
+module.exports = { router };

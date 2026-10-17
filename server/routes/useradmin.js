@@ -1,17 +1,14 @@
-const { validateid } = require("../utils/validation");
 const express = require("express");
-const useradmincontroller = require("../controllers/useradmincontroller");
+const controller = require("../controllers/useradmincontroller");
+const { validateid } = require("../utils/validation");
 const { authenticated, admin } = require("../middleware");
-
 const router = express.Router();
+router.use(authenticated, admin);
 router.param("id", validateid);
-
-router.get("/", authenticated, admin, useradmincontroller.home);
-router.get("/user", authenticated, admin, useradmincontroller.index);
-router.get("/user/create", authenticated, admin, useradmincontroller.createview);
-router.get("/user/update/:id", authenticated, admin, useradmincontroller.updateview);
-router.post("/user/create", authenticated, admin, useradmincontroller.create);
-router.post("/user/delete/:id", authenticated, admin, useradmincontroller.deleteaccounts);
-router.post("/user/update/:id", authenticated, admin, useradmincontroller.saveupdate);
-
-module.exports = {router};
+router.get("/", controller.home);
+router.get("/users", controller.index);
+router.post("/users", controller.create);
+router.get("/users/:id", controller.updateview);
+router.patch("/users/:id", controller.saveupdate);
+router.delete("/users/:id", controller.deleteaccounts);
+module.exports = { router };

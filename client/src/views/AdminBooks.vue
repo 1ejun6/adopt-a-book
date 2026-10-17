@@ -5,7 +5,7 @@ import AdminToolbar from '@/components/AdminToolbar.vue'
 import AdminTable from '@/components/AdminTable.vue'
 import BookIdentity from '@/components/BookIdentity.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
-import SuccessMessage from '@/components/SuccessMessage.vue'
+import Message from '@/components/Message.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -17,6 +17,7 @@ const loading = ref(false);
 const deleting = ref(false);
 const deleteError = ref('');
 const successMessage = ref('');
+const deletedTitles = ref([]);
 
 const columns = [
     { key: 'book', label: 'Book' },
@@ -28,7 +29,8 @@ const tabs = [
     { value: 'all', label: 'All books' },
     { value: 'available', label: 'Available' },
     { value: 'reserved', label: 'Reserved' },
-    { value: 'adopted', label: 'Adopted' }
+    { value: 'adopted', label: 'Adopted' },
+    { value: 'withdrawn', label: 'Withdrawn' }
 ];
 
 const availableGenres = computed(() => {
@@ -39,7 +41,8 @@ const counts = computed(() => ({
     all: books.value.length,
     available: books.value.filter(book => book.status === 'available').length,
     reserved: books.value.filter(book => book.status === 'reserved').length,
-    adopted: books.value.filter(book => book.status === 'adopted').length
+    adopted: books.value.filter(book => book.status === 'adopted').length,
+    withdrawn: books.value.filter(book => book.status === 'withdrawn').length
 }));
 
 const filteredBooks = computed(() => {
@@ -89,17 +92,24 @@ async function deleteBooks() {
         return
     };
     const bookids = [...selectedIds.value];
+    const titles = books.value.filter(book => bookids.includes(book.id)).map(book => book.title);
     deleting.value = true;
     deleteError.value = '';
     successMessage.value = '';
+    deletedTitles.value = [];
     try {
-        const response = await api(bookids.length === 1 ? `/admin/books/${bookids[0]}` : '/admin/books', {
+        const result = await api(bookids.length === 1 ? `/admin/books/${bookids[0]}` : '/admin/books', {
             method: 'DELETE',
-            body: bookids.length === 1 ? undefined : { bookids },
+            body: bookids.length === 1 ? undefined : { ids: bookids },
         });
-        books.value = books.value.filter(book => !bookids.includes(book.id));
+        const deleted = result.deletedids || [];
+        const withdrawn = result.withdrawnids || [];
+        books.value = books.value.filter(book => !deleted.includes(book.id)).map(book =>
+            withdrawn.includes(book.id) ? { ...book, status: 'withdrawn' } : book);
+
         selectedIds.value = selectedIds.value.filter(id => !bookids.includes(id));
-        successMessage.value = response.message;
+        successMessage.value = [deleted.length ? `${deleted.length} deleted` : '', withdrawn.length ? `${withdrawn.length} withdrawn; history kept` : ''].filter(Boolean).join(' · ');
+        deletedTitles.value = titles;
     } catch (error) {
         deleteError.value = error.message;
     } finally {
@@ -141,10 +151,15 @@ onMounted(fetchBooks);
         <AdminToolbar v-model:search="filters.search" searchPlaceHolder="Search by Titile, Author, ISBN..."
             :selectedRowCount="selectedIds.length">
             <template #filters>
-                <select v-model="filters.genre" class="w-full rounded-lg border bg-background px-3 py-2 text-sm sm:w-auto">
-                    <option value="all">All genres</option>
-                    <option v-for="genre in availableGenres" :key="genre" :value="genre">{{ genre }}</option>
-                </select>
+                <div class="relative w-full sm:w-auto">
+                    <select v-model="filters.genre" class="w-full appearance-none rounded-lg border bg-background py-2.5 pl-2.5 pr-10 text-sm">
+                        <option value="all">All genres</option>
+                        <option v-for="genre in availableGenres" :key="genre" :value="genre">{{ genre }}</option>
+                    </select>
+                    <svg class="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
+                </div>
             </template>
             <template #selectionActions="{ onlyOne }">
                 <Button size="sm" class="bg-card" :disabled="!onlyOne" @click="editBook">Edit</Button>
@@ -152,8 +167,9 @@ onMounted(fetchBooks);
             </template>
         </AdminToolbar>
 
-        <SuccessMessage v-if="deleteError" variant="error" :message="deleteError" @dismiss="deleteError = ''" />
-        <SuccessMessage v-if="successMessage" :message="successMessage" @dismiss="successMessage = ''" />
+        <Message v-if="deleteError || successMessage" :variant="deleteError ? 'error' : 'success'"
+            :message="deleteError || successMessage" :items="deleteError ? [] : deletedTitles"
+            @dismiss="deleteError = ''; successMessage = ''; deletedTitles = []" />
 
         <AdminTable :rows="filteredBooks" :columns="columns" :selectedIds="selectedIds" :isLoading="loading"
             emptyTitle="No books in this view" emptyDescription="Try another Status Tab, Genre, Search term"

@@ -1,3 +1,4 @@
+const { readall } = require("./query");
 const { z } = require("zod");
 const supabase = require("../supabase/supabase");
 
@@ -11,8 +12,7 @@ async function one(query) {
 }
 
 async function findbyuser(userid) {
-  const { data, error } = await supabase.from("watchlist").select("*, bookid:books(*)").eq("userid", userid).order("lastupdated", { ascending: false });
-  if (error) throw error;
+  const data = await readall(supabase.from("watchlist").select("*, bookid:books(id,title,authors,status,coverurl,mrtstationid,mrtstation:mrtstations(id,name,codes,lat,lng,selectable))").eq("userid", userid).order("lastupdated", { ascending: false }));
   return data.map(mapentry);
 }
 
@@ -25,17 +25,15 @@ async function createentry(value) {
   return mapentry(data);
 }
 
-async function updatecomment(bookid, userid, comments) {
+async function updatecomment(id, userid, comments) {
   comments = watchlistschema.shape.comments.parse(comments);
-  const { data, error } = await supabase.from("watchlist").update({ comments, lastupdated: new Date() }).eq("bookid", bookid).eq("userid", userid).select().maybeSingle();
+  const { data, error } = await supabase.from("watchlist").update({ comments, lastupdated: new Date() }).eq("id", id).eq("userid", userid).select().maybeSingle();
   if (error) throw error;
   return mapentry(data);
 }
 
-async function deleteentry(bookid, userid) {
-  const { data, error } = await supabase.from("watchlist").delete().eq("bookid", bookid).eq("userid", userid).select("id").maybeSingle();
-  if (error) throw error;
-  return Boolean(data);
-}
 
-module.exports = { watchlistschema, findbyuser, findbybookanduser, createentry, updatecomment, deleteentry };
+
+const findentry = (id, userid) => one(supabase.from("watchlist").select("*, bookid:books(id,title,authors,status,coverurl,mrtstationid,mrtstation:mrtstations(id,name,codes,lat,lng,selectable))").eq("id", id).eq("userid", userid));
+
+module.exports = { watchlistschema, findbyuser, findbybookanduser, createentry, updatecomment, findentry };

@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const { readall } = require("./query");
 const supabase = require("../supabase/supabase");
 
 const appointmentstatusschema = z.enum([
@@ -19,13 +20,10 @@ const appointmentschema = z.object({
   status: appointmentstatusschema.default("pending confirmation")
 });
 
-const appointmentupdateschema = appointmentschema.omit({ userid: true }).partial();
 
 const mapappointment = (row) => (row ? { ...row, _id: row.id } : null);
 async function many(query) {
-  const { data, error } = await query;
-  if (error) throw error;
-  return data.map(mapappointment);
+  return (await readall(query)).map(mapappointment);
 }
 const sorted = (query) => many(query.order("appointmentdate", { ascending: false }).order("timeslot", { ascending: false }));
 
@@ -37,43 +35,27 @@ async function createappointment(value) {
   return mapappointment(data);
 }
 
-const searchappointmentbyid = (id, userid) => many(supabase.from("appointments").select("*").eq("id", id).eq("userid", userid));
-async function updateappointmentbyid(id, userid, value) {
-  const validatedappointment = appointmentupdateschema.parse(value);
-  const { data, error } = await supabase.from("appointments").update(validatedappointment).eq("id", id).eq("userid", userid).in("status", ["pending confirmation", "appointment confirmed"]).select("id");
+const listallappointments = async () => (await sorted(supabase.from("appointments")
+  .select("*,books!inner(ownerid)").is("books.ownerid", null))).map(row => {
+    delete row.books;
+    return row;
+  });
+
+
+
+
+async function changecollection(id, actorid, changes) {
+  const { data, error } = await supabase.rpc("change_collection", { appointment_id: id, actor_id: actorid, changes }).single();
   if (error) throw error;
-  return { matchedcount: data.length, modifiedcount: data.length };
+  return mapappointment(data);
 }
-
-async function deleteappointmentbyid(id, userid) {
-  const { data, error } = await supabase.from("appointments").delete().eq("id", id).eq("userid", userid).in("status", ["pending confirmation", "appointment confirmed"]).select("id");
+const ownercollections = (ownerid) => many(supabase.from("appointments").select("*, books!inner(id,title,authors,coverurl,ownerid,status), users(id,name)").eq("books.ownerid", ownerid).order("appointmentdate"));
+async function findappointment(id) {
+  const { data, error } = await supabase.from("appointments").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
-  return { deletedcount: data.length };
+  return mapappointment(data);
 }
 
-const listallappointments = () => sorted(supabase.from("appointments").select("*"));
-async function confirmappointment(id, status) {
-  const validatedstatus = appointmentstatusschema.parse(status);
-  const { data, error } = await supabase.from("appointments").update({ status: validatedstatus }).eq("id", id).eq("status", "pending confirmation").select("id");
-  if (error) throw error;
-  return { matchedcount: data.length, modifiedcount: data.length };
-}
+const bookcollections = (bookid) => many(supabase.from("appointments").select("*").eq("bookid", bookid).order("createdat", { ascending: false }));
 
-async function completecollection(id) {
-  const validatedid = z.string().uuid().parse(id);
-  const { data, error } = await supabase.rpc("complete_book_collection", { appointment_id: validatedid });
-  if (error) throw error;
-  return data;
-}
-
-const searchappointmentbyuser = showappointments;
-const searchappointmentbyuserandstatus = (userid, status) => sorted(supabase.from("appointments").select("*").eq("userid", userid).eq("status", status));
-
-async function searchappointmentsbyusers(userids, status) {
-  if (userids.length === 0) return [];
-  let query = supabase.from("appointments").select("*").in("userid", userids);
-  if (status !== "all") query = query.eq("status", status);
-  return sorted(query);
-}
-
-module.exports = { searchappointmentsbyusers, appointmentschema, appointmentupdateschema, showappointments, createappointment, searchappointmentbyid, updateappointmentbyid, deleteappointmentbyid, listallappointments, confirmappointment, completecollection, searchappointmentbyuser, searchappointmentbyuserandstatus };
+module.exports = { appointmentschema, showappointments, createappointment, listallappointments, changecollection, ownercollections, findappointment, bookcollections };

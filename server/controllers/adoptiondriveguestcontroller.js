@@ -1,17 +1,20 @@
-const { errorstatus } = require("../utils/errors");
-const adoptiondrivemodel = require("../models/adoptiondrives");
+const drives = require("../models/adoptiondrives");
+const { errorstatus, errormessage } = require("../utils/errors");
 
-const getguestalldrives = async (req, res) => {
+async function getguestalldrives(req, res) {
   try {
-    const drives = await adoptiondrivemodel.getalldrivesdescending();
-    return res.json({
-      drives,
-      currentuser: req.user || null
-    });
-  } catch (err) {
-    console.log("error fetching adoption drives:", err);
-    return res.status(errorstatus(err)).json({ error: "could not load adoption drives" });
+    return res.json({ drives: await drives.discovery(req.query) });
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not load drives") });
   }
-};
-
-module.exports = { getguestalldrives };
+}
+async function getguestdrive(req, res) {
+  try {
+    const drive = await drives.publicdrives(req.params.id);
+    if (!drive) return res.status(404).json({ error: "drive not found" });
+    return res.json({ drive });
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not load drive") });
+  }
+}
+module.exports = { getguestalldrives, getguestdrive };

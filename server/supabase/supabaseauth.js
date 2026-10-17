@@ -7,6 +7,6 @@ if (!supabaseurl || !supabasepublishablekey) {
   throw new Error("supabaseurl &&& supabasepublishablekey must be set in .env");
 }
 
-const supabaseauth = createClient(supabaseurl, supabasepublishablekey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+const createauthclient = () => createClient(supabaseurl, supabasepublishablekey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 
-module.exports = supabaseauth;
+module.exports = createauthclient;

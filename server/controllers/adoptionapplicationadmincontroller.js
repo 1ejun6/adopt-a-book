@@ -1,9 +1,9 @@
-const { errorstatus } = require("../utils/errors");
+const { errorstatus, errormessage } = require("../utils/errors");
 const adopt = require("../models/adoptionapplication.js");
 
 const getadminadoptionapplications = async (req, res) => {
   try {
-    const adoptionapplications = await adopt.findall();
+    const adoptionapplications = (await adopt.findall()).filter((item) => item.bookid && !item.bookid.ownerid);
     return res.json({
       adoptionapplications,
       error: null
@@ -27,7 +27,7 @@ const getupdateadoptionapplication = async (req, res) => {
       return res.status(400).json({ error: "application id is required" });
     }
     const adoptionapplication = await adopt.findbyadoptionapplicationid(id);
-    if (!adoptionapplication) {
+    if (!adoptionapplication || adoptionapplication.bookid.ownerid) {
       return res.status(404).json({ error: "adoption application not found" });
     }
     return res.json({
@@ -36,14 +36,14 @@ const getupdateadoptionapplication = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    return res.status(errorstatus(err)).json({ error: "error loading adoption application" });
+    return res.status(errorstatus(err)).json({ error: errormessage(err, "error loading adoption application") });
   }
 };
 
 const updateadoptionapplication = async (req, res) => {
   try {
     const adoptionapplication = await adopt.findbyadoptionapplicationid(req.params.id);
-    if (!adoptionapplication) {
+    if (!adoptionapplication || adoptionapplication.bookid.ownerid) {
       return res.status(404).json({ error: "adoption application not found" });
     }
 
@@ -51,6 +51,7 @@ const updateadoptionapplication = async (req, res) => {
       return res.status(409).json({ error: "only pending applications can be decided" });
     }
 
+    require("../utils/validation").rejectfields(req.body, ["status"]);
     const status = req.body.status;
     if (status !== "approved" && status !== "rejected") {
       return res.status(400).json({ error: "status must be approved or rejected" });

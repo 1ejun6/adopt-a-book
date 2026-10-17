@@ -1,14 +1,14 @@
-const { validateid } = require("../utils/validation");
 const express = require("express");
-const watchlistcontroller = require("../controllers/watchlistcustomercontroller");
+const controller = require("../controllers/watchlistcustomercontroller");
+const { validateid } = require("../utils/validation");
 const { authenticated, customer } = require("../middleware");
-
 const router = express.Router();
+router.use(authenticated, customer);
 router.param("id", validateid);
-
-router.get("/", authenticated, customer, watchlistcontroller.index);
-router.post("/", authenticated, customer, watchlistcontroller.create);
-router.patch("/:id", authenticated, customer, watchlistcontroller.update);
-router.delete("/:id", authenticated, customer, watchlistcontroller.deleteentry);
-
-module.exports = {router};
+router.get("/", controller.index);
+router.post("/", controller.create);
+router.delete("/", controller.deleteentry);
+router.get("/:id", controller.read);
+router.patch("/:id", controller.update);
+router.delete("/:id", controller.deleteentry);
+module.exports = { router };
