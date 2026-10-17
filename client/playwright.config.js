@@ -6,16 +6,12 @@ import { loadEnv } from 'vite'
 const workspaceRoot = fileURLToPath(new URL('../', import.meta.url))
 const { clienturl } = loadEnv('development', workspaceRoot, '')
 
-if (!clienturl) {
-  throw new Error('clienturl must be set in the root .env file')
-}
+if (!clienturl) { throw new Error('clienturl must be set in the root .env file') }
 
 const clientUrl = new URL(clienturl)
 const clientPort = Number(clientUrl.port)
 
-if (!clientPort) {
-  throw new Error('clienturl in the root .env file must include a port')
-}
+if (!clientPort) { throw new Error('clienturl in the root .env file must include a port') }
 
 /**
  * See https://playwright.dev/docs/test-configuration.

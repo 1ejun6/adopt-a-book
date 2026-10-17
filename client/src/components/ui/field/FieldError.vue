@@ -9,7 +9,7 @@ const props = defineProps({
 });
 
 const content = computed(() => {
-  if (!props.errors || props.errors.length === 0) return null;
+  if (!props.errors || props.errors.length === 0) { return null; }
 
   const uniqueErrors = [
     ...new Map(
@@ -20,9 +20,7 @@ const content = computed(() => {
     ).values(),
   ];
 
-  if (uniqueErrors.length === 1 && uniqueErrors[0]) {
-    return typeof uniqueErrors[0] === 'string' ? uniqueErrors[0] : uniqueErrors[0].message;
-  }
+  if (uniqueErrors.length === 1 && uniqueErrors[0]) { return typeof uniqueErrors[0] === 'string' ? uniqueErrors[0] : uniqueErrors[0].message; }
 
   return uniqueErrors.map((error) => (typeof error === 'string' ? error : error?.message));
 });

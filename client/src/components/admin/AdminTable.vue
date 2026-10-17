@@ -11,28 +11,21 @@ const props = defineProps({
   selectedIds: { type: Array },
   isLoading: { type: Boolean, default: false },
   emptyTitle: { type: String, default: 'no matching rows' },
-  emptyDescription: {
-    type: String,
-    default: 'no rows to display',
-  },
+  emptyDescription: { type: String, default: 'no rows to display' }
 });
 
 const emit = defineEmits(['selectedRows', 'openRow']);
 
-function rowSelected(rowId) {
-  return props.selectedIds.includes(rowId);
-}
+const selectedIds = computed(() => new Set(props.selectedIds));
+function rowSelected(rowId) { return selectedIds.value.has(rowId); }
 
 const headerCheckboxState = computed(() => {
   const totalRowCount = props.rows.length;
   const selectedTotalRowCount = props.rows.filter((row) => rowSelected(row.id)).length;
 
-  if (selectedTotalRowCount === 0) {
-    return false;
-  }
-  if (selectedTotalRowCount === totalRowCount) {
-    return true;
-  }
+  if (!selectedTotalRowCount) { return false; }
+  if (selectedTotalRowCount === totalRowCount) { return true; }
+
   return 'indeterminate';
 });
 
@@ -43,20 +36,8 @@ function toggleRowSelection(rowId) {
 }
 
 function toggleAllRows() {
-  const rowIds = props.rows.map((row) => row.id); //@1ejun6 > get ids of all rows currently displayed in table
-  let selectedIdsAfterToggle;
-
-  if (headerCheckboxState.value === true) {
-    selectedIdsAfterToggle = props.selectedIds.filter((id) => !rowIds.includes(id));
-  } else {
-    selectedIdsAfterToggle = [...props.selectedIds]; //@1ejun6 > new copy
-
-    for (const id of rowIds) {
-      if (!selectedIdsAfterToggle.includes(id)) {
-        selectedIdsAfterToggle.push(id);
-      }
-    }
-  }
+  const rowIds = new Set(props.rows.map(row => row.id)); //@1ejun6 > get ids of all rows currently displayed in table
+  const selectedIdsAfterToggle = headerCheckboxState.value === true ? props.selectedIds.filter(id => !rowIds.has(id)) : [...new Set([...props.selectedIds, ...rowIds])]; //@1ejun6 > new copy
   emit('selectedRows', selectedIdsAfterToggle);
 }
 </script>
@@ -65,18 +46,13 @@ function toggleAllRows() {
   <div>
     <!--@lee-hlmilk > loading placeholders-->
     <div v-if="isLoading" class="rounded-lg border p-5" role="status" aria-busy="true">
-      <!--@lee-hlmilk > placeholder header-->
-      <div class="flex items-center gap-5 pb-3 border-b"> <!--@1ejun6 > padding bottom-->
-        <Skeleton class="size-4.5 rounded-lg"></Skeleton>
-        <Skeleton v-for="column in columns" :key="column.key" class="h-4 flex-1"></Skeleton>
-        <Skeleton class="h-4 w-20 ml-auto"></Skeleton>
-      </div>
-      <!--@lee-hlmilk > placeholder rows-->
-      <div v-for="placeholderRow in 4" :key="placeholderRow" class="flex items-center gap-5 py-3 border-b">
-        <!--@1ejun6 > padding for top &&& bottom-->
-        <Skeleton class="size-4.5 rounded-lg"></Skeleton>
-        <Skeleton v-for="column in columns" :key="column.key" class="h-4 flex-1"></Skeleton>
-        <Skeleton class="h-4 w-20 ml-auto"></Skeleton>
+      <!--@lee-hlmilk > placeholder header &&& placeholder rows-->
+      <!--@1ejun6 > padding bottom > first row; padding for top &&& bottom > remaining rows-->
+      <div v-for="row in 5" :key="row" class="flex items-center gap-5 border-b"
+        :class="row === 1 ? 'pb-2.5' : 'py-2.5'">
+        <Skeleton class="size-4.5 rounded-lg" />
+        <Skeleton v-for="column in columns" :key="column.key" class="h-4 flex-1" />
+        <Skeleton class="h-4 w-20 ml-auto" />
       </div>
     </div>
 
@@ -87,36 +63,36 @@ function toggleAllRows() {
           <!--@lee-hlmilk > select all visible rows-->
           <TableHead class="w-10 text-center align-middle" @click="toggleAllRows">
             <!--@1ejun6 > stops its click from bubbling up &&& triggering a parent element click handler-->
-            <Checkbox :model-value="headerCheckboxState" @click.stop
-              @update:model-value="toggleAllRows"></Checkbox>
+            <Checkbox class="mx-auto block" :modelValue="headerCheckboxState" @click.stop
+              @update:modelValue="toggleAllRows" />
           </TableHead>
           <TableHead v-for="column in columns" :key="column.key" :class="column.class">
             {{ column.label }}
           </TableHead>
           <!--@lee-hlmilk > row action column-->
-          <TableHead> </TableHead>
+          <TableHead />
         </TableRow>
       </TableHeader>
 
       <TableBody>
         <TableRow v-for="row in rows" :key="row.id" :data-state="rowSelected(row.id) ? 'selected' : undefined"
           class="washi-row washi-tape-hover" @click="emit('openRow', row)">
-          <TableCell class="washi-tape washi-left w-10 text-center" :data-active="rowSelected(row.id) ? true : undefined"
-            @click.stop="toggleRowSelection(row.id)">
-            <Checkbox :model-value="rowSelected(row.id)"
-              @click.stop @update:model-value="toggleRowSelection(row.id)"></Checkbox>
+          <TableCell class="washi-tape washi-left w-10 text-center"
+            :data-active="rowSelected(row.id) ? true : undefined" @click.stop="toggleRowSelection(row.id)">
+            <Checkbox class="mx-auto block" :modelValue="rowSelected(row.id)" @click.stop
+              @update:modelValue="toggleRowSelection(row.id)" />
           </TableCell>
 
           <TableCell v-for="column in columns" :key="column.key" :class="column.class">
-            <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]">
-              <span>{{ row[column.key] }}</span>
+            <slot :name="`cell${column.key[0].toUpperCase()}${column.key.slice(1)}`" :row="row"
+              :value="row[column.key]">
+              {{ row[column.key] }}
             </slot>
           </TableCell>
 
           <!--@lee-hlmilk > arrow for opening row-->
           <TableCell class="text-center">
-            <HugeiconsIcon class="mx-auto" :icon="ArrowRight01Icon" aria-hidden="true">
-            </HugeiconsIcon>
+            <HugeiconsIcon class="mx-auto" :icon="ArrowRight01Icon" aria-hidden="true" />
           </TableCell>
         </TableRow>
       </TableBody>

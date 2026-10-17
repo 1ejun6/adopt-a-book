@@ -1,6 +1,7 @@
 const { z } = require("zod");
 const stations = require("./mrtstations");
 const { readall } = require("./query");
+const { thumbnailurl } = require("../utils/bookcovers");
 const supabase = require("../supabase/supabase");
 
 const bookschema = z.object({
@@ -87,7 +88,7 @@ async function publicbooks(id) {
   let query = supabase.from("books").select(publicfields).neq("status", "withdrawn");
   if (id) {
     const { data, error } = await query.eq("id", id).maybeSingle();
-    if (error) throw error;
+  if (error) throw error;
     return mapbook(data);
   }
   return many(query.order("title"));
@@ -138,7 +139,12 @@ async function inventory(query) {
     page_size: filters.limit
   });
   if (error) throw error;
-  return { ...data, books: data.books.map(mapbook), page: filters.page, limit: filters.limit };
+  return {
+    ...data,
+    books: data.books.map(row => ({ ...mapbook(row), thumbnailurl: thumbnailurl(row.coverurl) })),
+    page: filters.page,
+    limit: filters.limit
+  };
 }
 
 module.exports = { bookschema, bookupdateschema, createbook, getbookbyid, listingschema, listingupdateschema, ownedbooks, editbook, withdrawbooks, deletebooks, publicbooks, publicfields, catalogueschema, catalogue, inventoryschema, inventory };

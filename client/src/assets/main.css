@@ -5,6 +5,7 @@
   --font-heading: 'Schoolbell', cursive; /*@1ejun6 > cursive is a fallback font category */
   --font-body: 'Coming Soon', cursive;
   --color-border: var(--border);
+  --color-ring: var(--muted-foreground);
   --color-destructive: var(--destructive);
   --color-muted-foreground: var(--muted-foreground);
   --color-primary: var(--primary);
@@ -46,17 +47,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer base {
-  h1 {
-    @apply text-3xl;
-  }
-  h2 {
-    @apply text-2xl;
-  }
-  h3 {
-    @apply text-xl;
-  }
+  h1 { @apply text-3xl; }
+  h2 { @apply text-2xl; }
+  h3 { @apply text-xl; }
   * {
-    border-color: var(--border);
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
@@ -65,13 +63,11 @@ h1, h2, h3, h4, h5, h6 {
   outline-offset: 2px;
 }
 
-:disabled,
-[aria-disabled='true'] {
+:is(:disabled, [aria-disabled='true']) {
   opacity: 0.5;
 }
 
-[aria-invalid='true'],
-[data-invalid='true'] {
+:is([aria-invalid='true'], [data-invalid='true']) {
   border-color: var(--destructive);
 }
 
@@ -136,8 +132,6 @@ h1, h2, h3, h4, h5, h6 {
   /*@1ejun6 > use these styles only in this situation */
   /*@1ejun6 > https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover &&& https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer */
   * {
-    cursor:
-      url('./front.svg') 26 15,
-      auto !important; /*@1ejun6 > fallback cursor > overwrite */
+    cursor: url('./front.svg') 26 15, auto !important; /*@1ejun6 > fallback cursor > overwrite */
   }
 }
