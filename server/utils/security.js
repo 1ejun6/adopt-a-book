@@ -8,7 +8,7 @@ function configuredorigin() {
   }
 }
 
-// CORS controls reading responses; validate the origin before performing mutations too.
+
 function mutationorigin(req, res, next) {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
   const origin = req.get("origin");

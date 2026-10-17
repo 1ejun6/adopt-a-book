@@ -24,7 +24,7 @@ async function readappointment(req, res) {
 async function createappointment(req, res) {
   try {
     const fields = proposalschema.parse(req.body);
-    // The RPC uses the current book title and verifies the approved reader under a book lock.
+
     const appointment = await appointments.createappointment({ ...fields, userid: req.user.id, booktitle: "collection" });
     return res.status(201).json({ appointment });
   } catch (error) {
