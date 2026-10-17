@@ -43,7 +43,7 @@ function toggleAllRows() {
 </script>
 
 <template>
-  <div>
+  <div class="min-w-0">
     <!--@lee-hlmilk > loading placeholders-->
     <div v-if="isLoading" class="rounded-lg border p-5" role="status" aria-busy="true">
       <!--@lee-hlmilk > placeholder header &&& placeholder rows-->

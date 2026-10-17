@@ -15,8 +15,8 @@ const search = defineModel('search', { type: String, default: '' });
 
         <!--@lee-hlmilk > search &&& page filters-->
         <div class="flex flex-col gap-2.5 sm:flex-row">
-            <Input type="search" v-model="search" class="h-auto text-sm leading-4" :placeholder="props.searchPlaceholder" />
-            <div v-if="$slots.filters || $slots.actions" class="flex gap-2.5">
+            <Input type="search" v-model="search" class="h-auto flex-1 p-2.5 text-sm leading-4" :placeholder="props.searchPlaceholder" />
+            <div v-if="$slots.filters || $slots.actions" class="flex flex-wrap gap-2.5">
                 <slot name="filters" />
                 <slot name="actions" />
             </div>
@@ -26,7 +26,7 @@ const search = defineModel('search', { type: String, default: '' });
         <div v-if="props.selectedRowCount > 0"
             class="flex flex-wrap items-center gap-2.5" role="status">
             <strong>{{ props.selectedRowCount }} selected</strong>
-            <div v-if="$slots.selectionActions" class="ml-auto flex gap-2.5" role="group">
+            <div v-if="$slots.selectionActions" class="ml-auto flex flex-wrap gap-2.5" role="group">
                 <!--@lee-hlmilk > helper to disable single-record actions > eg. edit > when in multi select-->
                 <slot name="selectionActions" :selectedRowCount="props.selectedRowCount" :onlyOne="props.selectedRowCount === 1"></slot>
             </div>

@@ -155,9 +155,9 @@ const columns = [
 ];
 </script>
 <template>
-    <main class="mx-auto w-full max-w-7xl space-y-5 p-5">
-        <header class="flex items-center justify-between gap-5">
-            <div>
+    <main class="mx-auto min-w-0 w-full max-w-7xl space-y-5">
+        <header class="flex flex-wrap items-center justify-between gap-5">
+            <div class="min-w-0">
                 <h1>Book Inventory</h1>
                 <p class="text-muted-foreground">organisation copies and community listings from intake to handover</p>
             </div>
