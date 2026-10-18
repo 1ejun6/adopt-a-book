@@ -1,8 +1,8 @@
 <script setup>
 //@1ejun6 > styled link inside top menu ||| dropdown
-import { reactiveOmit } from "@vueuse/core";
-import { NavigationMenuLink, useForwardPropsEmits } from "reka-ui";
-import { cn } from "@/lib/utils";
+import { reactiveOmit } from '@vueuse/core';
+import { NavigationMenuLink, useForwardPropsEmits } from 'reka-ui';
+import { cn } from '@/lib/utils';
 
 const props = defineProps({
   active: { type: Boolean, required: false },
@@ -10,18 +10,15 @@ const props = defineProps({
   as: { type: null, required: false },
   class: { type: null, required: false },
 });
-const emits = defineEmits(["select"]);
+const emits = defineEmits(['select']);
 
-const delegatedProps = reactiveOmit(props, "class"); //@1ejun6 > ~active~ &&& ~as~ &&& ~aschild~ go to reka ui > ~class~ is merged locally
+const delegatedProps = reactiveOmit(props, 'class'); //@1ejun6 > ~active~ &&& ~as~ &&& ~aschild~ go to reka ui > ~class~ is merged locally
 const forwarded = useForwardPropsEmits(delegatedProps, emits); //@1ejun6 > forwards remaining props &&& events to child component
 </script>
 
 <template>
-  <NavigationMenuLink data-slot="navigation-menu-link" v-bind="forwarded" :class="cn(
-    `data-active:focus:bg-accent data-active:hover:bg-accent data-active:bg-accent/50 data-active:text-accent-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ring-ring/10 dark:ring-ring/20 dark:outline-ring/40 outline-ring/50 [&_svg:not([class*='text-'])]:text-muted-foreground flex flex-col gap-1 rounded-sm p-2 text-sm transition-[color,box-shadow] focus-visible:ring-4 focus-visible:outline-1 [&_svg:not([class*='size-'])]:size-4`,
-    props.class,
-  )
-    ">
+  <NavigationMenuLink data-slot="navigation-menu-link" v-bind="forwarded"
+    :class="cn('washi-tape washi-tape-hover block rounded-lg p-2 text-sm', props.class)">
     <slot />
   </NavigationMenuLink>
 </template>

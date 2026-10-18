@@ -1,7 +1,6 @@
-const { errorstatus } = require("../utils/errors");
+const { errorstatus, errormessage } = require("../utils/errors");
 const user = require("../models/users");
 const supabase = require("../supabase/supabase");
-const { convertarray } = require("../utils/common");
 
 async function renderindex(
   req,
@@ -44,17 +43,15 @@ async function update(req, res, id, message = null, error = null, status = 200) 
     }
     return res.status(status).json({ message, error, account });
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error loading admin account" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "error loading admin account") });
   }
 }
 
-function createview(req, res) {
-  return res.json({ name: "", email: "" });
-}
 
 async function create(req, res) {
   let authuserid;
   try {
+    require("../utils/validation").rejectfields(req.body, ["name", "email", "password"]);
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -89,7 +86,10 @@ async function create(req, res) {
     });
     return renderindex(req, res, "admin account created", null, null, 201);
   } catch (error) {
-    if (authuserid) await supabase.auth.admin.deleteUser(authuserid);
+    if (authuserid) {
+      const { error: cleanuperror } = await supabase.auth.admin.deleteUser(authuserid);
+      if (cleanuperror) console.error("failed to remove orphan Auth account", authuserid, cleanuperror.message);
+    }
     return res.status(errorstatus(error)).json({
       message: null,
       error: "error creating admin account"
@@ -99,36 +99,23 @@ async function create(req, res) {
 
 async function deleteaccounts(req, res) {
   try {
-    const sids = convertarray(req.params.id);
-    if (sids.length === 0) {
-      return renderindex(
-        req,
-        res,
-        null,
-        "select at least one account to delete",
-        null,
-        400
-      );
-    }
-    const deleteaccounts = await user.findadminsbyids(sids);
-
-    const arrayids = deleteaccounts.map((a) => a._id);
-    const emailaddresses = deleteaccounts.map((a) => a.email);
-    if (arrayids.length === 0) {
-      return res.status(404).json({ error: "admin account not found" });
-    }
-    for (const id of arrayids) {
-      const { error } = await supabase.auth.admin.deleteUser(id);
-      if (error) throw error;
-    }
-    return renderindex(req, res, null, null, emailaddresses);
+    const id = req.params.id;
+    if (id === req.user.id) return res.status(409).json({ error: "you cannot delete your current admin account" });
+    const account = await user.findadminbyid(id);
+    if (!account) return res.status(404).json({ error: "admin account not found" });
+    const accounts = await user.findadminaccounts();
+    if (accounts.length <= 1) return res.status(409).json({ error: "the last administrator cannot be deleted" });
+    const { error } = await supabase.auth.admin.deleteUser(id);
+    if (error) throw error;
+    return res.status(204).send();
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error deleting admin account/s" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "error deleting admin account/s") });
   }
 }
 
 async function saveupdate(req, res) {
   try {
+    require("../utils/validation").rejectfields(req.body, ["name", "email", "password"]);
     const { name, email, password } = req.body;
     if (!name || !email) {
       return update(
@@ -183,8 +170,8 @@ async function saveupdate(req, res) {
       account
     });
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: "error updating admin account" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "error updating admin account") });
   }
 }
 
-module.exports = { home, index, createview, create, updateview, deleteaccounts, saveupdate };
+module.exports = { home, index, create, updateview, deleteaccounts, saveupdate };

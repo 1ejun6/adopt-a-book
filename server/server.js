@@ -9,6 +9,8 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const supabase = require("./supabase/supabase");
 const { loadcurrentuser } = require("./middleware");
+const { configuredorigin, mutationorigin } = require("./utils/security");
+const { errorstatus } = require("./utils/errors");
 const { normalizeresponse } = require("./utils/response");
 
 const rsvproutes = require("./routes/rsvp").router;
@@ -17,7 +19,7 @@ const customerappointmentroutes = require("./routes/appointmentcustomer").router
 const adminadoptiondriveroutes = require("./routes/adoptiondriveadmin").router;
 const customeradoptiondriveroutes = require("./routes/adoptiondrivecustomer").router;
 const guestadoptiondriveroutes = require("./routes/adoptiondriveguest").router;
-const authroutes = require("./routes/auth").router;
+const { router: authroutes, sessionrouter } = require("./routes/auth");
 const adminroutes = require("./routes/useradmin").router;
 const customerroutes = require("./routes/usercustomer").router;
 const bookadminroutes = require("./routes/bookadmin").router;
@@ -26,6 +28,7 @@ const openlibraryadminroutes = require("./routes/openlibraryadmin").router;
 const watchlistroutes = require("./routes/watchlistcustomer").router;
 const customeradoptionapplicationroutes = require("./routes/adoptionapplicationcustomer").router;
 const adminadoptionapplicationroutes = require("./routes/adoptionapplicationadmin").router;
+const locationroutes = require("./routes/location").router;
 
 server.use(normalizeresponse);
 server.use(express.json());
@@ -33,17 +36,21 @@ server.use(express.urlencoded({ extended: true }));
 server.use(cookieparser());
 
 server.use(cors({
-    origin: process.env.clienturl,
+    origin: configuredorigin(),
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
   })
 );
 
-server.use("/", require("./routes/databaseadmin").router);
+server.use(mutationorigin);
 server.use(require("./utils/validation").validaterequest);
-server.use(loadcurrentuser);
-
+server.use("/", require("./routes/databaseadmin").router);
+server.use("/books", bookcustomerroutes);
+server.use("/locations", locationroutes);
+server.use("/drives", guestadoptiondriveroutes);
+server.use("/", authroutes);
 server.get("/", (req, res) => res.json({name: "adopt-a-book-server", status: "ok"}));
+server.use(loadcurrentuser);
 
 server.use("/admin", adminroutes);
 server.use("/admin/drives", adminadoptiondriveroutes);
@@ -51,21 +58,20 @@ server.use("/admin/books", bookadminroutes);
 server.use("/admin/open-library", openlibraryadminroutes);
 server.use("/admin/applications", adminadoptionapplicationroutes);
 server.use("/customer/drives", customeradoptiondriveroutes);
-server.use("/books", bookcustomerroutes);
 server.use("/watchlist", watchlistroutes);
 server.use("/applications", customeradoptionapplicationroutes);
+server.use("/customer", require("./routes/listingcustomer").router);
 server.use("/customer", customerroutes);
-server.use("/", authroutes);
-server.use("/drives", guestadoptiondriveroutes);
+server.use("/", sessionrouter);
 server.use("/", rsvproutes);
 server.use("/appointments", customerappointmentroutes);
 server.use("/admin/appointments", adminappointmentroutes);
 
 server.use((req, res) => res.status(404).json({ error: "route not found" }));
 server.use((error, req, res, next) => {
-  console.error(error);
+  console.error("request failed >", error.code || error.name);
   if (res.headersSent) return next(error);
-  const status = error.status === 400 || error.status === 413 ? error.status : 500;
+  const status = error.status === 413 ? 413 : errorstatus(error);
   return res.status(status).json({ error: status === 400 ? "invalid request body" : status === 413 ? "request body is too large" : "internal server error" });
 });
 
@@ -77,10 +83,17 @@ async function connectdb() {
 
 function startserver() {
   const port = Number(process.env.port);
-  server.listen(port, () => {console.log(`server running at ${process.env.serverurl}/`);});
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("port must be an integer from 1 to 65535");
+  const listener = server.listen(port, () => { console.log(`server running at http://localhost:${port}/`); });
+  listener.on("error", error => {
+    console.error(error.code === "EADDRINUSE" ? `port ${port} is already in use; stop the other server or choose another port` : "server could not start");
+    process.exitCode = 1;
+  });
 }
 
-connectdb().then(startserver).catch((error) => {
+if (require.main === module) connectdb().then(startserver).catch((error) => {
   console.error(error.message);
   process.exit(1);
 });
+
+module.exports = server;

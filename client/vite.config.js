@@ -11,20 +11,14 @@ const workspaceRoot = fileURLToPath(new URL('../', import.meta.url))
 export default defineConfig(({ mode }) => {
   const { clienturl, serverurl } = loadEnv(mode, workspaceRoot, '')
 
-  if (!clienturl) {
-    throw new Error('clienturl must be set in the root .env file')
-  }
+  if (!clienturl) { throw new Error('clienturl must be set in the root .env file') }
 
-  if (!serverurl) {
-    throw new Error('serverurl must be set in the root .env file')
-  }
+  if (!serverurl) { throw new Error('serverurl must be set in the root .env file') }
 
   const clientUrl = new URL(clienturl)
   const port = Number(clientUrl.port)
 
-  if (!port) {
-    throw new Error('clienturl in the root .env file must include a port')
-  }
+  if (!port) { throw new Error('clienturl in the root .env file must include a port') }
 
   return {
     envDir: workspaceRoot,

@@ -1,9 +1,3 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 html, body, #app {
   min-height: 100%;
 }
@@ -13,7 +7,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Coming Soon', cursive; /*j > handwritten font > font fallback category is cursive*/
+  font-family: var(--font-body);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

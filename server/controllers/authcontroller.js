@@ -1,6 +1,6 @@
-const { errorstatus } = require("../utils/errors");
+const { errorstatus, errormessage } = require("../utils/errors");
 const supabase = require("../supabase/supabase");
-const supabaseauth = require("../supabase/supabaseauth");
+const createauthclient = require("../supabase/supabaseauth");
 const user = require("../models/users");
 const { setauthcookies, clearauthcookies } = require("../middleware");
 
@@ -9,17 +9,24 @@ function session(req, res) {
 }
 
 async function logout(req, res) {
-  if (req.accesstoken) {
-    const { error } = await supabase.auth.admin.signOut(req.accesstoken);
-    if (error) console.error("supabase logout error >", error.message);
+  try {
+    const accesstoken = req.accesstoken || req.cookies?.access_token;
+    if (accesstoken) {
+      const { error } = await supabase.auth.admin.signOut(accesstoken);
+      if (error) console.error("supabase logout failed >", error.code || "auth unavailable");
+    }
+  } catch (error) {
+    console.error("supabase logout failed >", error.code || "auth unavailable");
+  } finally {
+    clearauthcookies(res);
   }
-  clearauthcookies(res);
   return res.status(204).send();
 }
 
 async function register(req, res) {
   let authuserid;
   try {
+    require("../utils/validation").rejectfields(req.body, ["name", "email", "password"]);
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(422).json({ error: "all fields are required" });
@@ -67,13 +74,17 @@ async function register(req, res) {
     });
   } catch (error) {
     console.error("registration error >", error.message);
-    if (authuserid) await supabase.auth.admin.deleteUser(authuserid);
-    return res.status(errorstatus(error)).json({ error: "error registering user" });
+    if (authuserid) {
+      const { error: cleanuperror } = await supabase.auth.admin.deleteUser(authuserid);
+      if (cleanuperror) console.error("failed to remove orphan Auth account", authuserid, cleanuperror.message);
+    }
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "error registering user") });
   }
 }
 
 async function login(req, res) {
   try {
+    require("../utils/validation").rejectfields(req.body, ["email", "password"]);
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(422).json({ error: "email and password are required" });
@@ -82,12 +93,12 @@ async function login(req, res) {
     user.userschema.pick({ email: true }).parse({ email: typeof email === "string" ? email.trim() : email });
     if (typeof password !== "string") return res.status(422).json({ error: "password must be text" });
 
-    const { data, error } = await supabaseauth.auth.signInWithPassword({
+    const { data, error } = await createauthclient().auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password
     });
     if (error && [429, 503].includes(errorstatus(error))) {
-      return res.status(errorstatus(error)).json({ error: "authentication service unavailable; please try again" });
+      return res.status(errorstatus(error)).json({ error: errormessage(error, "authentication service unavailable; please try again") });
     }
     if (error || !data.session) {
       return res.status(401).json({ error: "invalid email or password" });
@@ -105,7 +116,7 @@ async function login(req, res) {
     });
   } catch (error) {
     console.error("login error >", error.message);
-    return res.status(errorstatus(error)).json({ error: "error logging in" });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "error logging in") });
   }
 }
 

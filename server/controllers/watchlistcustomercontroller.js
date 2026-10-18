@@ -1,4 +1,7 @@
-const { errorstatus } = require("../utils/errors");
+const { z } = require("zod");
+const { requestids } = require("../utils/validation");
+const { removecustomerrecords } = require("../models/records");
+const { errorstatus, errormessage } = require("../utils/errors");
 const watchlistmodel = require("../models/watchlist");
 const bookmodel = require("../models/books");
 const error_message = "something went wrong on our end > please try again later";
@@ -9,13 +12,13 @@ async function index(req, res) {
     return res.json({ watchlist });
   } catch (error) {
     console.error(`[watchlist controller] "index" failed with ${error}`);
-    return res.status(errorstatus(error)).json({ error: error_message });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, error_message) });
   }
 }
 
 async function create(req, res) {
   try {
-    const bookid = req.body.bookid;
+    const { bookid, comments } = z.object({ bookid: z.uuid(), comments: z.string().default("") }).strict().parse(req.body);
     if (!bookid) {
       return res.status(400).json({ error: "bookid is required" });
     }
@@ -25,19 +28,17 @@ async function create(req, res) {
     if (await watchlistmodel.findbybookanduser(bookid, req.user.id)) {
       return res.status(409).json({ error: "book is already in watchlist" });
     }
-    const entry = await watchlistmodel.createentry({ userid: req.user.id, bookid: bookid, bookname: book.title, comments: req.body.comments || "" });
+    const entry = await watchlistmodel.createentry({ userid: req.user.id, bookid: bookid, bookname: book.title, comments });
     return res.status(201).json({ entry });
   } catch (error) {
     console.error(`[watchlist controller] "create" failed with ${error}`);
-    return res.status(errorstatus(error)).json({ error: error_message });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, error_message) });
   }
 }
 
 async function update(req, res) {
   try {
-    if (typeof req.body.comments !== "string") {
-      return res.status(400).json({ error: "comments must be a string" });
-    }
+    z.object({ comments: z.string() }).strict().parse(req.body);
     const entry = await watchlistmodel.updatecomment(req.params.id, req.user.id, req.body.comments);
     if (!entry) {
       return res.status(404).json({ error: "watchlist entry not found" });
@@ -45,21 +46,27 @@ async function update(req, res) {
     return res.json({ entry });
   } catch (error) {
     console.error(`[watchlist controller] "update" failed with ${error}`);
-    return res.status(errorstatus(error)).json({ error: error_message });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, error_message) });
   }
 }
 
 async function deleteentry(req, res) {
   try {
-    const deleted = await watchlistmodel.deleteentry(req.params.id, req.user.id);
-    if (!deleted) {
-      return res.status(404).json({ error: "watchlist entry not found" });
-    }
+    await removecustomerrecords("watchlist", requestids(req), req.user.id);
     return res.status(204).send();
   } catch (error) {
     console.error(`[watchlist controller] "deleteentry" failed with ${error}`);
-    return res.status(errorstatus(error)).json({ error: error_message });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, error_message) });
   }
 }
 
-module.exports = { index, create, update, deleteentry };
+async function read(req, res) {
+  try {
+    const entry = await watchlistmodel.findentry(req.params.id, req.user.id);
+    if (!entry) return res.status(404).json({ error: "watchlist entry not found" });
+    return res.json({ entry });
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, error_message) });
+  }
+}
+module.exports = { index, create, read, update, deleteentry };

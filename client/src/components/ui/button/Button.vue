@@ -14,7 +14,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <Primitive data-slot="button" :data-variant="variant" :data-size="size" :as="as" :as-child="asChild"
+  <Primitive data-slot="button" :data-variant="variant" :data-size="size" :as="as" :asChild="asChild"
     :class="cn(buttonVariants({ variant, size }), props.class)">
     <slot />
   </Primitive>
