@@ -29,14 +29,23 @@ const router = createRouter({
         { path: '', name: 'customerHome', component: CustomerHome, label: 'Home', roles: ['customer'] },
       ],
     },
-    {
-      path: '/admin',
-      component: AppLayout,
-      children: [
-        { path: '', name: 'adminHome', component: AdminHome, label: 'Home', roles: ['admin'] },
-        { path: 'books', name: 'adminBooks', component: AdminBookInventory, label: 'Book Inventory', roles: ['admin'] },
-      ],
-    },
+    
+{
+  path: '/customer',
+  component: AppLayout,
+  children: [
+    // I need to make the components still, so i havent included the components in this.
+    { path: '', name: 'customerHome', component: CustomerHome, roles: ['customer']},
+
+    { path: 'books', name: 'customerBooks', label: 'Browse Books', roles: ['customer']},
+    { path: 'watchlist', name: 'customerWatchlist', label: 'Watchlist', roles: ['customer']},
+    { path: 'adoptions', name: 'customerAdoptions',label: 'My Adoptions',roles: ['customer']},
+    {path: 'pickups',name: 'customerPickups',label: 'Pickups', roles: ['customer']},
+    {path: 'drives', name: 'customerDrives', label: 'Adoption Drives', roles: ['customer']},
+    {path: 'account',name: 'customerAccount', label: 'My Account', roles: ['customer'], end: true}
+  ]
+},
+
   ],
 });
 
