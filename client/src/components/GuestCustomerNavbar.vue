@@ -65,7 +65,7 @@ async function logout() {
         <NavigationMenuList class="w-full">
           <NavigationMenuItem>
             <NavigationMenuLink as-child :class="navigationMenuTriggerStyle()">
-              <RouterLink to="/register">Browse Books</RouterLink>
+              <RouterLink to="/books">Browse Books</RouterLink>
             </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
@@ -93,7 +93,7 @@ async function logout() {
     </div>
    <!--@1ejun6 > * > every direct child element of the element with these classes-->
     <nav id="mobile" v-show="status" class="grid p-5 text-right md:hidden *:py-2 *:hover:bg-accent"> <!--@1ejun6 > each link sits on its own row-->
-      <RouterLink to="/register" @click="status = false">Browse Books</RouterLink>
+      <RouterLink to="/books" @click="status = false">Browse Books</RouterLink>
       <RouterLink to="/register" @click="status = false">Adoption Drives</RouterLink>
       <RouterLink v-if="auth.ready && !auth.user" to="/login" @click="status = false">Login</RouterLink>
       <RouterLink v-if="auth.ready && !auth.user" to="/register" @click="status = false">Create Account</RouterLink>
