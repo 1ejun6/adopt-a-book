@@ -34,9 +34,8 @@ const router = createRouter({
   path: '/customer',
   component: AppLayout,
   children: [
-    // I need to make the components still, so i havent included the components in this.
+    // @sanjana I need to make the components still, so i havent included the components in this.
     { path: '', name: 'customerHome', component: CustomerHome, roles: ['customer']},
-
     { path: 'books', name: 'customerBooks', label: 'Browse Books', roles: ['customer']},
     { path: 'watchlist', name: 'customerWatchlist', label: 'Watchlist', roles: ['customer']},
     { path: 'adoptions', name: 'customerAdoptions',label: 'My Adoptions',roles: ['customer']},

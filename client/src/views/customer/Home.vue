@@ -18,7 +18,6 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 
-// DATA FROM EXISTING BACKEND
 const books = ref([]);
 const watchlist = ref([]);
 
