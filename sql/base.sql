@@ -29,7 +29,7 @@ create table if not exists public.books (
   condition text check (condition in ('like new', 'good', 'fair')),
   collectionarea text,
   status text not null default 'available'
-    check (status in ('available', 'reserved', 'adopted', 'withdrawn')),
+    check (status in ('available', 'reserved', 'adopted')),
   createdat timestamptz not null default now(),
   updatedat timestamptz not null default now()
 );
@@ -259,8 +259,12 @@ grant execute on function public.check_drive_capacity() to service_role;
 alter table public.books add column if not exists ownerid uuid references public.users(id) on delete restrict;
 alter table public.books add column if not exists condition text check (condition in ('like new', 'good', 'fair'));
 alter table public.books add column if not exists collectionarea text;
+delete from public.watchlist where bookid in (select id from public.books where status = 'withdrawn');
+delete from public.appointments where bookid in (select id from public.books where status = 'withdrawn');
+delete from public.adoptionapplications where bookid in (select id from public.books where status = 'withdrawn');
+delete from public.books where status = 'withdrawn';
 alter table public.books drop constraint if exists books_status_check;
-alter table public.books add constraint books_status_check check (status in ('available','reserved','adopted','withdrawn'));
+alter table public.books add constraint books_status_check check (status in ('available','reserved','adopted'));
 alter table public.adoptionapplications drop constraint if exists adoptionapplications_status_check;
 alter table public.adoptionapplications add constraint adoptionapplications_status_check check (status in ('pending','approved','rejected','cancelled'));
 
@@ -311,37 +315,7 @@ begin
 end;
 $$;
 
-create or replace function public.withdraw_books(book_ids uuid[], actor_id uuid)
-returns integer language plpgsql set search_path = '' as $$
-declare
-  selectedbook public.books;
-  affected integer := 0;
-  is_admin boolean;
-begin
-  if not exists (select 1 from public.users where id = actor_id and role in ('admin','customer')) then
-    raise exception 'authorised account required' using errcode = 'PT403';
-  end if;
-  if book_ids is null or cardinality(book_ids) not between 1 and 100 or
-     cardinality(book_ids) <> (select count(distinct id) from unnest(book_ids) id) then
-    raise exception 'provide 1 to 100 distinct book ids' using errcode = 'PT400';
-  end if;
-  select role = 'admin' into is_admin from public.users where id = actor_id;
-  for selectedbook in select * from public.books where id = any(book_ids) order by id for update loop
-    if not coalesce(is_admin, false) and selectedbook.ownerid is distinct from actor_id then
-      raise exception 'listing not found' using errcode = 'PT404';
-    end if;
-    if selectedbook.status not in ('available','reserved') then raise exception 'only available or reserved books can be withdrawn'; end if;
-    affected := affected + 1;
-  end loop;
-  if affected <> cardinality(book_ids) then raise exception 'book not found' using errcode = 'PT404'; end if;
-  update public.adoptionapplications set status = 'cancelled', updatedat = now()
-    where bookid = any(book_ids) and status in ('pending','approved');
-  update public.appointments set status = 'cancelled', updatedat = now()
-    where bookid = any(book_ids) and status in ('pending confirmation','appointment confirmed');
-  update public.books set status = 'withdrawn', updatedat = now() where id = any(book_ids);
-  return affected;
-end;
-$$;
+drop function if exists public.withdraw_books(uuid[],uuid);
 
 
 create table if not exists public.mrtstations (
@@ -608,12 +582,12 @@ create trigger protect_last_admin before delete or update of role on public.user
 
 
 revoke all on function public.can_manage_book(uuid,uuid), public.decide_book_application(uuid,uuid,text),
-  public.withdraw_books(uuid[],uuid), public.edit_book(uuid,uuid,jsonb),
+  public.edit_book(uuid,uuid,jsonb),
   public.book_collection_appointment(uuid,uuid,text,date,text), public.change_collection(uuid,uuid,jsonb),
   public.remove_customer_records(text,uuid[],uuid), public.remove_drives(uuid[],uuid),
   public.cancel_drive_rsvp(uuid,uuid), public.protect_last_admin() from public, anon, authenticated;
 grant execute on function public.can_manage_book(uuid,uuid), public.decide_book_application(uuid,uuid,text),
-  public.withdraw_books(uuid[],uuid), public.edit_book(uuid,uuid,jsonb),
+  public.edit_book(uuid,uuid,jsonb),
   public.book_collection_appointment(uuid,uuid,text,date,text), public.change_collection(uuid,uuid,jsonb),
   public.remove_customer_records(text,uuid[],uuid), public.remove_drives(uuid[],uuid),
   public.cancel_drive_rsvp(uuid,uuid), public.protect_last_admin() to service_role;
@@ -622,7 +596,7 @@ notify pgrst, 'reload schema';
 
 
 create index if not exists books_title_id_idx on public.books (lower(title), id);
-create index if not exists books_public_title_id_idx on public.books (lower(title), id) where status <> 'withdrawn';
+drop index if exists public.books_public_title_id_idx;
 
 drop function if exists public.browse_books(text,text,text,text,bigint,integer);
 create or replace function public.browse_books(
@@ -645,8 +619,7 @@ begin
   end if;
   with filtered as not materialized (
     select b.* from public.books b
-    where b.status <> 'withdrawn'
-      and (station_ids is null or b.mrtstationid = any(station_ids))
+    where (station_ids is null or b.mrtstationid = any(station_ids))
       and (book_status is null or b.status = book_status)
       and (book_subject is null or b.subjects @> array[book_subject])
       and (coalesce(trim(search_term),'') = ''
@@ -696,7 +669,7 @@ declare result jsonb;
 begin
   if page_number is null or page_number < 1 or page_number > 9007199254740991
      or page_size is null or page_size not between 1 and 100
-     or (book_status is not null and book_status not in ('available','reserved','adopted','withdrawn')) then
+     or (book_status is not null and book_status not in ('available','reserved','adopted')) then
     raise exception 'invalid inventory filters' using errcode = 'PT422';
   end if;
   with filtered as not materialized (
@@ -724,8 +697,7 @@ begin
       'all', count(*),
       'available', count(*) filter (where status = 'available'),
       'reserved', count(*) filter (where status = 'reserved'),
-      'adopted', count(*) filter (where status = 'adopted'),
-      'withdrawn', count(*) filter (where status = 'withdrawn')
+      'adopted', count(*) filter (where status = 'adopted')
     ) from public.books),
     'genres', coalesce((select jsonb_agg(subject order by subject) from (
       select distinct unnest(subjects) as subject from public.books
@@ -752,33 +724,27 @@ declare
   selectedbook public.books;
   affected integer := 0;
   deleted_ids uuid[] := '{}';
-  withdrawn_ids uuid[] := '{}';
+  is_admin boolean;
 begin
-  if not exists (select 1 from public.users where id = actor_id and role = 'admin') then
-    raise exception 'administrator required' using errcode = 'PT403';
-  end if;
+  select role = 'admin' into is_admin from public.users where id = actor_id and role in ('admin','customer');
+  if not found then raise exception 'authorised account required' using errcode = 'PT403'; end if;
   if book_ids is null or cardinality(book_ids) not between 1 and 100 or
      cardinality(book_ids) <> (select count(distinct id) from unnest(book_ids) id) then
     raise exception 'provide 1 to 100 distinct book ids' using errcode = 'PT400';
   end if;
   for selectedbook in select * from public.books where id = any(book_ids) order by id for update loop
     affected := affected + 1;
-    if selectedbook.status not in ('available','reserved') then
-      raise exception 'adopted and withdrawn books must remain in history';
+    if not is_admin and selectedbook.ownerid is distinct from actor_id then
+      raise exception 'listing not found' using errcode = 'PT404';
     end if;
-    if selectedbook.ownerid is null and selectedbook.status = 'available'
-       and not exists (select 1 from public.adoptionapplications where bookid = selectedbook.id)
-       and not exists (select 1 from public.appointments where bookid = selectedbook.id)
-       and not exists (select 1 from public.watchlist where bookid = selectedbook.id) then
-      deleted_ids := array_append(deleted_ids, selectedbook.id);
-    else
-      withdrawn_ids := array_append(withdrawn_ids, selectedbook.id);
-    end if;
+    deleted_ids := array_append(deleted_ids, selectedbook.id);
   end loop;
   if affected <> cardinality(book_ids) then raise exception 'book not found' using errcode = 'PT404'; end if;
-  if cardinality(withdrawn_ids) > 0 then perform public.withdraw_books(withdrawn_ids, actor_id); end if;
+  delete from public.watchlist where bookid = any(book_ids);
+  delete from public.appointments where bookid = any(book_ids);
+  delete from public.adoptionapplications where bookid = any(book_ids);
   delete from public.books where id = any(deleted_ids);
-  return jsonb_build_object('deletedids', deleted_ids, 'withdrawnids', withdrawn_ids);
+  return jsonb_build_object('deletedids', deleted_ids);
 end;
 $$;
 revoke all on function public.delete_books(uuid[],uuid) from public, anon, authenticated;
