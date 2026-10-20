@@ -1,6 +1,6 @@
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
@@ -25,23 +25,31 @@ const loading = ref(true);
 const bookError = ref('');
 const watchlistError = ref('');
 
-// BOOKSHELF
+// @sree-sanjana06 > available book data and the five spines displayed on the shelf
 const featuredBooks = ref([]);
-// Small preview card
+// @sree-sanjana06 > remembers the book clicked to keep its small preview open
 const pinnedBook = ref(null);
 
-// Full book details popup
+// @sree-sanjana06 > controls full book details popup
 const dialogOpen = ref(false);
 const dialogBook = ref(null);
 const detailsLoading = ref(false);
 const detailsError = ref('');
 
-// Existing backend actions
+// @sree-sanjana06 tracks save/request submission status 
 const actionLoading = ref(false);
 const actionMessage = ref('');
 const actionError = ref('');
 const requestSubmitted = ref(false);
 
+//@sree-sanjana06 > controls whether the Save book and Request a copy popups are open
+const saveDialogOpen = ref(false);
+const requestDialogOpen = ref(false);
+
+//@sree-sanjana06 > stores the optional note entered when saving a book
+const watchlistNote = ref('');
+
+//@sree-sanjana06 > check if the current dialog book already exists in the watchlist
 const alreadySaved = computed(() => {
   return watchlist.value.some(
     entry => entry.bookid?.id === dialogBook.value?.id
@@ -49,15 +57,13 @@ const alreadySaved = computed(() => {
 });
 
 
-
-
-// Clicking a book spine keeps its preview visible
+// @sree-sanjana06 > click a spine to pin its preview, click again to unpin
 function toggleSpine(book) {
   pinnedBook.value =
     pinnedBook.value?.id === book.id ? null : book;
 }
 
-// Open the existing book details dialog
+// retrieve full book record from backend
 async function openBookDetails(book) {
   dialogBook.value = book;
   dialogOpen.value = true;
@@ -68,7 +74,7 @@ async function openBookDetails(book) {
   requestSubmitted.value = false;
 
   try {
-    // Existing GET /books/:id
+    // Existing GET /books/:id, returns selected book details 
     const result = await api(`/books/${book.id}`);
     dialogBook.value = result.book;
   } catch (error) {
@@ -78,52 +84,83 @@ async function openBookDetails(book) {
   }
 }
 
-// Save using the existing watchlist endpoint
+
+ //@sree-sanjana06 > opens the Save book popup instead of saving immediately
+async function openSaveDialog() {
+  if (!dialogBook.value || detailsLoading.value || alreadySaved.value) return;
+
+  //@sree-sanjana06 > reset the note and any previous feedback
+  watchlistNote.value = '';
+  actionError.value = '';
+  actionMessage.value = '';
+
+  //@sree-sanjana06 > close Book Details before opening Save book
+  dialogOpen.value = false;
+  await nextTick();
+  saveDialogOpen.value = true;
+}
+
+//@sree-sanjana06 > saves the selected book and optional note using existing backend
 async function saveToWatchlist() {
-  if (!dialogBook.value || actionLoading.value) return;
+  if (!dialogBook.value || actionLoading.value || alreadySaved.value) return;
+
+  //@sree-sanjana06 > prevent notes longer than 300 characters
+  if (watchlistNote.value.length > 300) return;
 
   actionLoading.value = true;
   actionError.value = '';
   actionMessage.value = '';
 
   try {
+    //@sree-sanjana06 > POST /watchlist accepts bookid and optional comments
     await api('/watchlist', {
       method: 'POST',
       body: {
-        bookid: dialogBook.value.id
+        bookid: dialogBook.value.id,
+        comments: watchlistNote.value.trim()
       }
     });
 
-    // Refresh the existing Saved for Later section
+    //@sree-sanjana06 > refresh the watchlist to display the newly saved book
     const result = await api('/watchlist');
     watchlist.value = result.watchlist || [];
 
     actionMessage.value = 'Book saved to your watchlist.';
+
   } catch (error) {
+    //@sree-sanjana06 > display backend error if saving fails
     actionError.value = error.message;
+
   } finally {
     actionLoading.value = false;
   }
 }
 
-// Submit using the existing adoption application endpoint
+//@sree-sanjana06 > opens Request a copy popup without submitting anything yet
+async function openRequestDialog() {
+  if (!dialogBook.value || detailsLoading.value || requestSubmitted.value) return;
+
+  actionError.value = '';
+  actionMessage.value = '';
+
+  //@sree-sanjana06 > close Book Details before opening the review popup
+  dialogOpen.value = false;
+  await nextTick();
+  requestDialogOpen.value = true;
+}
+
+//@sree-sanjana06 > submits adoption application only after customer confirms
 async function requestCopy() {
   if (!dialogBook.value || actionLoading.value || requestSubmitted.value) {
     return;
   }
-
-  // Confirm before creating a real adoption request
-  const confirmed = window.confirm(
-    `Submit an adoption request for "${dialogBook.value.title}"?`
-  );
-
-  if (!confirmed) return;
 
   actionLoading.value = true;
   actionError.value = '';
   actionMessage.value = '';
 
   try {
+    //@sree-sanjana06 > POST /applications creates an adoption request for this book
     await api('/applications', {
       method: 'POST',
       body: {
@@ -131,10 +168,13 @@ async function requestCopy() {
       }
     });
 
+    //@sree-sanjana06 > prevent duplicate submissions in the current popup
     requestSubmitted.value = true;
     actionMessage.value = 'Adoption request submitted successfully.';
+
   } catch (error) {
     actionError.value = error.message;
+
   } finally {
     actionLoading.value = false;
   }
@@ -237,7 +277,7 @@ onMounted(loadHome);
 <template>
   <main class="mx-auto w-full max-w-7xl space-y-10">
 
-    <!-- SECTION 1: WELCOME -->
+    <!--Welcome Section-->
     <header class="space-y-2 border-b pb-6">
 
       <p class="text-xs uppercase tracking-widest text-muted-foreground">
@@ -254,7 +294,7 @@ onMounted(loadHome);
 
     </header>
 
-    <!-- SECTION 2: DISCOVER YOUR NEXT READ -->
+<!--Still on your mind?-->
     <section class="space-y-5 rounded-xl border bg-card p-6">
 
       <!-- HEADING AND RANDOM BUTTON -->
@@ -262,7 +302,7 @@ onMounted(loadHome);
 
         <div class="space-y-1">
           <h2 class="font-heading text-3xl">
-            Discover Your Next Read
+           Available on the shelf 
           </h2>
 
           <p class="text-sm text-muted-foreground">
@@ -385,7 +425,7 @@ onMounted(loadHome);
 
   </div>
 
-  <!-- SHELF BASE -->
+  //shelf line underneath the book spines
   <div class="h-3 rounded-md bg-foreground"></div>
 
   <p class="mt-3 text-center text-sm text-muted-foreground">
@@ -405,15 +445,15 @@ onMounted(loadHome);
 
         <div class="space-y-1">
           <h2 class="font-heading text-3xl">
-            Saved for Later
+            Still on your mind?
           </h2>
 
           <p class="text-sm text-muted-foreground">
-            The books you want to come back to.
+            The books you saved for later
           </p>
         </div>
 
-        <!-- CAROUSEL CONTROLS -->
+        <!-- @sree-sanjana06 previous/next arrows scroll saved books horizontally-->
         <div
           v-if="watchlist.length > 0"
           class="flex items-center gap-2"
@@ -512,8 +552,6 @@ onMounted(loadHome);
       </div>
 
     </section>
-
-
 
     
 <!-- FULL BOOK DETAILS POPUP -->
@@ -646,7 +684,7 @@ onMounted(loadHome);
               dialogBook.status !== 'available' ||
               requestSubmitted
             "
-            @click="requestCopy"
+            @click="openRequestDialog"
           >
             {{ requestSubmitted ? 'Request submitted' : 'Request copy' }}
           </Button>
@@ -659,7 +697,7 @@ onMounted(loadHome);
               dialogBook.status !== 'available' ||
               alreadySaved
             "
-            @click="saveToWatchlist"
+            @click="openSaveDialog"
           >
             {{ alreadySaved ? 'Already saved' : 'Save to watchlist' }}
           </Button>
@@ -673,6 +711,263 @@ onMounted(loadHome);
   </DialogContent>
 
 </Dialog>
+
+
+<!--@sree-sanjana06 > SAVE BOOK POPUP: allows customer to add an optional note before saving-->
+<Dialog v-model:open="saveDialogOpen">
+
+  <DialogContent
+    class="max-h-[90vh] w-[calc(100vw-2rem)] max-w-2xl overflow-y-auto p-0"
+    :showCloseButton="false"
+  >
+
+    <!--@sree-sanjana06 > popup heading and close button-->
+    <DialogHeader class="flex flex-row items-center justify-between border-b p-5">
+
+      <DialogTitle class="font-heading text-3xl">
+        Save book
+      </DialogTitle>
+
+      <Button variant="outline" @click="saveDialogOpen = false">
+        Close
+      </Button>
+
+    </DialogHeader>
+
+    <div v-if="dialogBook" class="space-y-6 p-6">
+
+      <!--@sree-sanjana06 > display the selected book using existing shared component-->
+      <AppBookIdentity
+        :title="dialogBook.title"
+        :author="getAuthors(dialogBook)"
+        :cover="dialogBook.coverurl"
+        coverClass="w-20"
+      />
+
+      <p class="text-muted-foreground">
+        Keep this book in your watchlist. Saving doesn't reserve it.
+      </p>
+
+      <!--@sree-sanjana06 > optional private note stored in watchlistNote-->
+      <div class="space-y-2">
+
+        <label for="watchlist-note" class="block text-sm">
+          Note (optional)
+        </label>
+
+        <textarea
+          id="watchlist-note"
+          v-model="watchlistNote"
+          maxlength="300"
+          rows="4"
+          :disabled="actionLoading || alreadySaved"
+          placeholder="Something to remember about this book"
+          class="w-full resize-y rounded-lg border bg-background p-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        ></textarea>
+
+        <!--@sree-sanjana06 > display note character count; maximum 300-->
+        <p class="text-sm text-muted-foreground">
+          Only visible to you · {{ watchlistNote.length }}/300 characters
+        </p>
+
+      </div>
+
+      <!--@sree-sanjana06 > display backend success or error feedback-->
+      <p
+        v-if="actionMessage"
+        class="rounded-lg bg-success p-3 text-sm"
+        role="status"
+      >
+        {{ actionMessage }}
+      </p>
+
+      <p
+        v-if="actionError"
+        class="text-sm text-destructive"
+        role="alert"
+      >
+        {{ actionError }}
+      </p>
+
+      <!--@sree-sanjana06 > save the book and note when customer confirms-->
+      <div class="flex justify-end border-t pt-5">
+
+        <Button
+          :disabled="actionLoading || alreadySaved"
+          @click="saveToWatchlist"
+        >
+          {{ alreadySaved ? 'Saved' : actionLoading ? 'Saving...' : 'Save' }}
+        </Button>
+
+      </div>
+
+    </div>
+
+  </DialogContent>
+
+</Dialog>
+
+
+<!--@sree-sanjana06 > REQUEST A COPY POPUP: customer reviews request before submission-->
+<Dialog v-model:open="requestDialogOpen">
+
+  <DialogContent
+    class="max-h-[90vh] w-[calc(100vw-2rem)] max-w-5xl overflow-y-auto p-0"
+    :showCloseButton="false"
+  >
+
+    <!--@sree-sanjana06 > popup heading and close button-->
+    <DialogHeader class="flex flex-row items-center justify-between border-b p-5">
+
+      <DialogTitle class="font-heading text-3xl">
+        Request a copy
+      </DialogTitle>
+
+      <Button variant="outline" @click="requestDialogOpen = false">
+        Close
+      </Button>
+
+    </DialogHeader>
+
+    <div v-if="dialogBook" class="space-y-6 p-6">
+
+      <!--@sree-sanjana06 > visual tracker showing the four stages of book adoption-->
+      <div class="grid grid-cols-4 gap-2 sm:gap-4">
+
+        <!--@sree-sanjana06 > step 1 completed: customer has chosen a book-->
+        <div class="space-y-2 border-t-2 border-green-700 pt-3">
+          <span class="grid size-9 place-items-center rounded-full bg-green-100 text-green-800">
+            ✓
+          </span>
+          <p class="text-xs sm:text-sm">Choose a book</p>
+        </div>
+
+        <!--@sree-sanjana06 > step 2 active: request is being reviewed before submission-->
+        <div class="space-y-2 border-t-2 border-foreground pt-3">
+          <span class="grid size-9 place-items-center rounded-full bg-foreground text-background">
+            2
+          </span>
+          <p class="text-xs font-semibold sm:text-sm">Request &amp; review</p>
+        </div>
+
+        <!--@sree-sanjana06 > step 3 happens after request approval-->
+        <div class="space-y-2 border-t-2 pt-3 text-muted-foreground">
+          <span class="grid size-9 place-items-center rounded-full bg-muted">
+            3
+          </span>
+          <p class="text-xs sm:text-sm">Arrange pickup</p>
+        </div>
+
+        <!--@sree-sanjana06 > step 4 is collecting the approved book-->
+        <div class="space-y-2 border-t-2 pt-3 text-muted-foreground">
+          <span class="grid size-9 place-items-center rounded-full bg-muted">
+            4
+          </span>
+          <p class="text-xs sm:text-sm">Collect your book</p>
+        </div>
+
+      </div>
+
+      <!--@sree-sanjana06 > clarify that submitting a request does not reserve the book-->
+      <p class="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
+        You're sending a request, not booking a pickup.
+        Nothing is submitted until you confirm below.
+      </p>
+
+      <div class="grid gap-6 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
+
+        <!--@sree-sanjana06 > display the selected book on the left-->
+        <div class="space-y-3">
+
+          <p class="text-sm text-muted-foreground">
+            Your selected copy
+          </p>
+
+          <AppBookIdentity
+            :title="dialogBook.title"
+            :author="getAuthors(dialogBook)"
+            :cover="dialogBook.coverurl"
+            coverClass="w-32"
+          />
+
+        </div>
+
+        <!--@sree-sanjana06 > display customer details and submission information on the right-->
+        <div class="space-y-5 rounded-xl border p-5">
+
+          <h3 class="font-heading text-2xl">
+            Requesting as
+          </h3>
+
+          <!--@sree-sanjana06 > retrieve logged-in customer's name and email from auth-->
+          <dl class="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm sm:grid-cols-[7rem_minmax(0,1fr)]">
+
+            <dt class="text-muted-foreground">Reader</dt>
+            <dd class="break-words">
+              {{ auth.user?.name || 'Reader' }}
+            </dd>
+
+            <dt class="text-muted-foreground">Email</dt>
+            <dd class="break-all">
+              {{ auth.user?.email || 'Not available' }}
+            </dd>
+
+          </dl>
+
+          <div class="space-y-3 border-t pt-5">
+
+            <h4 class="font-heading text-xl">
+              The team reviews each request
+            </h4>
+
+            <p class="text-sm text-muted-foreground">
+              You're asking for this donated copy, free of charge.
+              Submitting doesn't reserve it. If your request is approved,
+              you can arrange a pickup time.
+            </p>
+
+            <p class="text-sm text-muted-foreground">
+              You can follow the response in My Adoptions.
+            </p>
+
+          </div>
+
+          <!--@sree-sanjana06 > display backend feedback after request submission-->
+          <p
+            v-if="actionMessage"
+            class="rounded-lg bg-success p-3 text-sm"
+            role="status"
+          >
+            {{ actionMessage }}
+          </p>
+
+          <p
+            v-if="actionError"
+            class="text-sm text-destructive"
+            role="alert"
+          >
+            {{ actionError }}
+          </p>
+
+          <!--@sree-sanjana06 > only this button submits the adoption application-->
+          <Button
+            class="w-full"
+            :disabled="actionLoading || requestSubmitted"
+            @click="requestCopy"
+          >
+            {{ requestSubmitted ? 'Request submitted' : actionLoading ? 'Submitting...' : 'Submit request' }}
+          </Button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </DialogContent>
+
+</Dialog>
+
 
 
   </main>
