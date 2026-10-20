@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
+import bookspine from '@/assets/bookspine.svg';
 
 const cover = (isbn) => `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
 
@@ -27,18 +28,13 @@ const selected = ref(null);
     <!--@ChitanyaBharathi > books in a row > bottom border is the shelf-->
     <div class="flex justify-center gap-10 border-b-10 border-[#e8c9a9]">
       <!--@ChitanyaBharathi > one svg spine per book > lifts on hover-->
-      <svg v-for="book in books" :key="book.title" width="80" height="280"
-           class="hover:-translate-y-2.5 transition" @click="selected = book">
-        <rect width="80" height="280" rx="6" :fill="book.colour" stroke="#633b22" stroke-width="2" />
-        <!--@ChitanyaBharathi > thin double bands at top and bottom > classic spine look-->
-        <g fill="none" stroke="#633b22" stroke-width="1" opacity="0.5">
-          <rect y="14" width="80" height="4" />
-          <rect y="262" width="80" height="4" />
-        </g>
+      <div v-for="book in books" :key="book.title" :style="{ backgroundColor: book.colour }"
+           class="relative rounded-[6px] hover:-translate-y-2.5 transition" @click="selected = book">
+        <img :src="bookspine" alt="" width="80" height="280" />
         <!--@ChitanyaBharathi > vertical-rl > text reads downwards-->
-        <text x="46" y="35" font-size="20" writing-mode="vertical-rl">{{ book.title }}</text>
-        <text x="22" y="35" font-size="12" writing-mode="vertical-rl">{{ book.author }}</text>
-      </svg>
+        <span class="absolute top-[35px] left-[36px] text-left text-[20px] leading-none [writing-mode:vertical-rl]">{{ book.title }}</span>
+        <span class="absolute top-[35px] left-[16px] text-left text-[12px] leading-none [writing-mode:vertical-rl]">{{ book.author }}</span>
+      </div>
     </div>
 
     <!--@ChitanyaBharathi > details of the picked book-->
