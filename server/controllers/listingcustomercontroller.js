@@ -66,13 +66,12 @@ async function update(req, res) {
   }
 }
 
-async function withdraw(req, res) {
+async function deletebooks(req, res) {
   try {
     const ids = requestids(req);
-    await book.withdrawbooks(ids, req.user.id);
-    return res.json({ withdrawnids: ids });
+    return res.json(await book.deletebooks(ids, req.user.id));
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: errormessage(error, "select your available or reserved listings to withdraw") });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not delete your listings") });
   }
 }
 
@@ -126,4 +125,4 @@ async function updatecollection(req, res) {
   }
 }
 
-module.exports = { index, create, read, update, withdraw, requests, decide, collections, collection, updatecollection };
+module.exports = { index, create, read, update, deletebooks, requests, decide, collections, collection, updatecollection };

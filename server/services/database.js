@@ -21,11 +21,10 @@ async function transaction(work) {
   }
 }
 
-async function runsql(filename, books = []) {
-  if (!['base.sql', 'clear.sql', 'books.sql'].includes(filename)) throw new Error('unsupported maintenance script');
+async function runsql(filename) {
+  if (!['base.sql', 'clear.sql', 'seed.sql'].includes(filename)) throw new Error('unsupported maintenance script');
   const sql = await readFile(path.resolve(__dirname, '../../sql', filename), 'utf8');
   return transaction(async client => {
-    await client.query("select set_config('app.seed_books', $1, true)", [JSON.stringify(books)]);
     const results = await client.query(sql);
     const last = Array.isArray(results) ? results.at(-1) : results;
     return last.rows[0] || null;

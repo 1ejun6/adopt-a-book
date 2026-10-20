@@ -18,7 +18,7 @@ const filters = reactive({ search: '', status: 'all', genre: 'all' });
 const loading = ref(false);
 const deleting = ref(false);
 const availableGenres = ref([]);
-const counts = ref({ all: 0, available: 0, reserved: 0, adopted: 0, withdrawn: 0 });
+const counts = ref({ all: 0, available: 0, reserved: 0, adopted: 0 });
 const page = ref(1);
 const pageSize = 15;
 const total = ref(0);
@@ -96,37 +96,14 @@ async function fetchBooks() {
 
 async function deleteBooks() {
     if (loading.value || deleting.value || !selectedIds.value.length) { return; }
-    const version = requestId;
     const bookids = [...selectedIds.value];
     const titles = books.value.filter(book => bookids.includes(book.id)).map(book => book.title);
     deleting.value = true;
     try {
-        const { deletedids = [], withdrawnids = [] } = await api('/admin/books', { method: 'DELETE', body: { ids: bookids } });
-        for (const id of [...deletedids, ...withdrawnids]) { bookDetails.delete(id); }
-        //@1ejun6 > update current refs after server confirms > only reload if view changed ||| page becomes empty
-        if (version !== requestId) { await fetchBooks(); }
-        else {
-            const deleted = new Set(deletedids);
-            const withdrawn = new Set(withdrawnids);
-            const previousCount = books.value.length;
-            for (const book of books.value) {
-                if (deleted.has(book.id)) {
-                    counts.value.all--;
-                    counts.value[book.status]--;
-                } else if (withdrawn.has(book.id) && book.status !== 'withdrawn') {
-                    counts.value[book.status]--;
-                    counts.value.withdrawn++;
-                    book.status = 'withdrawn';
-                }
-            }
-            books.value = books.value.filter(book => !deleted.has(book.id) && (filters.status === 'all' || book.status === filters.status));
-            total.value -= previousCount - books.value.length;
-            selectedIds.value = [];
-            if (page.value > pageCount.value) { page.value = pageCount.value; }
-            else if (!books.value.length && total.value > 0) { await fetchBooks(); }
-        }
-        const message = [deletedids.length ? `${deletedids.length} deleted` : '', withdrawnids.length ? `${withdrawnids.length} withdrawn; history kept` : ''].filter(Boolean).join(' · ');
-        toast.info(message, {
+        const { deletedids = [] } = await api('/admin/books', { method: 'DELETE', body: { ids: bookids } });
+        for (const id of deletedids) { bookDetails.delete(id); }
+        await fetchBooks();
+        toast.info(`${deletedids.length} deleted`, {
             description: titles.map((title, index) => `${index + 1}. ${title}`).join('\n'),
             style: { whiteSpace: 'pre-line' }
         });
