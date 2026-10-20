@@ -155,7 +155,7 @@ const columns = [
 ];
 </script>
 <template>
-    <main class="mx-auto min-w-0 w-full max-w-7xl space-y-5">
+    <section class="mx-auto min-w-0 w-full max-w-7xl space-y-5">
         <header class="flex flex-wrap items-center justify-between gap-5">
             <div class="min-w-0">
                 <h1>Book Inventory</h1>
@@ -190,5 +190,5 @@ const columns = [
         <BookDetailsDialog v-model:open="dialogOpen" :book="selectedBook" />
         <AppPagination itemLabel="books" v-if="!loadError && total > 0" v-model:page="page" :total="total"
             :visibleCount="books.length" :pageSize="pageSize" :pageCount="pageCount" :loading="loading" :disabled="loading || deleting" />
-    </main>
+    </section>
 </template>
