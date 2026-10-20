@@ -101,8 +101,7 @@ const showupdatebook = async (req, res) => {
 const deletebooks = async (req, res) => {
   try {
     const ids = requestids(req);
-    const result = await book.deletebooks(ids, req.user.id);
-    return res.json(result);
+    return res.json(await book.deletebooks(ids, req.user.id));
   } catch (error) {
     console.error("book deletion failed >", error);
     if (error.code === "PGRST202" || error.code === "42883" || error.code === "42703") {
@@ -124,7 +123,7 @@ const updatebook = async (req, res) => {
     if (!currentbook) {
       return res.status(404).json({ error: "book not found" });
     }
-    if (Object.hasOwn(req.body, "status")) return res.status(422).json({ error: "status changes use the application, collection or withdrawal endpoints" });
+    if (Object.hasOwn(req.body, "status")) return res.status(422).json({ error: "status changes use the application or collection endpoints" });
     const allowed = new Set(["title", "authors", "isbn", "subjects", "publicationyear", "description", "coverurl", "openlibraryid", "condition", "mrtstationid"]);
     if (Object.keys(req.body).some((key) => !allowed.has(key))) return res.status(422).json({ error: "unsupported book field" });
     const fields = book.bookupdateschema.parse(formdata);
