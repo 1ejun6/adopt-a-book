@@ -21,14 +21,14 @@ watch(() => props.cover, () => { coverFailed.value = false; });
         <!--@1ejun6 > loading-->
         <!--@lee-hlmilk > prevent cover from shrinking > keep 2-3 book proportions-->
         <Skeleton :class="props.coverClass" class="shrink-0 aspect-[2/3] rounded-lg"></Skeleton>
-        <!--@lee-hlmilk > loading title &&& author-->
-        <div class="min-w-0 flex-1"> <!--@1ejun6 > fills remaining width &&& can shrink-->
+        <!--@lee-hlmilk > loading title & author-->
+        <div class="min-w-0 flex-1"> <!--@1ejun6 > fills remaining width & can shrink-->
             <Skeleton class="h-5 w-2/3"></Skeleton>
             <Skeleton class="h-4 w-1/3"></Skeleton>
         </div>
     </div>
 
-    <!--@lee-hlmilk > book cover  title &&& author-->
+    <!--@lee-hlmilk > book cover  title & author-->
     <div v-else class="flex w-full min-w-0 items-center gap-2.5">
         <div :class="props.coverClass" class="grid place-items-center shrink-0 aspect-[2/3] rounded-lg">
             <img v-if="props.cover && !coverFailed" :key="props.cover" :src="props.cover" alt="" width="48" height="72"

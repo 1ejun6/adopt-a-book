@@ -1,5 +1,5 @@
 <script setup>
-//@1ejun6 > arranges text &&& controls inside a field
+//@1ejun6 > arranges text & controls inside a field
 import { cn } from '@/lib/utils';
 
 const props = defineProps({

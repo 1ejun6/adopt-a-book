@@ -17,7 +17,7 @@ const delegatedProps = reactiveOmit(props, 'class');
 const forwardedProps = useForwardProps(delegatedProps);
 </script>
 
-<!--@1ejun6 > reka supplies css variables for active dropdown dimensions &&& position-->
+<!--@1ejun6 > reka supplies css variables for active dropdown dimensions & position-->
 <template>
   <!--@1ejun6 > displays dropdown below menu without affecting page layout-->
   <div class="absolute top-full left-0 isolate z-50 flex justify-center">
