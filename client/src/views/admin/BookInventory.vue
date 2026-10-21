@@ -14,43 +14,49 @@ const books = ref([]);
 const selectedBook = ref(null);
 const dialogOpen = ref(false);
 const selectedIds = ref([]);
-const filters = reactive({ search: '', status: 'all', genre: 'all' });
 const loading = ref(false);
 const deleting = ref(false);
+let requestId = 0;
+const loadError = ref('');
+let bookRequestId = 0;
+
+const filters = reactive({ search: '', status: 'all', genre: 'all' });
 const availableGenres = ref([]);
 const counts = ref({ all: 0, available: 0, reserved: 0, adopted: 0 });
+const bookDetails = new Map(); //@1ejun6 > hashmap
+
 const page = ref(1);
 const pageSize = 15;
 const total = ref(0);
-const loadError = ref('');
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
-let requestId = 0;
 
-const bookDetails = new Map();
-let bookRequestId = 0;
-//@1ejun6 > fetch full details on click > cache request for repeat opens &&& ignore older clicks
+//@1ejun6 > fetch full details on click > cache request for repeat opens & ignore older clicks
 async function openBook(book) {
+    //@1ejun6 > id > a number assigned to this click \ request
+    //@1ejun6 > ~book.id~ > book id in database
+    //@1ejun6 > ~bookrequestid~ > holds latest request number & increases whenever you click a book
     if (loading.value || deleting.value) { return; }
     const id = ++bookRequestId;
     let request = bookDetails.get(book.id);
     try {
         if (!request) {
-            request = api(`/admin/books/${book.id}`).then(response => response.currentbook);
-            bookDetails.set(book.id, request);
+            //@1ejun6 > currentbook is from backend
+            request = api(`/admin/books/${book.id}`).then(response => response.currentbook); //@1ejun6 > extract
+            bookDetails.set(book.id, request); //@1ejun6 > response
         }
         const details = await request;
         if (id !== bookRequestId) { return; }
         selectedBook.value = { ...book, ...details };
         dialogOpen.value = true;
     } catch (error) {
-        if (bookDetails.get(book.id) === request) { bookDetails.delete(book.id); }
+        if (bookDetails.get(book.id) === request) { bookDetails.delete(book.id); } //@1ejun6 > clear cache
         if (id === bookRequestId) { toast.error(error.message); }
     }
 }
 
 async function fetchBooks() {
     const id = ++requestId;
-    //@1ejun6 > refresh details cache when inventory page ||| filters change
+    //@1ejun6 > refresh details cache when inventory page \ filters change
     bookDetails.clear();
     bookRequestId++;
     loading.value = true;

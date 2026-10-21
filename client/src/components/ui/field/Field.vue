@@ -1,5 +1,5 @@
 <script setup>
-//@1ejun6 > groups a form control with its label &&& related content
+//@1ejun6 > groups a form control with its label & related content
 import { cn } from "@/lib/utils";
 import { fieldVariants } from ".";
 

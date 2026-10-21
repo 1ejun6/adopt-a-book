@@ -13,7 +13,7 @@ const search = defineModel('search', { type: String, default: '' });
     <section class="space-y-5">
         <slot name="tabs" />
 
-        <!--@lee-hlmilk > search &&& page filters-->
+        <!--@lee-hlmilk > search & page filters-->
         <div class="flex flex-col gap-2.5 sm:flex-row">
             <Input type="search" v-model="search" class="h-auto flex-1 p-2.5 text-sm leading-4" :placeholder="props.searchPlaceholder" />
             <div v-if="$slots.filters || $slots.actions" class="flex flex-wrap gap-2.5">
@@ -22,7 +22,7 @@ const search = defineModel('search', { type: String, default: '' });
             </div>
         </div>
 
-        <!--@lee-hlmilk > selected row count &&& page actions-->
+        <!--@lee-hlmilk > selected row count & page actions-->
         <div v-if="props.selectedRowCount > 0"
             class="flex flex-wrap items-center gap-2.5" role="status">
             <strong>{{ props.selectedRowCount }} selected</strong>

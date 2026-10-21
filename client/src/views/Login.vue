@@ -28,7 +28,7 @@ async function login() {
         auth.user = response.user;
         auth.ready = true;
 
-        console.log(response.message || 'login successful');
+        toast.success(response.message);
         form.password = '';
         
         await router.push(homeRoute.value);

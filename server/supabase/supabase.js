@@ -4,7 +4,7 @@ const configuredsupabaseurl = process.env.supabaseurl;
 const supabasesecretkey = process.env.supabasesecretkey;
 
 if (!configuredsupabaseurl || !supabasesecretkey) {
-  throw new Error("supabaseurl &&& supabasesecretkey must be set in .env");
+  throw new Error("supabaseurl & supabasesecretkey must be set in .env");
 }
 
 let supabaseurl;
