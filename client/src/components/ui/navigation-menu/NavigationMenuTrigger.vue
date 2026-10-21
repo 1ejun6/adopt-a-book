@@ -1,5 +1,5 @@
 <script setup>
-//@1ejun6 > clickable button that opens ||| closes its matching dropdown
+//@1ejun6 > clickable button that opens \ closes its matching dropdown
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons';
 import { reactiveOmit } from '@vueuse/core';
 import { NavigationMenuTrigger, useForwardProps } from 'reka-ui';

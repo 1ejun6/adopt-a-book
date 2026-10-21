@@ -1,5 +1,4 @@
 <script setup>
-import { toast } from 'vue-sonner';
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/lib/api'
@@ -7,6 +6,7 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { toast } from 'vue-sonner'
 
 const router = useRouter();
 const showPassword = ref(false);
@@ -23,7 +23,7 @@ async function register() {
         };
 
         const response = await api('/register', data);
-        console.log(response.message || 'registration successful');
+        toast.success(response.message);
         form.password = '';
 
         await router.push('/login');

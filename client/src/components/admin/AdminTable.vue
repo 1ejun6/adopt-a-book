@@ -46,8 +46,8 @@ function toggleAllRows() {
   <div class="min-w-0">
     <!--@lee-hlmilk > loading placeholders-->
     <div v-if="isLoading" class="rounded-lg border p-5" role="status" aria-busy="true">
-      <!--@lee-hlmilk > placeholder header &&& placeholder rows-->
-      <!--@1ejun6 > padding bottom > first row; padding for top &&& bottom > remaining rows-->
+      <!--@lee-hlmilk > placeholder header & placeholder rows-->
+      <!--@1ejun6 > padding bottom > first row; padding for top & bottom > remaining rows-->
       <div v-for="row in 5" :key="row" class="flex items-center gap-5 border-b"
         :class="row === 1 ? 'pb-2.5' : 'py-2.5'">
         <Skeleton class="size-4.5 rounded-lg" />
@@ -62,7 +62,7 @@ function toggleAllRows() {
         <TableRow>
           <!--@lee-hlmilk > select all visible rows-->
           <TableHead class="w-10 text-center align-middle" @click="toggleAllRows">
-            <!--@1ejun6 > stops its click from bubbling up &&& triggering a parent element click handler-->
+            <!--@1ejun6 > stops its click from bubbling up & triggering a parent element click handler-->
             <Checkbox class="mx-auto block" :modelValue="headerCheckboxState" @click.stop
               @update:modelValue="toggleAllRows" />
           </TableHead>

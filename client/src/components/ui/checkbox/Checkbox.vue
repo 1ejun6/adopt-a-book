@@ -27,7 +27,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
 </script>
 
 <template>
-  <!--@lee-hlmilk > changed shadcn defaults to size-4.5 > rounded-lg corners &&& card background to match original table checkboxes > checked &&& indeterminate states use our main.css -->
+  <!--@lee-hlmilk > changed shadcn defaults to size-4.5 > rounded-lg corners & card background to match original table checkboxes > checked & indeterminate states use our main.css -->
   <CheckboxRoot v-slot="slotProps" data-slot="checkbox" v-bind="forwarded" :class="cn(
     'size-4.5 rounded-lg border border-foreground bg-foreground text-background data-[state=unchecked]:bg-card',
     props.class,
@@ -35,7 +35,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
     ">
     <CheckboxIndicator data-slot="checkbox-indicator" class="grid place-content-center">
       <slot v-bind="slotProps">
-        <!--@lee-hlmilk > added dash for partial selection &&& render tick through hugeiconsicon > shared checkbox handles both symbols so table does not repeat indicator markup-->
+        <!--@lee-hlmilk > added dash for partial selection & render tick through hugeiconsicon > shared checkbox handles both symbols so table does not repeat indicator markup-->
         <HugeiconsIcon v-if="slotProps.state === 'indeterminate'" :icon="MinusSignIcon" class="size-3.5"
           aria-hidden="true"></HugeiconsIcon> <!--@1ejun6 > highest check box is dash icon-->
         <HugeiconsIcon v-else :icon="Tick02Icon" class="size-3.5" aria-hidden="true"></HugeiconsIcon> <!--@1ejun6 > highest check box is tick icon-->

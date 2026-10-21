@@ -1,5 +1,5 @@
 <script setup>
-//@1ejun6 > groups one trigger ||| link &&& its optional dropdown content
+//@1ejun6 > groups one trigger \ link & its optional dropdown content
 import { reactiveOmit } from '@vueuse/core';
 import { NavigationMenuItem } from 'reka-ui';
 import { cn } from '@/lib/utils';

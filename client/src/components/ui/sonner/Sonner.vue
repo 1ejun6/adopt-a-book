@@ -16,7 +16,7 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
     <template #error-icon>
       <HugeiconsIcon :icon="CancelCircleIcon" :size="20" />
     </template>
-    <!--@1ejun6 > toast.promise uses loading while pending > success when resolved ||| error when rejected-->
+    <!--@1ejun6 > toast.promise uses loading while pending > success when resolved \ error when rejected-->
     <template #loading-icon>
       <HugeiconsIcon :icon="Loading03Icon" :size="20" class="animate-spin" />
     </template>
@@ -24,7 +24,7 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
 </template>
 
 <style>
-/*@1ejun6 > shared lavender postcard > existing toast messages &&& actions stay unchanged */
+/*@1ejun6 > shared lavender postcard > existing toast messages & actions stay unchanged */
 .lavenderToaster [data-sonner-toast][data-styled='true'] {
   --stripe-color: #bcb8ff;
   --stamp-size: 50px;
@@ -43,7 +43,7 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
   box-sizing: border-box;
   max-width: 100%;
 
-  /*@1ejun6 > success uses green stripes &&& error uses rose > other types keep lavender */
+  /*@1ejun6 > success uses green stripes & error uses rose > other types keep lavender */
   &[data-type='success'] {
     --stripe-color: var(--toast-success-stripe);
   }

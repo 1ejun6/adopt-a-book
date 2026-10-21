@@ -18,7 +18,7 @@ const router = createRouter({
       component: AppLayout,
       children: [
         { path: '', name: 'guestHome', component: GuestHome, label: 'Browse Books', roles: ['guest'] },
-        { path: 'login', name: 'login', component: Login, label: 'Login', roles: ['guest'], end: true },
+        { path: 'login', name: 'login', component: Login, label: 'Login', roles: ['guest'] },
         { path: 'register', name: 'register', component: Register, label: 'Create Account', roles: ['guest'] },
       ],
     },
@@ -40,7 +40,7 @@ const router = createRouter({
   ],
 });
 
-//@1ejun6 > gets child pages from every route group &&& combines them into one list
+//@1ejun6 > gets child pages from every route group & combines them into one list
 const pages = router.options.routes.flatMap(group => group.children);
 
 //@1ejun6 > ~to~ is destination route
