@@ -60,7 +60,8 @@ const fields = computed(() => {
             </div>
             <hr>
             <DialogFooter>
-                <Button type="button" class="w-full" @click="emit('edit', book)">Edit</Button>
+                <!--@lee-hlmilk > reserved &&& adopted copies cannot be edited > availability follows approval &&& collection-->
+                <Button type="button" class="w-full" :disabled="['reserved', 'adopted'].includes(book.status)" @click="emit('edit', book)">Edit</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>
