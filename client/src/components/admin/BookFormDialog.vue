@@ -23,18 +23,7 @@ const addMode = ref('search');
 const invalidFields = ref([]);
 const metadataOpen = ref(false);
 //@lee-hlmilk > reactive draft state for editing book metadata
-const bookForm = reactive({
-    title: '',
-    authors: '',
-    condition: '',
-    mrtstationid: '',
-    description: '',
-    isbn: '',
-    publicationyear: '',
-    subject: '',
-    openlibraryid: '',
-    coverurl: ''
-});
+const bookForm = reactive({title: '', authors: '', condition: '', mrtstationid: '', description: '', isbn: '', publicationyear: '', subject: '', openlibraryid: '', coverurl: ''});
 //@lee-hlmilk > compare draft with opening snapshot > reverting all fields removes unsaved changes prompt
 const isFormDirty = computed(() => open.value && JSON.stringify(bookForm) !== initialForm.value);
 //@lee-hlmilk > keep current station in list even if no longer selectable for new writes
@@ -94,16 +83,16 @@ function submitBook(event) {
     }
     const data = {
         ...(!props.book ? { source: addMode.value === 'review' ? 'open_library' : 'manual' } : {}),
-        title: bookForm.title.trim(),
+        title: bookForm.title,
         authors: bookForm.authors,
         condition: bookForm.condition || null,
         mrtstationid: bookForm.mrtstationid,
         description: bookForm.description.trim(),
-        isbn: bookForm.isbn.trim() || null,
-        publicationyear: bookForm.publicationyear === '' ? null : Number(bookForm.publicationyear),
-        subjects: bookForm.subject.trim() ? [bookForm.subject.trim()] : [], //@lee-hlmilk > backend expects array > send zero ||| one subject
-        openlibraryid: bookForm.openlibraryid.trim() || null,
-        coverurl: bookForm.coverurl.trim() || null
+        isbn: bookForm.isbn,
+        publicationyear: bookForm.publicationyear,
+        subjects: bookForm.subject, //@lee-hlmilk > map single subject field to API name > backend trims &&& converts to array
+        openlibraryid: bookForm.openlibraryid,
+        coverurl: bookForm.coverurl
     };
     //@lee-hlmilk > submitter identifies Add and continue > view saves data before resetting ||| closing form
     emit('submit', data, !props.book && event?.submitter?.value === 'continue');

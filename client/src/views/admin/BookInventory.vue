@@ -148,13 +148,7 @@ async function saveBook(data, keepAdding) {
             body: data
         });
         const updated = response.book;
-        if (selectedBook.value?.id === updated.id) {
-            selectedBook.value = {
-                ...updated,
-                author: (updated.authors || []).join(', ') || 'Unknown Author',
-                cover: updated.coverurl || ''
-            };
-        }
+        if (selectedBook.value?.id === updated.id) { selectedBook.value = formatBook(updated); }
         if (keepAdding) { bookFormDialog.value.resetForm(); }
         else { formOpen.value = false; }
         toast.success(response.message || (editing ? 'Book updated' : 'Book added'));
@@ -162,6 +156,18 @@ async function saveBook(data, keepAdding) {
         await fetchBooks();
     } catch (error) { toast.error(error.message); }
     finally { saving.value = false; }
+}
+
+//@lee-hlmilk > same display fields for inventory rows &&& saved details > raw metadata stays available
+function formatBook(book) {
+    return {
+        ...book,
+        title: book.title || 'Untitled',
+        author: book.authors?.join(', ') || book.author || 'Unknown Author',
+        isbn: book.isbn || '—',
+        status: (book.status || 'available').toLowerCase(),
+        cover: book.thumbnailurl || book.coverurl || ''
+    };
 }
 
 async function fetchBooks() {
@@ -178,7 +184,7 @@ async function fetchBooks() {
             query: {
                 page: page.value,
                 limit: pageSize,
-                search: filters.search.trim(),
+                search: filters.search,
                 status: filters.status === 'all' ? undefined : filters.status,
                 subject: filters.genre === 'all' ? undefined : filters.genre
             },
@@ -191,15 +197,7 @@ async function fetchBooks() {
 
         //@1ejun6 > a deletion may remove last row on current page
         if (page.value > pageCount.value) { page.value = pageCount.value; return; }
-        books.value = (Array.isArray(response.books) ? response.books : []).map(book => ({
-            ...book,
-            id: book.id,
-            title: book.title || 'Untitled',
-            author: (Array.isArray(book.authors) ? book.authors.join(', ') : '') || book.author || 'Unknown Author',
-            isbn: book.isbn || '—',
-            status: (book.status || 'available').toLowerCase(),
-            cover: book.thumbnailurl || book.coverurl || ''
-        }));
+        books.value = response.books.map(formatBook);
     } catch (error) {
         if (id !== requestId) { return; }
         loadError.value = error.message;
