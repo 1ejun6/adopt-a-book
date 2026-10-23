@@ -50,7 +50,7 @@ function toggleAllRows() {
       <!--@1ejun6 > padding bottom > first row; padding for top & bottom > remaining rows-->
       <div v-for="row in 5" :key="row" class="flex items-center gap-5 border-b"
         :class="row === 1 ? 'pb-2.5' : 'py-2.5'">
-        <Skeleton class="size-4.5 rounded-lg" />
+        <Skeleton class="size-4.5" />
         <Skeleton v-for="column in columns" :key="column.key" class="h-4 flex-1" />
         <Skeleton class="h-4 w-20 ml-auto" />
       </div>

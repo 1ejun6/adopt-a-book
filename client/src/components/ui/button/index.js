@@ -8,7 +8,7 @@ export const buttonVariants = ({ variant, size } = {}) =>
     variant === 'destructive'
       ? 'bg-badge-rose text-badge-rose-foreground hover:bg-badge-rose'
       : variant === 'outline'
-      ? 'border border-border bg-transparent'
+      ? 'border bg-transparent'
       : 'bg-primary',
     size === 'sm' ? 'h-8 px-3' : 'h-9 px-4',
   );

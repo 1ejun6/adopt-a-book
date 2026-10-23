@@ -15,7 +15,7 @@ const page = defineModel('page', { type: Number, required: true });
 </script>
 
 <template>
-    <div class="sticky bottom-0 z-20 -mx-5 flex flex-col items-center bg-background p-2.5 text-sm pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:mx-0 sm:flex-row sm:justify-between sm:gap-2.5">
+    <div class="sticky bottom-0 z-20 -mx-5 flex flex-col items-center bg-background px-2.5 pt-2.5 text-sm pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:mx-0 sm:flex-row sm:justify-between sm:gap-2.5">
         <p aria-live="polite">
             {{ loading ? `Loading ${itemLabel}…` : `${total === 0 ? 0 : (page - 1) * pageSize + 1}–${Math.min((page - 1) * pageSize + (visibleCount ?? pageSize), total)} of ${total} ${itemLabel}` }}
         </p>

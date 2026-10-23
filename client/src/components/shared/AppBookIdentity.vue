@@ -20,7 +20,7 @@ watch(() => props.cover, () => { coverFailed.value = false; });
     <div v-if="props.loading" class="flex w-full min-w-0 items-center gap-2.5" aria-busy="true" role="status">
         <!--@1ejun6 > loading-->
         <!--@lee-hlmilk > prevent cover from shrinking > keep 2-3 book proportions-->
-        <Skeleton :class="props.coverClass" class="shrink-0 aspect-[2/3] rounded-lg"></Skeleton>
+        <Skeleton :class="props.coverClass" class="shrink-0 aspect-[2/3]"></Skeleton>
         <!--@lee-hlmilk > loading title & author-->
         <div class="min-w-0 flex-1"> <!--@1ejun6 > fills remaining width & can shrink-->
             <Skeleton class="h-5 w-2/3"></Skeleton>
