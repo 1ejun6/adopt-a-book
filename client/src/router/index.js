@@ -9,6 +9,7 @@ import { auth, role, homeRoute } from '@/lib/auth';
 import { loadSession } from '@/lib/session';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
+import CustomerWatchlist from '../views/customer/Watchlist.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -37,7 +38,7 @@ const router = createRouter({
     // @sanjana I need to make the components still, so i havent included the components in this.
     { path: '', name: 'customerHome', component: CustomerHome, roles: ['customer']},
     { path: 'books', name: 'customerBooks', label: 'Browse Books', roles: ['customer']},
-    { path: 'watchlist', name: 'customerWatchlist', label: 'Watchlist', roles: ['customer']},
+    { path: 'watchlist', name: 'customerWatchlist', component: CustomerWatchlist, label: 'Watchlist', roles: ['customer']},
     { path: 'adoptions', name: 'customerAdoptions',label: 'My Adoptions',roles: ['customer']},
     {path: 'pickups',name: 'customerPickups',label: 'Pickups', roles: ['customer']},
     {path: 'drives', name: 'customerDrives', label: 'Adoption Drives', roles: ['customer']},

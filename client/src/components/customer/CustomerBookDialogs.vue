@@ -1,4 +1,3 @@
-
 <script setup>
 import { ref, computed, nextTick } from 'vue';
 import { api } from '@/lib/api';
@@ -8,8 +7,12 @@ import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 import AppStatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-const props = defineProps({ watchlist: { type: Array, required: true } });
-const emit = defineEmits(['saved']);
+//@sree-sanjana06 > enable watchlist management buttons only on Watchlist page
+const props = defineProps({
+  watchlist: { type: Array, required: true },
+  manageWatchlist: { type: Boolean, default: false }
+});
+const emit = defineEmits(['saved', 'edit', 'remove']);
 
 //@sree-sanjana06 > all three popups share the currently selected book
 const dialogBook = ref(null);
@@ -24,6 +27,11 @@ const actionError = ref('');
 const requestSubmitted = ref(false);
 const savedThisSession = ref(false);
 const watchlistNote = ref('');
+
+//@sree-sanjana06 > find saved entry matching the book currently displayed
+const savedEntry = computed(() => props.watchlist.find(
+  entry => entry.bookid?.id === dialogBook.value?.id
+));
 
 const alreadySaved = computed(() => savedThisSession.value || props.watchlist.some(
   entry => entry.bookid?.id === dialogBook.value?.id
@@ -53,6 +61,24 @@ async function openBookDetails(book) {
   }
 }
 defineExpose({ openBookDetails });
+
+//@sree-sanjana06 > close book details and ask Watchlist page to edit saved note
+async function editSavedBook() {
+  if (!savedEntry.value) return;
+  const entry = savedEntry.value;
+  dialogOpen.value = false;
+  await nextTick();
+  emit('edit', entry);
+}
+
+//@sree-sanjana06 > close book details and ask Watchlist page to confirm removal
+async function removeSavedBook() {
+  if (!savedEntry.value) return;
+  const entry = savedEntry.value;
+  dialogOpen.value = false;
+  await nextTick();
+  emit('remove', entry);
+}
 
 //@sree-sanjana06 > close details before showing the optional watchlist note popup
 async function openSaveDialog() {
@@ -168,17 +194,36 @@ async function requestCopy() {
           <p class="text-muted-foreground">
             Request this donated copy for free. The team reviews your request before you arrange collection.
           </p>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <Button :disabled="actionLoading || detailsLoading || !!detailsError || dialogBook.status !== 'available' || requestSubmitted"
+          
+          <!--@sree-sanjana06 > show management actions for books already in Watchlist-->
+          <div class="grid gap-3"
+            :class="manageWatchlist && savedEntry ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
+
+            <!--@sree-sanjana06 > existing adoption request functionality-->
+            <Button
+              :disabled="actionLoading || detailsLoading || !!detailsError || dialogBook.status !== 'available' || requestSubmitted"
               @click="openRequestDialog">
               {{ requestSubmitted ? 'Request submitted' : 'Request copy' }}
             </Button>
-            <Button variant="outline"
+
+            <!--@sree-sanjana06 > replace Save button with Edit and Remove on Watchlist page-->
+            <template v-if="manageWatchlist && savedEntry">
+              <Button variant="outline" @click="editSavedBook">
+                Edit saved book
+              </Button>
+              <Button variant="outline" @click="removeSavedBook">
+                Remove from watchlist
+              </Button>
+            </template>
+
+            <!--@sree-sanjana06 > retain original Save button for Home and other pages-->
+            <Button v-else variant="outline"
               :disabled="actionLoading || detailsLoading || !!detailsError || dialogBook.status !== 'available' || alreadySaved"
               @click="openSaveDialog">
               {{ alreadySaved ? 'Already saved' : 'Save to watchlist' }}
             </Button>
           </div>
+
         </div>
       </div>
     </DialogContent>
