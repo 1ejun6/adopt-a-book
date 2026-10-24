@@ -26,7 +26,7 @@ const router = createRouter({
       path: '/customer',
       component: AppLayout,
       children: [
-        { path: '', name: 'customerHome', component: CustomerHome, label: 'Home', roles: ['customer'] },
+        { path: '', name: 'customerHome', component: CustomerHome, roles: ['customer'] },
       ],
     },
     

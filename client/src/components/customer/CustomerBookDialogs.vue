@@ -216,7 +216,7 @@ async function requestCopy() {
     </DialogContent>
   </Dialog>
 
-  <!--@sree-sanjana06 > request review popup; progress tracker is visual only-->
+  <!--@sree-sanjana06 > request review popup; progress tracker only a visual not actually changing-->
   <Dialog v-model:open="requestDialogOpen">
     <DialogContent class="max-h-[90vh] w-[calc(100vw-2rem)] max-w-5xl overflow-y-auto p-0" :showCloseButton="false">
       <DialogHeader class="flex flex-row items-center justify-between border-b p-5">

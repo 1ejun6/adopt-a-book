@@ -7,7 +7,7 @@ export const role = computed(() => auth.user?.role || 'guest');
 //@1ejun6 > name > matches route name in ~router/index.js~ > export lets other files import these shared values
 //export const homeRoute = computed(() => ({ name: role.value === 'admin' ? 'adminBooks' : 'guestHome' }));
 
-//@sree-sanjana06 > redirect each role to its respective homepage
+//@sree-sanjana06 > direct customers to their homepage when clicking the logo
 export const homeRoute = computed(() => ({
   name: role.value === 'admin'
     ? 'adminBooks'

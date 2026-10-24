@@ -37,21 +37,30 @@ const route = useRoute();
           <RouterLink :to="{ name: link.name }" @click="emit('navigate')">{{ link.label }}</RouterLink>
         </NavigationMenuLink>
       </NavigationMenuItem>
-      <!--@sree-sanjana06 > keep Logout next to My Account if an end-aligned link exists-->
+      
+      
+<!--@sree-sanjana06 > vertical separator between My Account and Logout-->
+<NavigationMenuItem
+  v-if="auth.ready && auth.user && links.some(link => link.name === 'customerAccount')"
+  class="px-1 text-muted-foreground"
+  aria-hidden="true">
+  |
+</NavigationMenuItem>
 
-      <!--@sree-sanjana06 > separator between My Account and Logout-->
-      <NavigationMenuItem
-        v-if="auth.ready && auth.user && links.some(link => link.name === 'customerAccount')"
-        class="px-1 text-muted-foreground"
-        aria-hidden="true">
-        |
-        </NavigationMenuItem>
-
-      <!--@sree-sanjana06 > keep Logout next to My Account-->
-      <NavigationMenuItem
+<!--@sree-sanjana06 > display Logout beside My Account while keeping existing logout functionality-->
+<NavigationMenuItem
   v-if="auth.ready && auth.user"
   :class="{ 'ml-auto': !links.some(link => link.end) }">
-  </NavigationMenuItem>
+
+  <button
+    type="button"
+    :class="navigationMenuTriggerStyle()"
+    :disabled="logoutLoading"
+    @click="emit('logout')">
+    Logout
+  </button>
+
+</NavigationMenuItem>
 
     </NavigationMenuList>
   </NavigationMenu>
