@@ -1,4 +1,5 @@
 <script setup>
+//!@1ejun6 > why are you loading watchlist? should it not be a post for watchlist?
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -38,7 +39,7 @@ async function fetchBooks() {
   loadError.value = '';
 
   try {
-    const response = await api('/books', {
+    const response = await api('/books', { //!@1ejun6 > where is method?
       query: {
         page: page.value,
         limit: pageSize,
@@ -75,7 +76,7 @@ async function fetchBooks() {
 async function loadWatchlist() {
   watchlistError.value = '';
   try {
-    const response = await api('/watchlist');
+    const response = await api('/watchlist'); //!@1ejun6 > where is method?
     watchlist.value = response.watchlist || [];
   } catch (error) {
     watchlistError.value = error.message;

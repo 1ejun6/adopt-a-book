@@ -54,7 +54,7 @@ async function saveNote() {
     const comments = note.value.trim();
 
     await api(`/watchlist/${id}`, {
-      method: 'PATCH',
+      method: 'PATCH', //@sree-sanjana06 > partial
       body: { comments }
     });
 
@@ -119,8 +119,7 @@ onMounted(loadWatchlist);
     </div>
 
     <!--@sree-sanjana06 > show empty state after removing the final saved book-->
-    <div v-else-if="watchlist.length === 0"
-      class="rounded-xl border bg-card p-8 text-center">
+    <div v-else-if="watchlist.length === 0" class="rounded-xl border bg-card p-8 text-center">
       <h2 class="font-heading text-2xl">Your shelf is waiting</h2>
       <p class="mt-2 text-sm text-muted-foreground">
         Save a book while browsing to find it here later.
@@ -129,19 +128,13 @@ onMounted(loadWatchlist);
 
     <!--@sree-sanjana06 > each card emits actions handled by this page-->
     <section v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-      <WatchlistBookCard v-for="entry in watchlist" :key="entry.id"
-        :entry="entry"
-        @preview="openPreview"
-        @edit="startEdit"
-        @remove="startRemove" />
+      <WatchlistBookCard v-for="entry in watchlist" :key="entry.id" :entry="entry" @preview="openPreview"
+        @edit="startEdit" @remove="startRemove" />
     </section>
 
     <!--@sree-sanjana06 > existing book details and adoption request popups-->
-    <CustomerBookDialogs ref="dialogs" :watchlist="watchlist"
-      manageWatchlist
-      @saved="watchlist = $event"
-      @edit="startEdit"
-      @remove="startRemove" />
+    <CustomerBookDialogs ref="dialogs" :watchlist="watchlist" manageWatchlist @saved="watchlist = $event"
+      @edit="startEdit" @remove="startRemove" />
 
     <!--@sree-sanjana06 > edit the saved note using existing Dialog UI-->
     <Dialog v-model:open="editOpen">
@@ -157,8 +150,7 @@ onMounted(loadWatchlist);
 
           <div class="space-y-2">
             <label for="edit-watchlist-note">Your note (optional)</label>
-            <textarea id="edit-watchlist-note" v-model="note"
-              maxlength="300" rows="4" :disabled="busy"
+            <textarea id="edit-watchlist-note" v-model="note" maxlength="300" rows="4" :disabled="busy"
               class="w-full rounded-lg border bg-background p-3 outline-none focus-visible:ring-2 focus-visible:ring-ring"></textarea>
             <p class="text-sm text-muted-foreground">
               Only visible to you · {{ note.length }}/300 characters
