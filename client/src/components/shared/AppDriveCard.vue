@@ -66,6 +66,6 @@ const meta = computed(() => {
       <span class="block text-sm text-muted-foreground">{{ meta }}</span>
     </span>
 
-    <HugeiconsIcon :icon="ArrowRight01Icon" class="shrink-0" aria-hidden="true" />
+    <HugeiconsIcon :icon="ArrowRight01Icon" aria-hidden="true" />
   </button>
 </template>

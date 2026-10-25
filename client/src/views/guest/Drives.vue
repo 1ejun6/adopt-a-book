@@ -15,6 +15,7 @@ const loadError = ref('');
 const filters = reactive({ search: '', status: 'all' });
 const selectedDrive = ref(null);
 const dialogOpen = ref(false);
+const noticeClass = 'space-y-2.5 rounded-lg border p-5 text-center';
 
 const statusTabs = [
   { value: 'all', label: 'All drives' },
@@ -104,13 +105,13 @@ onMounted(fetchDrives);
       </div>
     </div>
 
-    <div v-else-if="loadError" class="space-y-2.5 rounded-lg border p-5 text-center" role="alert">
+    <div v-else-if="loadError" :class="noticeClass" role="alert">
       <h2>We couldn't load the book drives</h2>
       <p class="text-sm text-muted-foreground">{{ loadError }}</p>
       <Button @click="fetchDrives">Try again</Button>
     </div>
 
-    <div v-else-if="!drives.length" class="space-y-2.5 rounded-lg border p-5 text-center">
+    <div v-else-if="!drives.length" :class="noticeClass">
       <h2>No book drives to show yet</h2>
       <p class="text-sm text-muted-foreground">
         Check back for future community events. You can still browse books in the meantime.
@@ -120,7 +121,7 @@ onMounted(fetchDrives);
       </Button>
     </div>
 
-    <div v-else-if="!visibleDrives.length" class="space-y-2.5 rounded-lg border p-5 text-center">
+    <div v-else-if="!visibleDrives.length" :class="noticeClass">
       <h2>No drives match your search</h2>
       <p class="text-sm text-muted-foreground">Try another status tab or search term</p>
       <Button variant="outline" @click="clearFilters">Clear filters</Button>

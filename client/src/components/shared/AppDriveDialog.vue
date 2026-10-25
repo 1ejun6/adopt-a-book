@@ -37,7 +37,7 @@ const fields = computed(() => {
         <dl class="grid gap-2.5 sm:grid-cols-[auto_minmax(0,1fr)]">
           <template v-for="field in fields" :key="field.label">
             <dt class="text-muted-foreground">{{ field.label }}</dt>
-            <dd class="min-w-0">{{ field.value || 'Not provided' }}</dd>
+            <dd>{{ field.value || 'Not provided' }}</dd>
           </template>
         </dl>
         <div class="space-y-2.5">
@@ -48,12 +48,12 @@ const fields = computed(() => {
       </div>
       <hr />
       <!--@brod > Guest RSVP. A customer page can replace this slot.-->
-      <DialogFooter class="flex-col">
+      <DialogFooter class="flex-col text-center">
         <slot name="actions" :drive="drive">
-          <Button v-if="drive.status === 'open'" asChild class="w-full">
+          <Button v-if="drive.status === 'open'" asChild>
             <RouterLink :to="{ name: 'register' }">Join to RSVP</RouterLink>
           </Button>
-          <p v-else class="text-center">
+          <p v-else>
             {{
               drive.status === 'cancelled'
                 ? 'This drive has been cancelled'
@@ -61,7 +61,7 @@ const fields = computed(() => {
             }}
           </p>
         </slot>
-        <p class="text-center text-xs text-muted-foreground">
+        <p class="text-xs text-muted-foreground">
           An RSVP helps organisers plan. It doesn't reserve a book.
         </p>
       </DialogFooter>
