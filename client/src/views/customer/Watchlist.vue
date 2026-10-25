@@ -36,7 +36,6 @@ async function loadWatchlist() {
 function openPreview(book) {
   dialogs.value?.openBookDetails(book);
 }
-
 //@sree-sanjana06 > open edit popup with existing private note
 function startEdit(entry) {
   editingEntry.value = entry;
@@ -44,7 +43,6 @@ function startEdit(entry) {
   actionError.value = '';
   editOpen.value = true;
 }
-
 //@sree-sanjana06 > update only the note on this watchlist entry
 async function saveNote() {
   if (!editingEntry.value || busy.value || note.value.length > 300) return;
