@@ -22,7 +22,7 @@ const cover = isbn => `https://covers.openlibrary.org/b/isbn/${encodeURIComponen
   <!--@ChitanyaBharathi > books in a row > bottom border is shelf-->
   <div class="grid grid-cols-5 gap-10 border-b-10">
     <div v-for="(book, index) in books" :key="book.title" :class="spineClasses[index]"
-      class="book-spine relative rounded-[6px] hover:-translate-y-2.5" role="button" tabindex="0"
+      class="book-spine relative rounded-[6px] hover:-translate-y-2.5" role="button"
       @click="selected = book" @keydown.enter="selected = book" @keydown.space.prevent="selected = book">
       <img :src="bookspine" alt="" width="80" height="280" class="w-full" />
       <!--@ChitanyaBharathi > title & author overlay spine between its binding lines-->
