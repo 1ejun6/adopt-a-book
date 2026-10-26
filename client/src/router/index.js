@@ -5,6 +5,8 @@ import AdminHome from '../views/admin/Home.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
 import AdminBookInventory from '../views/admin/BookInventory.vue';
+import AdminAdoptionApplications from '../views/admin/AdoptionApplications.vue';
+import AdminAppointments from '../views/admin/Appointments.vue';
 import { auth, role, homeRoute } from '@/lib/auth';
 import { loadSession } from '@/lib/session';
 import { toast } from 'vue-sonner';
@@ -35,6 +37,8 @@ const router = createRouter({
       children: [
         { path: '', name: 'adminHome', component: AdminHome, label: 'Home', roles: ['admin'] },
         { path: 'books', name: 'adminBooks', component: AdminBookInventory, label: 'Book Inventory', roles: ['admin'] },
+        { path: 'applications', name: 'adminApplications', component: AdminAdoptionApplications, label: 'Adoption Applications', roles: ['admin'] },
+        { path: 'appointments', name: 'adminAppointments', component: AdminAppointments, label: 'Appointments', roles: ['admin'] },
       ],
     },
   ],
