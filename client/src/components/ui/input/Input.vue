@@ -19,7 +19,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 
 <template>
   <input v-model="modelValue" data-slot="input" :class="cn(
-    'h-9 w-full min-w-0 rounded-lg border bg-background px-3 text-base placeholder:text-muted-foreground transition-colors hover:border-muted-foreground focus-visible:border-foreground md:text-sm',
+    'h-9 w-full min-w-0 rounded-lg border border-border bg-background px-3 text-base placeholder:textMutedForeground transition-colors hover:borderMutedForeground focus-visible:borderForeground md:text-sm',
     props.class,
   )
     " />
