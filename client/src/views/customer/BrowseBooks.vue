@@ -19,11 +19,11 @@ const loadError = ref('');
 const watchlistError = ref('');
 
 //@sree-sanjana06 > search, filter and sort values sent to backend
-const filters = reactive({ search: '', status: 'all', subject: '', sort: 'title' });
+const filters = reactive({ search: '', status: '', subject: '', sort: 'title' });
 
 //@sree-sanjana06 > pagination and saved-book lookup
 const page = ref(1);
-const pageSize = 12;
+const pageSize = 15;
 const total = ref(0);
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
 const savedIds = computed(() => new Set(
@@ -44,7 +44,7 @@ async function fetchBooks() {
         page: page.value,
         limit: pageSize,
         search: filters.search.trim(),
-        status: filters.status === 'all' ? undefined : filters.status,
+        status: 'available',
         subject: filters.subject.trim() || undefined,
         sort: filters.sort
       }
@@ -85,7 +85,7 @@ async function loadWatchlist() {
 
 //@sree-sanjana06 > reset all filters using the same reactive object
 function clearFilters() {
-  Object.assign(filters, { search: '', status: 'all', subject: '', sort: 'title' });
+  Object.assign(filters, { search: '', subject: '', sort: 'title' });
 }
 
 //@sree-sanjana06 > reset to page 1 when filters change, then fetch results
@@ -112,18 +112,9 @@ onMounted(loadWatchlist);
       </p>
     </header>
 
-    <!--@sree-sanjana06 > explain the book adoption journey-->
-    <section class="flex flex-wrap gap-3 text-sm text-muted-foreground">
-      <span v-for="step in ['Find a book', 'Request a copy', 'Arrange pickup after approval']"
-        :key="step" class="rounded-lg border p-3">
-        {{ step }}
-      </span>
-    </section>
-
     <!--@sree-sanjana06 > reusable customer filters built with AppToolbar-->
     <BrowseBookFilters
       v-model:search="filters.search"
-      v-model:status="filters.status"
       v-model:subject="filters.subject"
       v-model:sort="filters.sort"
       @clear="clearFilters"
