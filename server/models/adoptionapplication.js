@@ -23,7 +23,7 @@ async function one(query) {
   return mapapplication(data);
 }
 
-const selectwithrelations = "*, userid:users(id,name), bookid:books(id,title,authors,status,ownerid,condition,collectionarea,coverurl,mrtstationid,mrtstation:mrtstations(id,name,codes,lat,lng,selectable))";
+const selectwithrelations = (userfields = "id,name") => `*, userid:users(${userfields}), bookid:books(id,title,authors,status,ownerid,condition,collectionarea,coverurl,mrtstationid,mrtstation:mrtstations(id,name,codes,lat,lng,selectable))`;
 
 async function addadoptionapplication(value) {
   const validatedapplication = adoptionapplicationschema.parse(value);
@@ -32,11 +32,12 @@ async function addadoptionapplication(value) {
   return mapapplication(data);
 }
 
-const findbyid = (userid) => many(supabase.from("adoptionapplications").select(selectwithrelations).eq("userid", userid));
+const findbyid = (userid) => many(supabase.from("adoptionapplications").select(selectwithrelations()).eq("userid", userid));
 
-const findall = () => many(supabase.from("adoptionapplications").select(selectwithrelations));
+//@lee-hlmilk > admin list needs applicant email > customer queries retain their existing user fields
+const findall = () => many(supabase.from("adoptionapplications").select(selectwithrelations("id,name,email")));
 
-const findbyadoptionapplicationid = (id) => one(supabase.from("adoptionapplications").select(selectwithrelations).eq("id", id));
+const findbyadoptionapplicationid = (id) => one(supabase.from("adoptionapplications").select(selectwithrelations()).eq("id", id));
 
 const findbyuserbookwithstatuses = (userid, bookid, statuses) => one(supabase.from("adoptionapplications").select("*").eq("userid", userid).eq("bookid", bookid).in("status", statuses));
 
@@ -51,7 +52,7 @@ async function decideapplication(id, status, decidedby) {
 }
 
 
-const forbook = (bookid) => many(supabase.from("adoptionapplications").select(selectwithrelations).eq("bookid", bookid).order("createdat"));
+const forbook = (bookid) => many(supabase.from("adoptionapplications").select(selectwithrelations()).eq("bookid", bookid).order("createdat"));
 
 const ownerrequests = (ownerid) => many(supabase.from("adoptionapplications")
   .select("bookid,status,books!inner(ownerid)").eq("books.ownerid", ownerid).eq("status", "pending"));
