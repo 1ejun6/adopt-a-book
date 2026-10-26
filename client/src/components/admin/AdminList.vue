@@ -14,6 +14,7 @@ const props = defineProps({
   searchPlaceholder: { type: String, default: 'Search...' },
   loading: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
+  selectable: { type: Boolean, default: true },
   error: { type: String, default: '' },
   emptyTitle: { type: String, default: 'No matching rows' },
   emptyDescription: { type: String, default: 'Try another filter or search term.' },
@@ -42,7 +43,7 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
     </header>
 
     <AppFilters v-model:search="search" v-model:status="tab" :tabs="props.tabs" :counts="props.counts"
-      :searchPlaceholder="props.searchPlaceholder" :selectedRowCount="selectedIds.length">
+      :searchPlaceholder="props.searchPlaceholder" :selectedRowCount="props.selectable ? selectedIds.length : 0">
       <template v-if="$slots.tabs" #tabs="slotProps">
         <slot name="tabs" v-bind="slotProps" />
       </template>
@@ -59,7 +60,7 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
     </AppFilters>
 
     <AdminTable v-if="!props.error" :rows="props.rows" :columns="props.columns" :selectedIds="selectedIds"
-      :isLoading="props.loading" :emptyTitle="props.emptyTitle" :emptyDescription="props.emptyDescription"
+      :isLoading="props.loading" :selectable="props.selectable" :emptyTitle="props.emptyTitle" :emptyDescription="props.emptyDescription"
       @selectedRows="selectedIds = $event" @openRow="emit('openRow', $event)">
       <template v-for="name in tableSlots" #[name]="slotProps">
         <slot :name="name" v-bind="slotProps" />
