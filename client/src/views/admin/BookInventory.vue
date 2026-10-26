@@ -2,8 +2,8 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
+import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue'
-import AdminFormDialog from '@/components/admin/AdminFormDialog.vue'
 import BookFormDialog from '@/components/admin/BookFormDialog.vue'
 import BookDetailsDialog from '@/components/admin/BookDetailsDialog.vue'
 import BookIdentity from '@/components/shared/AppBookIdentity.vue'
@@ -19,14 +19,17 @@ const saving = ref(false);
 const stations = ref([]);
 //@lee-hlmilk > template ref gives access to form reset > draft fields stay inside BookFormDialog
 const bookFormDialog = ref(null);
+const importedIds = ref([]);
 const lookup = reactive({ query: '', books: [], loading: false, searched: false, error: '' });
 let lookupRequestId = 0;
 const selectedIds = ref([]);
 const selectedRow = computed(() => books.value.find(book => book.id === selectedIds.value[0]));
+const selectedBooks = computed(() => books.value.filter(book => selectedIds.value.includes(book.id)));
+const canSelect = computed(() => ['all', 'available'].includes(filters.status));
+const deleteBlocked = computed(() => selectedBooks.value.some(book => book.status !== 'available'));
+const { confirm } = useConfirmation();
 const loading = ref(false);
 const deleting = ref(false);
-const deleteOpen = ref(false);
-const pendingDeleteBooks = ref([]);
 let requestId = 0;
 const loadError = ref('');
 let bookRequestId = 0;
@@ -85,6 +88,7 @@ async function openAddBook() {
         await loadStations();
         if (id !== bookRequestId) { return; }
         editingBook.value = null;
+        importedIds.value = [];
         resetLookup();
         dialogOpen.value = false;
         formOpen.value = true;
@@ -158,6 +162,29 @@ async function saveBook(data, keepAdding) {
     finally { saving.value = false; }
 }
 
+//@lee-hlmilk > backend creates one copy per request > return successful result IDs so retry only includes failed books
+async function importBooks(booksToAdd) {
+    if (saving.value || !booksToAdd.length) { return; }
+    saving.value = true;
+    const completed = [];
+    const failures = [];
+    try {
+        for (const book of booksToAdd) {
+            try {
+                await api('/admin/books', { method: 'POST', body: book.data });
+                completed.push(book.id);
+            } catch (error) { failures.push(`${book.data.title}: ${error.message}`); }
+        }
+        importedIds.value = completed;
+        if (completed.length === booksToAdd.length) { formOpen.value = false; }
+        if (completed.length) {
+            toast.success(`${completed.length} ${completed.length === 1 ? 'book added' : 'books added'}`);
+            await fetchBooks();
+        }
+        if (failures.length) { toast.error(`${failures.length} ${failures.length === 1 ? 'book could' : 'books could'} not be added`, { description: failures.join('\n'), style: { whiteSpace: 'pre-line' } }); }
+    } finally { saving.value = false; }
+}
+
 //@lee-hlmilk > same display fields for inventory rows &&& saved details > raw metadata stays available
 function formatBook(book) {
     return {
@@ -208,21 +235,28 @@ async function fetchBooks() {
     }
 }
 
-//@lee-hlmilk > snapshot rows shown in confirmation > later selection changes must not change deletion targets
-function requestDeleteBooks() {
-    if (loading.value || deleting.value || !selectedIds.value.length) { return; }
-    pendingDeleteBooks.value = books.value.filter(book => selectedIds.value.includes(book.id));
-    deleteOpen.value = true;
-}
-
+//@lee-hlmilk > snapshot selected copies before deleting > retain available-only checks for single &&& bulk actions
 async function deleteBooks() {
-    const bookids = pendingDeleteBooks.value.map(book => book.id);
-    if (loading.value || deleting.value || !bookids.length) { return; }
-    const titles = pendingDeleteBooks.value.map(book => book.title);
+    const targets = [...selectedBooks.value];
+    const bookids = targets.map(book => book.id);
+    if (loading.value || deleting.value || !canSelect.value || !bookids.length) { return; }
+    if (deleteBlocked.value) {
+        toast.error('Only available books can be deleted.');
+        return;
+    }
+    const titles = targets.map(book => book.title);
+    if (!await confirm(`Delete ${targets.length === 1 ? 'book' : 'books'}?`, {
+        description: `Selected books and their related applications, appointments, and watchlist entries will be permanently deleted.\n${titles.join('\n')}`,
+        actionLabel: 'Delete', destructive: true
+    })) { return; }
+    if (loading.value || deleting.value || !canSelect.value) { return; }
+    if (targets.some(book => books.value.find(row => row.id === book.id)?.status !== 'available')) {
+        toast.error('Only available books can be deleted. Select the books again.');
+        return;
+    }
     deleting.value = true;
     try {
         const { deletedids = [] } = await api('/admin/books', { method: 'DELETE', body: { ids: bookids } });
-        deleteOpen.value = false;
         for (const id of deletedids) { bookDetails.delete(id); }
         await fetchBooks();
         toast.info(`${deletedids.length} deleted`, {
@@ -234,6 +268,7 @@ async function deleteBooks() {
 }
 
 watch(filters, () => {
+    selectedIds.value = [];
     if (page.value === 1) { fetchBooks(); }
     else { page.value = 1; }
 });
@@ -249,15 +284,15 @@ const statusTabs = [
 ];
 
 const columns = [
-    { key: 'book', label: 'Book' },
-    { key: 'isbn', label: 'ISBN' },
+    { key: 'book', label: 'Book', class: 'w-3/5' },
+    { key: 'isbn', label: 'ISBN', class: 'w-1/5' },
     { key: 'status', label: 'Status' }
 ];
 </script>
 <template>
     <AdminList title="Book Inventory" description="organisation copies and community listings from intake to handover"
         v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
-        :rows="books" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="deleting"
+        :rows="books" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="deleting" :selectable="canSelect"
         :error="loadError" searchPlaceholder="Search by Title, Author, ISBN..."
         emptyTitle="No books in this view" emptyDescription="Try another Status Tab, Genre, Search term"
         :pagination="{ itemLabel: 'books', total, pageSize, pageCount }" @openRow="openBook">
@@ -271,10 +306,11 @@ const columns = [
             </select>
         </template>
         <template #selectionActions="{ onlyOne }">
+            <p v-if="deleteBlocked" class="text-sm text-muted-foreground" role="status">Only available books can be deleted.</p>
             <!--@lee-hlmilk > open edit dialog for selected book-->
             <Button size="sm" class="bg-card" :disabled="!onlyOne || ['reserved', 'adopted'].includes(selectedRow?.status)"
                 @click="openEditBook(selectedRow)">Edit</Button>
-            <Button variant="destructive" size="sm" :disabled="deleting" @click="requestDeleteBooks">{{ deleting ?
+            <Button variant="destructive" size="sm" :disabled="loading || deleting || deleteBlocked" @click="deleteBooks">{{ deleting ?
                 'Deleting…' : 'Delete' }}</Button>
         </template>
         <template #cellBook="{ row }">
@@ -288,22 +324,8 @@ const columns = [
         </template>
     </AdminList>
     <BookDetailsDialog v-model:open="dialogOpen" :book="selectedBook" @edit="openEditBook" />
-    <!--@lee-hlmilk > reuse form shell for confirmation > footer supplies destructive submit action-->
-    <AdminFormDialog v-model:open="deleteOpen" :title="`Delete ${pendingDeleteBooks.length} ${pendingDeleteBooks.length === 1 ? 'book' : 'books'}?`"
-        description="Selected books and their related applications, appointments, and watchlist entries will be permanently deleted."
-        :submitting="deleting" @submit="deleteBooks">
-        <ul class="list-disc space-y-2.5 pl-5">
-            <li v-for="book in pendingDeleteBooks" :key="book.id">{{ book.title }}</li>
-        </ul>
-        <template #footer="{ requestClose }">
-            <Button type="button" variant="outline" :disabled="deleting" @click="requestClose">Cancel</Button>
-            <Button type="submit" variant="destructive" class="flex-1" :disabled="deleting">
-                {{ deleting ? 'Deleting…' : pendingDeleteBooks.length === 1 ? 'Delete book' : 'Delete books' }}
-            </Button>
-        </template>
-    </AdminFormDialog>
 
     <BookFormDialog ref="bookFormDialog" v-model:open="formOpen" v-model:query="lookup.query"
-        :book="editingBook" :stations="stations" :lookup="lookup" :submitting="saving"
-        @search="searchBooks" @select="cancelLookup" @submit="saveBook" />
+        :book="editingBook" :stations="stations" :lookup="lookup" :submitting="saving" :importedIds="importedIds"
+        @search="searchBooks" @select="cancelLookup" @submit="saveBook" @import="importBooks" />
 </template>

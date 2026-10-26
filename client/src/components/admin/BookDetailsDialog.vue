@@ -45,9 +45,9 @@ const fields = computed(() => {
             </DialogHeader>
             <hr>
             <div class="space-y-5">
-                <div class="flex flex-wrap items-center justify-between gap-5">
+                <div class="flex flex-wrap items-center justify-between gap-5 py-5">
                     <AppBookIdentity :title="currentBook.title" :author="currentBook.author" :cover="currentBook.cover"
-                        class="flex-1" />
+                        class="min-w-0 flex-1" />
                     <AppStatusBadge :status="currentBook.status" class="text-sm" />
                 </div>
                 <p class="whitespace-pre-line">{{ currentBook.description || 'No description recorded.' }}</p>
