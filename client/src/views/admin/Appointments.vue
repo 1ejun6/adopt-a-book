@@ -6,10 +6,9 @@ import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue';
 import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue';
 import BookIdentity from '@/components/shared/AppBookIdentity.vue';
+import AppDatePicker from '@/components/shared/AppDatePicker.vue';
 import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
 
 const appointments = ref([]);
 const selectedIds = ref([]);
@@ -186,13 +185,7 @@ fetchAppointments();
         :error="loadError" searchPlaceholder="Search by Customer, Email, Book, Location..."
         :pagination="{ itemLabel: 'appointments', total: filteredAppointments.length, pageSize, pageCount }" @openRow="openAppointment">
         <template #filters>
-            <!--@lee-hlmilk > relative wrapper anchors Clear > datetime-edit padding reserves text space beside Clear &&& the native picker-->
-            <div class="relative flex w-full sm:w-44">
-                <Input v-model="filters.date" type="date" aria-label="Collection date" class="h-auto flex-1 p-2.5 text-sm leading-4 [&::-webkit-datetime-edit]:pr-7" />
-                <button v-if="filters.date" type="button" class="absolute inset-y-0 right-8 flex w-7 items-center justify-center" aria-label="Clear collection date" @click="filters.date = ''">
-                    <HugeiconsIcon :icon="Cancel01Icon" class="size-4" aria-hidden="true" />
-                </button>
-            </div>
+            <AppDatePicker v-model="filters.date" label="Collection date" />
             <select v-model="filters.status" aria-label="Appointment status" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
                 <option value="all">All statuses</option>
                 <template v-if="filters.view === 'history'">

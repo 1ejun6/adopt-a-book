@@ -8,6 +8,7 @@ import AdminTable from '@/components/admin/AdminTable.vue';
 import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue';
 import DriveFormDialog from '@/components/admin/DriveFormDialog.vue';
 import BookIdentity from '@/components/shared/AppBookIdentity.vue';
+import AppDatePicker from '@/components/shared/AppDatePicker.vue';
 import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +29,7 @@ const filteredStationBooks = computed(() => {
     return stationBooks.rows.filter(book => [book.title, ...book.authors].join(' ').toLowerCase().includes(search));
 });
 const today = ref('');
-const filters = reactive({ search: '', view: 'upcoming', status: 'all' });
+const filters = reactive({ search: '', date: '', view: 'upcoming', status: 'all' });
 const page = ref(1);
 const pageSize = 15;
 const { confirm } = useConfirmation();
@@ -53,6 +54,7 @@ const counts = computed(() => ({ upcoming: drives.value.filter(drive => !isPastD
 const filteredDrives = computed(() => {
     const search = filters.search.trim().toLowerCase();
     return drives.value.filter(drive => (filters.view === 'past' ? isPastDrive(drive) : !isPastDrive(drive)) &&
+        (!filters.date || drive.eventdate === filters.date) &&
         (filters.status === 'all' || drive.status === filters.status) &&
         [drive.title, drive.location, drive.mrtstation?.name].filter(Boolean).join(' ').toLowerCase().includes(search)
     ).sort((a, b) => (filters.view === 'past' ? b.eventdate.localeCompare(a.eventdate) : a.eventdate.localeCompare(b.eventdate)) || a.id.localeCompare(b.id));
@@ -202,6 +204,7 @@ fetchDrives();
         :pagination="{ itemLabel: 'drives', total: filteredDrives.length, pageSize, pageCount }" @openRow="openDrive">
         <template #headerActions><Button :disabled="loading || saving" @click="openForm()">Create drive</Button></template>
         <template #filters>
+            <AppDatePicker v-model="filters.date" label="Event date" />
             <select v-model="filters.status" aria-label="Drive status" class="w-full rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
                 <option value="all">All statuses</option>
                 <option v-for="status in statusOptions" :key="status" :value="status">{{ status.charAt(0).toUpperCase() + status.slice(1) }}</option>
@@ -222,8 +225,8 @@ fetchDrives();
         <template #cellRegistrations="{ row }">{{ row.userids.length }} / {{ row.maxcapacity }}</template>
         <template #cellStatus="{ value }"><StatusBadge :status="value" /></template>
         <template #empty>
-            <h2>{{ filters.search.trim() || filters.status !== 'all' ? 'No matching drives' : filters.view === 'past' ? 'No past drives' : 'No upcoming drives' }}</h2>
-            <p class="text-sm text-muted-foreground">Try another status, search term, or view.</p>
+            <h2>{{ filters.search.trim() || filters.date || filters.status !== 'all' ? 'No matching drives' : filters.view === 'past' ? 'No past drives' : 'No upcoming drives' }}</h2>
+            <p class="text-sm text-muted-foreground">Try another date, status, search term, or view.</p>
         </template>
     </AdminList>
 
