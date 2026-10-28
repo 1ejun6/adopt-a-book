@@ -11,19 +11,22 @@ const props = defineProps({
     status: { type: String, default: '' },
     description: { type: String, default: '' },
     fields: { type: Array, default: () => [] },
+    fixedLayout: { type: Boolean, default: false },
     summaryClass: { type: null, default: null }
 });
 const emit = defineEmits(['update:open']);
 </script>
 
 <template>
+    <!--@lee-hlmilk > open is read from the view > update:open asks the view to store X ||| Escape ||| outside-click changes-->
     <Dialog :open="props.open" @update:open="emit('update:open', $event)">
-        <DialogContent :aria-describedby="undefined">
-            <DialogHeader>
+        <DialogContent :aria-describedby="undefined" :class="props.fixedLayout && 'flex flex-col overflow-hidden'">
+            <DialogHeader class="shrink-0">
                 <DialogTitle>{{ props.title }}</DialogTitle>
             </DialogHeader>
             <hr>
-            <div class="space-y-5">
+            <!--@lee-hlmilk > fixed layouts let a slotted table shrink &&& scroll while the header &&& actions stay visible-->
+            <div :class="props.fixedLayout ? 'flex min-h-0 flex-col gap-5' : 'space-y-5'">
                 <div v-if="props.book || props.status || $slots.summary" class="flex flex-wrap items-center justify-between gap-5" :class="props.summaryClass">
                     <!--@lee-hlmilk > book identity is optional > other records such as drives can supply their own summary-->
                     <slot name="summary">
@@ -35,9 +38,11 @@ const emit = defineEmits(['update:open']);
                 </div>
                 <p v-if="props.description" class="whitespace-pre-line">{{ props.description }}</p>
                 <dl v-if="props.fields.length" class="grid gap-2.5 sm:grid-cols-[auto_minmax(0,1fr)]">
+                    <!--@lee-hlmilk > mobile stacks labels above values > sm uses label/value columns with a shrinkable value track-->
                     <template v-for="field in props.fields" :key="field.label">
                         <dt class="text-muted-foreground">{{ field.label }}</dt>
-                        <dd class="min-w-0">{{ field.value || 'Not provided' }}</dd>
+                        <!--@lee-hlmilk > optional field slots keep related content such as location links with their value-->
+                        <dd class="min-w-0"><slot :name="`field-${field.key || field.label}`" :field="field">{{ field.value || 'Not provided' }}</slot></dd>
                     </template>
                 </dl>
                 <slot />
@@ -45,7 +50,7 @@ const emit = defineEmits(['update:open']);
             <!--@lee-hlmilk > read-only records omit actions > no empty footer ||| separator-->
             <template v-if="$slots.actions">
                 <hr>
-                <DialogFooter><slot name="actions" /></DialogFooter>
+                <DialogFooter class="shrink-0"><slot name="actions" /></DialogFooter>
             </template>
         </DialogContent>
     </Dialog>

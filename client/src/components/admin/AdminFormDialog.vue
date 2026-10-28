@@ -20,6 +20,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['submit']);
+//@lee-hlmilk > open proxies the parent's v-model > change it only after submitting &&& discard guards allow closing
 const open = defineModel('open', { type: Boolean, default: false });
 const { confirm, cancel } = useConfirmation();
 watch(open, isOpen => { if (!isOpen) { cancel(); } });
@@ -37,7 +38,7 @@ async function handleOpenChange(nextOpen) {
 
 <template>
   <Dialog :open="open" @update:open="handleOpenChange">
-    <DialogContent :class="props.contentClass" :showCloseButton="!submitting">
+    <DialogContent v-bind="props.description ? {} : { 'aria-describedby': undefined }" :class="props.contentClass" :showCloseButton="!submitting">
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
         <DialogDescription v-if="description">{{ description }}</DialogDescription>
@@ -50,10 +51,12 @@ async function handleOpenChange(nextOpen) {
         <slot name="top" />
 
         <!--@lee-hlmilk > main form wrapper > hidden when searching before draft selection-->
+        <!--@lee-hlmilk > forward the original submit event so forms can inspect controls &&& the clicked submitter-->
         <form v-if="!hideForm" :novalidate="props.noValidate" @submit.prevent="emit('submit', $event)">
           <slot />
           <hr v-if="props.showFooterSeparator">
           <DialogFooter>
+            <!--@lee-hlmilk > footer replaces default buttons > extraActions adds buttons while retaining the defaults-->
             <slot name="footer">
               <Button type="button" variant="outline" :disabled="submitting" @click="handleOpenChange(false)">
                 Cancel

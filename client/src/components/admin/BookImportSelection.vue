@@ -18,6 +18,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:query', 'search', 'select', 'manual', 'submit']);
 //@lee-hlmilk > form owns the shared draft > selection &&& locations survive switching import steps
+//@lee-hlmilk > toRefs keeps writes linked to props.draft > this intentionally edits BookFormDialog's draft, not saved API records
 const { selectedIds, addedIds, reviewBooks, reviewing, invalidIds } = toRefs(props.draft);
 //@lee-hlmilk > search results have no database ID > index identifies a result for this lookup only
 const results = computed(() => props.lookup.books.map((book, id) => ({ ...book, id })).filter(book => !addedIds.value.includes(book.id)));
@@ -82,6 +83,7 @@ watch(() => props.importedIds, ids => {
 
 <template>
     <form class="flex min-h-0 min-w-0 flex-col gap-5" novalidate @submit.prevent="reviewing ? submitBooks($event) : emit('search')">
+        <!--@lee-hlmilk > contents removes the fieldset layout box > disabled still applies to controls while the table can shrink-->
         <fieldset :disabled="props.submitting" class="contents">
             <div class="flex flex-wrap items-center justify-between gap-2.5">
                 <h2>{{ reviewing ? 'Choose collection locations' : 'Find on Open Library' }}</h2>
@@ -91,16 +93,12 @@ watch(() => props.importedIds, ids => {
             <Field v-else>
                 <FieldLabel for="book-search">Search by title, author or ISBN</FieldLabel>
                 <div class="flex items-center gap-2.5">
-                    <Input id="book-search" :modelValue="props.query" type="search" class="min-w-0 flex-1"
+                    <Input id="book-search" :modelValue="props.query" type="search" class="flex-1"
                         @update:modelValue="emit('update:query', $event)" />
                     <Button type="submit" class="shrink-0" :disabled="props.lookup.loading || !props.query.trim()">{{ props.lookup.loading ? 'Searching…' : 'Search' }}</Button>
                 </div>
             </Field>
             <p v-if="props.lookup.loading" role="status">Searching Open Library…</p>
-            <div v-else-if="props.lookup.error" class="space-y-2.5" role="alert">
-                <p>{{ props.lookup.error }}</p>
-                <Button type="button" variant="outline" @click="emit('search')">Retry</Button>
-            </div>
             <template v-else-if="props.lookup.searched">
                 <div class="flex items-center justify-between gap-2.5">
                     <p role="status">{{ reviewing ? `${reviewBooks.length} books to add` : `${results.length} results · ${selectedIds.length} selected` }}</p>
@@ -118,6 +116,7 @@ watch(() => props.importedIds, ids => {
                         <template #headerMrtstationid="{ column }">{{ column.label }} <span class="text-destructive" aria-hidden="true">*</span></template>
                         <template #headerActions><span class="sr-only">Actions</span></template>
                         <template #cellMrtstationid="{ row }">
+                            <!--@lee-hlmilk > review rows are draft copies > this native v-model stores each copy's station before submission-->
                             <select v-model="row.mrtstationid" required :aria-label="`MRT station for ${row.title}`"
                                 :aria-invalid="invalidIds.includes(row.id)" class="h-9 w-full min-w-44 rounded-lg border bg-background px-3 text-sm"
                                 @change="invalidIds = invalidIds.filter(id => id !== row.id)">
@@ -136,7 +135,7 @@ watch(() => props.importedIds, ids => {
             </template>
             <div v-if="reviewing" class="flex items-center justify-between gap-2.5">
                 <Button type="button" variant="outline" @click="reviewing = false">Back to results</Button>
-                <Button type="submit" class="ml-auto" :disabled="!canImport">{{ props.submitting ? 'Adding…' : `Add ${reviewBooks.length} ${reviewBooks.length === 1 ? 'book' : 'books'}` }}</Button>
+                <Button type="submit" :disabled="!canImport">{{ props.submitting ? 'Adding…' : `Add ${reviewBooks.length} ${reviewBooks.length === 1 ? 'book' : 'books'}` }}</Button>
             </div>
         </fieldset>
     </form>

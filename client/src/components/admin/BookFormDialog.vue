@@ -16,6 +16,7 @@ const props = defineProps({
     submitting: { type: Boolean, default: false },
     importedIds: { type: Array, default: () => [] }
 });
+//@lee-hlmilk > open &&& query sync with inventory > bookForm &&& importDraft remain local drafts until submit
 const open = defineModel('open', { type: Boolean, default: false });
 const query = defineModel('query', { type: String, default: '' });
 const emit = defineEmits(['submit', 'search', 'select', 'import']);
@@ -120,16 +121,17 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
 </script>
 <template>
     <!--@lee-hlmilk > edit book dialog form-->
+    <!--@lee-hlmilk > import mode constrains height with flex &&& min-h-0 > its table scrolls instead of the whole dialog-->
     <AdminFormDialog v-model:open="open" :title="props.book ? 'Edit book' : 'Add book'"
         :description="props.book ? '' : 'Add a record for a physical copy received. Review the metadata before saving.'"
-        :submitLabel="props.book ? 'Save changes' : 'Add book'"
-        :submittingLabel="props.book ? 'Saving…' : 'Adding…'"
+        submitLabel="Add book" submittingLabel="Adding…"
         :contentClass="!props.book && addMode === 'search' ? 'max-w-5xl flex flex-col overflow-hidden' : null"
         :bodyClass="!props.book && addMode === 'search' ? 'flex min-h-0 flex-col' : null"
         :hideForm="!props.book && addMode === 'search'"
         :showFooterSeparator="!props.book"
         :submitting="props.submitting" :dirty="isFormDirty" noValidate @submit="submitBook">
         <template v-if="!props.book" #top>
+            <!--@lee-hlmilk > relay query updates &&& lookup actions > import submission becomes the view's import event-->
             <BookImportSelection v-if="addMode === 'search'" v-model:query="query" :lookup="props.lookup" :draft="importDraft"
                 :stations="props.stations" :submitting="props.submitting" :importedIds="props.importedIds"
                 @search="emit('search')" @select="emit('select')" @manual="enterManually" @submit="emit('import', $event)" />
@@ -144,6 +146,7 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
             <p class="text-muted-foreground"><span class="text-destructive" aria-hidden="true">*</span> Required</p>
             <StatusBadge v-if="props.book" :status="props.book.status" />
         </div>
+        <!--@lee-hlmilk > grid gap separates fields > Field supplies label/control spacing > wide fields span both sm columns-->
         <div class="grid gap-5 sm:grid-cols-2">
             <Field class="sm:col-span-2">
                 <FieldLabel for="edit-title">Title <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>

@@ -8,6 +8,7 @@ import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
 const props = defineProps({
   rows: { type: Array },
   columns: { type: Array },
+  compact: { type: Boolean, default: false },
   selectedIds: { type: Array, default: () => [] },
   selectable: { type: Boolean, default: true },
   selectionColumn: { type: Boolean, default: true },
@@ -19,6 +20,7 @@ const props = defineProps({
 
 const emit = defineEmits(['selectedRows', 'openRow']);
 
+//@lee-hlmilk > selectedIds is parent-owned > emit a replacement array instead of changing the prop
 const selectedIds = computed(() => new Set(props.selectedIds));
 function rowSelected(rowId) { return selectedIds.value.has(rowId); }
 
@@ -68,7 +70,7 @@ function handleRowClick(row) {
     </div>
 
     <!--@lee-hlmilk > table rows-->
-    <Table v-else-if="rows.length > 0">
+    <Table v-else-if="rows.length > 0" :compact="props.compact">
       <TableHeader class="bg-primary">
         <TableRow>
           <!--@lee-hlmilk > select all visible rows-->
@@ -95,6 +97,7 @@ function handleRowClick(row) {
           </TableCell>
 
           <TableCell v-for="column in columns" :key="column.key" :class="['truncate', column.class]">
+            <!--@lee-hlmilk > column classes size cells > row &&& value let each caller render its own content-->
             <slot :name="`cell${column.key[0].toUpperCase()}${column.key.slice(1)}`" :row="row"
               :value="row[column.key]">
               {{ row[column.key] }}

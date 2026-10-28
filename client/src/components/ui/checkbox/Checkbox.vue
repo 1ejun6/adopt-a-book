@@ -20,6 +20,7 @@ const props = defineProps({
 });
 
 const emits = defineEmits(['update:modelValue']);
+//@lee-hlmilk > forward modelValue &&& update:modelValue to Reka > keep class separate so cn merges caller styling
 const delegatedProps = reactiveOmit(props, 'class');
 const forwarded = useForwardPropsEmits(delegatedProps, emits);
 
@@ -34,6 +35,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
   )
     ">
     <CheckboxIndicator data-slot="checkbox-indicator" class="grid place-content-center">
+      <!--@lee-hlmilk > expose Reka's state to a custom indicator slot > the default slot renders dash ||| tick-->
       <slot v-bind="slotProps">
         <!--@lee-hlmilk > added dash for partial selection & render tick through hugeiconsicon > shared checkbox handles both symbols so table does not repeat indicator markup-->
         <HugeiconsIcon v-if="slotProps.state === 'indeterminate'" :icon="MinusSignIcon" class="size-3.5"

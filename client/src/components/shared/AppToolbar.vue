@@ -6,6 +6,7 @@ const props = defineProps({
     selectedRowCount: { type: Number, default: 0 }
 });
 
+//@lee-hlmilk > Input's modelValue updates this search model > update:search travels back through AppFilters to the view
 const search = defineModel('search', { type: String, default: '' });
 </script>
 
@@ -14,6 +15,7 @@ const search = defineModel('search', { type: String, default: '' });
         <slot name="tabs" />
 
         <!--@lee-hlmilk > search & page filters-->
+        <!--@lee-hlmilk > stack controls on mobile > sm puts search &&& filters in one row > matching padding/leading aligns their heights-->
         <div class="flex flex-col gap-2.5 sm:flex-row">
             <Input type="search" v-model="search" class="h-auto flex-1 p-2.5 text-sm leading-4" :placeholder="props.searchPlaceholder" />
             <div v-if="$slots.filters || $slots.actions" class="flex flex-wrap gap-2.5">

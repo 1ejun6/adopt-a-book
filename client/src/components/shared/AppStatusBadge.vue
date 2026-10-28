@@ -3,8 +3,7 @@ import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 
 const props = defineProps({
-  status: { type: String, required: true },
-  variant: { type: String }
+  status: { type: String, required: true }
 });
 
 //@lee-hlmilk > shorten appointment labels for display > keep API statuses unchanged
@@ -24,6 +23,7 @@ const badgeColour = computed(() => {
 <template>
   <!--@lee-hlmilk > automated status styling-->
   <Badge :variant="badgeColour" :data-status="status">
+    <!--@lee-hlmilk > supplied slot content replaces the label, eg. tab counts > colour &&& data-status still use the record status-->
     <slot>{{ statusLabel }}</slot>
   </Badge>
 </template>

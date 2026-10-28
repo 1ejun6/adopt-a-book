@@ -12,6 +12,7 @@ const props = defineProps({
 });
 
 const coverFailed = ref(false);
+//@lee-hlmilk > reset the image fallback when a reused row receives a different cover URL
 watch(() => props.cover, () => { coverFailed.value = false; });
 </script>
 
@@ -29,6 +30,7 @@ watch(() => props.cover, () => { coverFailed.value = false; });
     </div>
 
     <!--@lee-hlmilk > book cover  title & author-->
+    <!--@lee-hlmilk > min-w-0 allows text to shrink &&& truncate inside fixed table columns > shrink-0 protects the cover-->
     <div v-else class="flex w-full min-w-0 items-center gap-2.5">
         <div :class="props.coverClass" class="grid place-items-center shrink-0 aspect-[2/3] rounded-lg">
             <img v-if="props.cover && !coverFailed" :key="props.cover" :src="props.cover" alt="" width="48" height="72"

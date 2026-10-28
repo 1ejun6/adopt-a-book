@@ -37,7 +37,7 @@ const stations = ref([]);
 //@lee-hlmilk > template ref gives access to form reset > draft fields stay inside BookFormDialog
 const bookFormDialog = ref(null);
 const importedIds = ref([]);
-const lookup = reactive({ query: '', books: [], loading: false, searched: false, error: '' });
+const lookup = reactive({ query: '', books: [], loading: false, searched: false });
 let lookupRequestId = 0;
 const selectedIds = ref([]);
 const selectedRow = computed(() => books.value.find(book => book.id === selectedIds.value[0]));
@@ -119,14 +119,16 @@ async function searchBooks() {
     const query = lookup.query.trim();
     if (!query || lookup.loading || saving.value) { return; }
     const id = ++lookupRequestId;
-    Object.assign(lookup, { loading: true, error: '', searched: false, books: [] });
+    Object.assign(lookup, { loading: true, searched: false, books: [] });
     try {
         const response = await api('/admin/open-library', { query: { q: query } });
         if (id !== lookupRequestId) { return; }
         lookup.books = response.books;
         lookup.searched = true;
     } catch (error) {
-        if (id === lookupRequestId) { lookup.error = error.message; }
+        if (id === lookupRequestId) {
+            toast.error(error.message);
+        }
     } finally {
         if (id === lookupRequestId) { lookup.loading = false; }
     }
@@ -137,7 +139,7 @@ function cancelLookup() { lookupRequestId++; lookup.loading = false; }
 
 function resetLookup() {
     cancelLookup();
-    Object.assign(lookup, { query: '', books: [], searched: false, error: '' });
+    Object.assign(lookup, { query: '', books: [], searched: false });
 }
 
 //@lee-hlmilk > load full book details &&& mrt stations before opening edit dialog
@@ -274,7 +276,6 @@ async function deleteBooks() {
     deleting.value = true;
     try {
         const { deletedids = [] } = await api('/admin/books', { method: 'DELETE', body: { ids: bookids } });
-        for (const id of deletedids) { bookDetails.delete(id); }
         await fetchBooks();
         toast.info(`${deletedids.length} deleted`, {
             description: titles.map((title, index) => `${index + 1}. ${title}`).join('\n'),
@@ -307,6 +308,7 @@ const columns = [
 ];
 </script>
 <template>
+    <!--@lee-hlmilk > list models update this view's filters &&& selection &&& page > watchers fetch the matching server page-->
     <AdminList title="Book Inventory" description="Manage book records and track their availability."
         v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="books" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="deleting" :selectable="canSelect"
@@ -340,6 +342,7 @@ const columns = [
             <StatusBadge :status="value" />
         </template>
     </AdminList>
+    <!--@lee-hlmilk > summaryClass adds padding only to the book summary > the shared dialog supplies the outer padding-->
     <AdminDetailsDialog v-if="selectedBook" :open="dialogOpen" title="Book details" :book="selectedBook"
         :status="selectedBook.status" :fields="bookFields" :description="selectedBook.description || 'No description recorded.'"
         summaryClass="py-5" @update:open="dialogOpen = $event">
@@ -349,6 +352,7 @@ const columns = [
         </template>
     </AdminDetailsDialog>
 
+    <!--@lee-hlmilk > models sync visibility &&& query text > props carry results &&& save state > events request API work-->
     <BookFormDialog ref="bookFormDialog" v-model:open="formOpen" v-model:query="lookup.query"
         :book="editingBook" :stations="stations" :lookup="lookup" :submitting="saving" :importedIds="importedIds"
         @search="searchBooks" @select="cancelLookup" @submit="saveBook" @import="importBooks" />

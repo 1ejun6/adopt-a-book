@@ -12,6 +12,7 @@ export function useConfirmation() {
     const { id, resolve } = pending;
     pending = null;
     toast.dismiss(id);
+    //@lee-hlmilk > resolve the caller's awaited choice > closing the toast does not perform the API action itself
     resolve(confirmed);
   }
 

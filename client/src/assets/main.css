@@ -69,6 +69,7 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 0.5;
 }
 
+/*@lee-hlmilk > forms supply invalid attributes > one shared rule colours invalid borders without per-field red utilities */
 :is([aria-invalid='true'], [data-invalid='true']) {
   border-color: var(--destructive);
 }

@@ -137,6 +137,7 @@ fetchApplications();
 </script>
 
 <template>
+    <!--@lee-hlmilk > AdminList updates view-owned models > visibleApplications already contains the locally filtered page-->
     <AdminList title="Adoption applications" description="Review requests for organisation copies. Approval reserves the copy for collection."
         v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="visibleApplications" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="saving"
@@ -163,7 +164,7 @@ fetchApplications();
         <template #cellBook="{ row }">
             <BookIdentity :title="row.bookid?.title || 'Untitled'" :author="row.bookid?.authors?.join(', ') || 'Unknown Author'" :cover="row.bookid?.coverurl" />
         </template>
-        <template #cellSubmitted="{ row }"><span class="whitespace-nowrap text-sm">{{ formatDate(row.createdat) }}</span></template>
+        <template #cellSubmitted="{ row }">{{ formatDate(row.createdat) }}</template>
         <template #cellStatus="{ value }"><StatusBadge :status="value" /></template>
         <template #empty>
             <h2>{{ pendingEmpty ? 'No pending applications' : filters.search.trim() ? 'No matching applications' : 'No applications in this view' }}</h2>
@@ -171,11 +172,6 @@ fetchApplications();
             <Button v-if="pendingEmpty" variant="outline" class="mt-2.5" @click="filters.status = 'all'">View all applications</Button>
         </template>
     </AdminList>
-    <!--@lee-hlmilk > AdminList hides the table on failure > keep retry visible without relying on the toast-->
-    <div v-if="loadError" class="mx-auto mt-5 max-w-7xl space-y-2.5 rounded-lg border p-5" role="alert">
-        <p>{{ loadError }}</p>
-        <Button variant="outline" :disabled="loading" @click="fetchApplications">Retry</Button>
-    </div>
 
     <AdminDetailsDialog v-if="selectedApplication" :open="detailsOpen" title="Application details"
         :book="selectedApplication.bookid" :status="selectedApplication.status" :fields="applicationFields" @update:open="detailsOpen = $event">
@@ -184,9 +180,10 @@ fetchApplications();
             <p class="text-muted-foreground">Reason</p>
             <p>No reason stated.</p>
         </div>
-        <p v-if="selectedApplication.status === 'pending' && detailsHint" class="text-sm text-muted-foreground">{{ detailsHint }}</p>
+        <p v-if="selectedApplication.status === 'pending' && detailsHint" class="text-muted-foreground">{{ detailsHint }}</p>
         <!--@lee-hlmilk > reviewed applications are read-only > decision actions remain available only for pending requests-->
         <template v-if="selectedApplication.status === 'pending'" #actions>
+            <!--@lee-hlmilk > both flex-1 buttons share the footer width > pass one record to the same bulk-capable action-->
             <Button type="button" variant="destructive" class="flex-1" :disabled="!!detailsHint" @click="decideApplications('rejected', [selectedApplication])">Reject</Button>
             <Button type="button" class="flex-1" :disabled="!!detailsHint" @click="decideApplications('approved', [selectedApplication])">Approve</Button>
         </template>

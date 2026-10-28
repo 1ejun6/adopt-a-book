@@ -22,6 +22,7 @@ const props = defineProps({
 });
 
 //@lee-hlmilk > view owns requests &&& state > models pass toolbar &&& table changes back to it
+//@lee-hlmilk > each named model pairs its prop with update:name > assignments update the view's v-model binding
 const search = defineModel('search', { type: String, default: '' });
 const tab = defineModel('tab', { type: String, default: 'all' });
 const selectedIds = defineModel('selectedIds', { type: Array, default: () => [] });
@@ -33,6 +34,7 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
 </script>
 
 <template>
+  <!--@lee-hlmilk > AppLayout owns page padding > this shell only centres &&& limits width &&& spaces sections-->
   <main class="mx-auto min-w-0 w-full max-w-7xl space-y-5">
     <header class="flex flex-wrap items-center justify-between gap-5">
       <div class="min-w-0">
@@ -62,6 +64,7 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
     <AdminTable v-if="!props.error" :rows="props.rows" :columns="props.columns" :selectedIds="selectedIds"
       :isLoading="props.loading" :selectable="props.selectable" :emptyTitle="props.emptyTitle" :emptyDescription="props.emptyDescription"
       @selectedRows="selectedIds = $event" @openRow="emit('openRow', $event)">
+      <!--@lee-hlmilk > scoped slot props come from AdminTable > pass row &&& value through to the view's cell slots-->
       <template v-for="name in tableSlots" #[name]="slotProps">
         <slot :name="name" v-bind="slotProps" />
       </template>

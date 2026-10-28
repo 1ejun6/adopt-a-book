@@ -178,6 +178,7 @@ fetchAppointments();
 </script>
 
 <template>
+    <!--@lee-hlmilk > list models update local filters &&& page > History disables selection while keeping record details available-->
     <AdminList title="Appointments" description="Manage appointments and book collections."
         v-model:search="filters.search" v-model:tab="filters.view" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="visibleAppointments" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving"
@@ -185,6 +186,7 @@ fetchAppointments();
         :error="loadError" searchPlaceholder="Search by Customer, Email, Book, Location..."
         :pagination="{ itemLabel: 'appointments', total: filteredAppointments.length, pageSize, pageCount }" @openRow="openAppointment">
         <template #filters>
+            <!--@lee-hlmilk > relative wrapper anchors Clear > datetime-edit padding reserves text space beside Clear &&& the native picker-->
             <div class="relative flex w-full sm:w-44">
                 <Input v-model="filters.date" type="date" aria-label="Collection date" class="h-auto flex-1 p-2.5 text-sm leading-4 [&::-webkit-datetime-edit]:pr-7" />
                 <button v-if="filters.date" type="button" class="absolute inset-y-0 right-8 flex w-7 items-center justify-center" aria-label="Clear collection date" @click="filters.date = ''">
@@ -228,10 +230,6 @@ fetchAppointments();
             <p class="text-sm text-muted-foreground">{{ hasFilters ? 'Try another search term, date, status, or view.' : 'Pickup bookings will appear in their corresponding view.' }}</p>
         </template>
     </AdminList>
-    <div v-if="loadError" class="mx-auto mt-5 max-w-7xl space-y-2.5 rounded-lg border p-5" role="alert">
-        <p>{{ loadError }}</p>
-        <Button variant="outline" :disabled="loading" @click="fetchAppointments">Retry</Button>
-    </div>
 
     <AdminDetailsDialog v-if="selectedAppointment" :open="detailsOpen" title="Appointment details"
         :book="{ ...selectedAppointment.book, title: selectedAppointment.booktitle }" :status="selectedAppointment.status"
