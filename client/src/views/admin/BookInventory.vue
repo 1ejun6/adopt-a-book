@@ -5,13 +5,30 @@ import { api } from '@/lib/api';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue'
 import BookFormDialog from '@/components/admin/BookFormDialog.vue'
-import BookDetailsDialog from '@/components/admin/BookDetailsDialog.vue'
+import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue'
 import BookIdentity from '@/components/shared/AppBookIdentity.vue'
 import StatusBadge from '@/components/shared/AppStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 
 const books = ref([]);
 const selectedBook = ref(null);
+//@1ejun6 > admin view shows book metadata > missing values stay visible instead of hiding rows
+const bookFields = computed(() => {
+    const book = selectedBook.value;
+    if (!book) { return []; }
+    return [
+        { label: 'Title', value: book.title },
+        { label: 'Authors', value: book.authors?.join(', ') || book.author },
+        { label: 'Condition', value: book.condition },
+        { label: 'Collection area', value: book.collectionarea || book.mrtstation?.name },
+        { label: 'Subjects', value: book.subjects?.join(', ') },
+        { label: 'ISBN', value: book.isbn },
+        { label: 'First publication', value: book.publicationyear },
+        { label: 'Open Library ID', value: book.openlibraryid },
+        { label: 'Source', value: book.source === 'open_library' ? 'Open Library' : book.source },
+        { label: 'Updated at', value: book.updatedat ? new Date(book.updatedat).toLocaleString('en-SG', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Singapore' }) : null }
+    ];
+});
 const dialogOpen = ref(false);
 const formOpen = ref(false);
 const editingBook = ref(null);
@@ -323,7 +340,14 @@ const columns = [
             <StatusBadge :status="value" />
         </template>
     </AdminList>
-    <BookDetailsDialog v-model:open="dialogOpen" :book="selectedBook" @edit="openEditBook" />
+    <AdminDetailsDialog v-if="selectedBook" :open="dialogOpen" title="Book details" :book="selectedBook"
+        :status="selectedBook.status" :fields="bookFields" :description="selectedBook.description || 'No description recorded.'"
+        summaryClass="py-5" @update:open="dialogOpen = $event">
+        <template #actions>
+            <!--@lee-hlmilk > reserved &&& adopted copies cannot be edited > availability follows approval &&& collection-->
+            <Button type="button" class="w-full" :disabled="['reserved', 'adopted'].includes(selectedBook.status)" @click="openEditBook(selectedBook)">Edit</Button>
+        </template>
+    </AdminDetailsDialog>
 
     <BookFormDialog ref="bookFormDialog" v-model:open="formOpen" v-model:query="lookup.query"
         :book="editingBook" :stations="stations" :lookup="lookup" :submitting="saving" :importedIds="importedIds"

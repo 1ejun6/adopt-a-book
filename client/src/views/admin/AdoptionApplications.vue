@@ -4,7 +4,7 @@ import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue';
-import ApplicationDetailsDialog from '@/components/admin/ApplicationDetailsDialog.vue';
+import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue';
 import BookIdentity from '@/components/shared/AppBookIdentity.vue';
 import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,14 @@ import { Button } from '@/components/ui/button';
 const applications = ref([]);
 const selectedIds = ref([]);
 const selectedApplication = ref(null);
+//@lee-hlmilk > page supplies record-specific details > the shared dialog owns their layout
+const applicationFields = computed(() => [
+    { label: 'Applicant', value: selectedApplication.value?.userid?.name },
+    { label: 'Email', value: selectedApplication.value?.userid?.email },
+    { label: 'Submitted', value: selectedApplication.value?.createdat ? new Date(selectedApplication.value.createdat).toLocaleString('en-SG', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Singapore' }) : null },
+    { label: 'Collection area', value: selectedApplication.value?.bookid?.collectionarea }
+]);
+const detailsHint = computed(() => selectedApplication.value ? decisionHint([selectedApplication.value]) : '');
 const detailsOpen = ref(false);
 const loading = ref(false);
 const saving = ref(false);
@@ -169,7 +177,18 @@ fetchApplications();
         <Button variant="outline" :disabled="loading" @click="fetchApplications">Retry</Button>
     </div>
 
-    <ApplicationDetailsDialog :open="detailsOpen" :application="selectedApplication"
-        :decisionHint="selectedApplication ? decisionHint([selectedApplication]) : ''"
-        @update:open="detailsOpen = $event" @decide="decideApplications($event, [selectedApplication])" />
+    <AdminDetailsDialog v-if="selectedApplication" :open="detailsOpen" title="Application details"
+        :book="selectedApplication.bookid" :status="selectedApplication.status" :fields="applicationFields" @update:open="detailsOpen = $event">
+        <!--@lee-hlmilk > customer reasons are not supplied by the API yet > show the agreed empty placeholder-->
+        <div class="space-y-2.5">
+            <p class="text-muted-foreground">Reason</p>
+            <p>No reason stated.</p>
+        </div>
+        <p v-if="selectedApplication.status === 'pending' && detailsHint" class="text-sm text-muted-foreground">{{ detailsHint }}</p>
+        <!--@lee-hlmilk > reviewed applications are read-only > decision actions remain available only for pending requests-->
+        <template v-if="selectedApplication.status === 'pending'" #actions>
+            <Button type="button" variant="destructive" class="flex-1" :disabled="!!detailsHint" @click="decideApplications('rejected', [selectedApplication])">Reject</Button>
+            <Button type="button" class="flex-1" :disabled="!!detailsHint" @click="decideApplications('approved', [selectedApplication])">Approve</Button>
+        </template>
+    </AdminDetailsDialog>
 </template>
