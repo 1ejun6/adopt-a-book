@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 import AppStatusBadge from '@/components/shared/AppStatusBadge.vue';
@@ -38,10 +38,9 @@ const fields = computed(() => {
 
 <template>
     <Dialog v-model:open="open">
-        <DialogContent v-if="book">
+        <DialogContent v-if="book" :aria-describedby="undefined">
             <DialogHeader>
                 <DialogTitle>Book details</DialogTitle>
-                <DialogDescription>details for the selected inventory book</DialogDescription>
             </DialogHeader>
             <hr>
             <div class="space-y-5">

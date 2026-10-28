@@ -290,7 +290,7 @@ const columns = [
 ];
 </script>
 <template>
-    <AdminList title="Book Inventory" description="organisation copies and community listings from intake to handover"
+    <AdminList title="Book Inventory" description="Manage book records and track their availability."
         v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="books" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="deleting" :selectable="canSelect"
         :error="loadError" searchPlaceholder="Search by Title, Author, ISBN..."

@@ -121,7 +121,7 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
 <template>
     <!--@lee-hlmilk > edit book dialog form-->
     <AdminFormDialog v-model:open="open" :title="props.book ? 'Edit book' : 'Add book'"
-        :description="props.book ? 'Availability follows approvals and collection.' : 'Add a record for a physical copy received. Review the metadata before saving.'"
+        :description="props.book ? '' : 'Add a record for a physical copy received. Review the metadata before saving.'"
         :submitLabel="props.book ? 'Save changes' : 'Add book'"
         :submittingLabel="props.book ? 'Saving…' : 'Adding…'"
         :contentClass="!props.book && addMode === 'search' ? 'max-w-5xl flex flex-col overflow-hidden' : null"
@@ -133,7 +133,6 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
             <BookImportSelection v-if="addMode === 'search'" v-model:query="query" :lookup="props.lookup" :draft="importDraft"
                 :stations="props.stations" :submitting="props.submitting" :importedIds="props.importedIds"
                 @search="emit('search')" @select="emit('select')" @manual="enterManually" @submit="emit('import', $event)" />
-            <p v-else class="text-muted-foreground">Enter the book details below.</p>
         </template>
         <template v-if="!props.book" #extraActions>
             <Button type="submit" value="continue" variant="outline" :disabled="props.submitting">Add and continue</Button>
