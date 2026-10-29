@@ -71,7 +71,7 @@ function getAuthors(book) {
     </div>
 
     <!--@sree-sanjana06 > shared subject display-->
-    <div class="flex min-h-5 items-center gap-2.5">
+    <div class="h-5 min-w-0">
       <span v-if="book.subjects?.length"
         class="text-xs text-muted-foreground">
         {{ book.subjects[0] }}
@@ -79,16 +79,21 @@ function getAuthors(book) {
     </div>
 
     <!--@sree-sanjana06 > consistent space for book description-->
-    <div class="h-[3.75rem] overflow-hidden">
+    <div class="h-[3.75rem]">
       <p v-if="book.description"
         class="line-clamp-3 text-sm text-muted-foreground">
         {{ book.description }}
       </p>
+
+      <p v-else class="text-sm text-muted-foreground italic">
+        No description available.
+    </p>
     </div>
 
-    <!--@sree-sanjana06 > display saved comment on watchlist only-->
-    <div v-if="variant === 'watchlist'" class="min-h-12">
-      <p v-if="comment" class="line-clamp-2 text-sm text-muted-foreground">
+    <!--@sree-sanjana06 > reserve equal note space on both card variants-->
+    <div class="h-12">
+      <p v-if="variant === 'watchlist' && comment"
+        class="line-clamp-2 text-sm leading-5 text-muted-foreground">
         Note: {{ comment }}
       </p>
     </div>
