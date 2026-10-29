@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { ArrowRight01Icon, Book02Icon, UserGroupIcon } from '@hugeicons/core-free-icons';
 import AppStatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { formatDate } from '@/lib/utils';
 
@@ -9,9 +9,10 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['open']);
-//@brod > Anything that is not open is greyed out.
-const isOpen = computed(() => props.drive.status === 'open');
-//@brod > Day and month for the tile, full date for the line below.
+// @brod > Check if drive has ended 
+const ended = computed(() => props.drive.past && props.drive.status !== 'cancelled');
+const isOpen = computed(() => props.drive.status === 'open' && !props.drive.past);
+
 const when = computed(() => ({
   day: formatDate(props.drive.eventdate, { day: 'numeric' }),
   month: formatDate(props.drive.eventdate, { month: 'short' }),
@@ -23,49 +24,48 @@ const when = computed(() => ({
   }),
 }));
 
-//@brod > en-CA matches eventdate (YYYY-MM-DD) so the gap is whole days.
-const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' });
-//@brod > "today", "tomorrow", or "in 12 days".
-const relativeDays = new Intl.RelativeTimeFormat('en-SG', { numeric: 'auto' });
-//@brod > Date, how soon, and how many places.
-const meta = computed(() => {
-  const daysAway = relativeDays.format(
-    Math.round((Date.parse(props.drive.eventdate) - Date.parse(today)) / 86400000),
-    'day',
-  );
-  return `${when.value.full} · ${daysAway} · ${props.drive.maxcapacity} places`;
-});
+//@brod > Full formatted date string and total drive capacity label.
+const meta = computed(() => when.value.full);
+const spots = computed(() => `${props.drive.maxcapacity} places`);
 </script>
 
 <template>
-  <!--@brod >  button so keyboard focus works without extra handlers.-->
   <button
     type="button"
-    aria-haspopup="dialog"
-    class="washi-tape washi-tape-hover flex w-full items-center gap-2.5 rounded-lg border p-5 text-left sm:gap-5"
+    class="washi-tape washi-tape-hover flex w-full items-center gap-4 rounded-lg border p-4 text-left"
     @click="emit('open')"
   >
-    <!--@brod > Screen readers use the date line below instead.-->
     <time
       :datetime="drive.eventdate"
-      aria-hidden="true"
-      class="flex size-15 shrink-0 flex-col items-center justify-center rounded-lg border border-foreground"
+      class="flex size-14 flex-col items-center justify-center rounded-lg border"
       :class="isOpen ? 'bg-badge-rose' : 'bg-badge-neutral'"
     >
-      <strong class="font-heading text-2xl font-normal leading-none">{{ when.day }}</strong>
+      <strong class="font-heading text-2xl leading-none">{{ when.day }}</strong>
       <small class="text-xs uppercase">{{ when.month }}</small>
     </time>
 
-    <span class="min-w-0 flex-1 space-y-1" :class="{ 'text-muted-foreground': !isOpen }">
-      <AppStatusBadge as="span" :status="drive.status" class="text-xs" />
-      <!--@brod > Two lines before clipping. Phones cannot hover.-->
-      <strong :title="drive.title" class="line-clamp-2 font-heading text-xl font-normal">
-        {{ drive.title }}
-      </strong>
-      <span class="block truncate text-sm">{{ drive.location }}</span>
-      <span class="block text-sm text-muted-foreground">{{ meta }}</span>
-    </span>
+    <div class="flex flex-1 flex-col gap-1">
+      <!-- @brod current status  -->
+      <AppStatusBadge as="span" :status="ended ? 'closed' : drive.status" class="w-fit text-xs">
+        {{ ended ? 'ended' : drive.status }}
+      </AppStatusBadge>
+      <h3 class="text-lg">{{ drive.title }}</h3>
+      <p class="text-sm">{{ drive.location }}</p>
+      <p class="text-sm">{{ meta }}</p>
 
-    <HugeiconsIcon :icon="ArrowRight01Icon" aria-hidden="true" />
+      <div class="flex items-center gap-3 text-sm">
+        <span v-if="!drive.past" class="flex items-center gap-1">
+          <HugeiconsIcon :icon="UserGroupIcon" class="size-4" />
+          {{ spots }}
+        </span>
+        <!-- @brod how to show current book count -->
+        <span class="flex items-center gap-1">
+          <HugeiconsIcon :icon="Book02Icon" class="size-4" />
+          {{ drive.bookCount ?? 0 }} books
+        </span>
+      </div>
+    </div>
+
+    <HugeiconsIcon :icon="ArrowRight01Icon" />
   </button>
 </template>
