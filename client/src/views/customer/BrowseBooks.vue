@@ -19,8 +19,9 @@ const loading = ref(false);
 const loadError = ref('');
 const watchlistError = ref('');
 
-//@sree-sanjana06 > search, filter and sort values sent to backend
-const filters = reactive({ search: '', status: '', subject: '', sort: 'title' });
+//@sree-sanjana06 > search, genre and sorting filters for Browse Books
+const filters = reactive({ search: '', subject: '', sort: 'title'});
+
 
 //@sree-sanjana06 > pagination and saved-book lookup
 const page = ref(1);
@@ -145,7 +146,6 @@ onMounted(loadWatchlist);
       <p class="text-sm text-muted-foreground">
         Try another search or change your filters.
       </p>
-      <Button variant="outline" @click="clearFilters">Clear filters</Button>
     </div>
 
  
