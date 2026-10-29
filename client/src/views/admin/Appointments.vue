@@ -1,5 +1,6 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
 import { useConfirmation } from '@/lib/confirmation';
@@ -10,6 +11,8 @@ import AppDatePicker from '@/components/shared/AppDatePicker.vue';
 import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Button } from '@/components/ui/button';
 
+const router = useRouter();
+const navigation = router.options.history.state;
 const appointments = ref([]);
 const selectedIds = ref([]);
 const selectedAppointment = ref(null);
@@ -27,7 +30,6 @@ const loading = ref(false);
 const saving = ref(false);
 const { confirm } = useConfirmation();
 const loadError = ref('');
-const filters = reactive({ search: '', date: '', view: 'awaiting', status: 'all' });
 const page = ref(1);
 const pageSize = 15;
 const today = ref('');
@@ -40,6 +42,8 @@ const viewTabs = [
     { value: 'overdue', label: 'Overdue' },
     { value: 'history', label: 'History' }
 ];
+//@lee-hlmilk > dashboard links choose the initial queue through navigation state > keep the URL clean
+const filters = reactive({ search: '', date: '', view: viewTabs.some(tab => tab.value === navigation.view) ? navigation.view : 'awaiting', status: 'all' });
 const columns = [
     { key: 'customer', label: 'Customer', class: 'w-1/5' },
     { key: 'book', label: 'Requested copy' },
@@ -173,6 +177,25 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
 watch(filters, () => { page.value = 1; selectedIds.value = []; });
 watch(() => filters.view, () => { filters.status = 'all'; });
 watch(page, () => { selectedIds.value = []; });
+//@lee-hlmilk > pickup links open the exact appointment after loading > consume the target so refreshes do not reopen it
+let appointmentId = navigation.appointment;
+watch(loading, async (isLoading) => {
+    if (typeof appointmentId !== 'string' || isLoading || loadError.value) { return; }
+    const appointment = appointments.value.find(appointment => appointment.id === appointmentId);
+    if (appointment) {
+        filters.view = matchesView(appointment, 'today') ? 'today' : viewTabs.find(tab => matchesView(appointment, tab.value))?.value || 'history';
+        filters.search = '';
+        filters.date = '';
+        filters.status = 'all';
+        await nextTick();
+        page.value = Math.floor(filteredAppointments.value.findIndex(row => row.id === appointment.id) / pageSize) + 1;
+        openAppointment(appointment);
+    } else {
+        toast.error('This appointment is no longer available.');
+    }
+    appointmentId = null;
+    router.replace({ state: { appointment: null } });
+});
 fetchAppointments();
 </script>
 

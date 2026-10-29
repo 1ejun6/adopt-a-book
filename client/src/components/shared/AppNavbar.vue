@@ -41,7 +41,7 @@ async function logout() {
   <header class="sticky top-0 z-50 border-b bg-background">
     <div class="flex items-center justify-between p-5">
       <!--@1ejun6 > centers navbar horizontal > fills available width-->
-      <RouterLink :to="homeRoute" class="flex shrink-0 items-center gap-2.5 font-heading text-lg" @click="status = false">
+      <RouterLink :to="role === 'admin' ? { name: 'adminHome' } : homeRoute" class="flex shrink-0 items-center gap-2.5 font-heading text-lg" @click="status = false">
         Adopt a Book
         <img :src="bow" alt="" width="48" height="48" />
       </RouterLink>
