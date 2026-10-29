@@ -5,8 +5,9 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import AppPagination from '@/components/shared/AppPagination.vue';
 import BrowseBookFilters from '@/components/customer/BrowseBookFilters.vue';
-import BrowseBookCard from '@/components/customer/BrowseBookCard.vue';
 import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
+//@sree-sanjana06 > reuse shared book card for browse books and watchlist
+import CustomerBookCard from '@/components/customer/CustomerBookCard.vue';
 
 //@sree-sanjana06 > catalogue, watchlist and book details dialog
 const books = ref([]);
@@ -147,13 +148,16 @@ onMounted(loadWatchlist);
       <Button variant="outline" @click="clearFilters">Clear filters</Button>
     </div>
 
-    <!--@sree-sanjana06 > reusable cards for matching books-->
-    <section v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-      <BrowseBookCard v-for="book in books" :key="book.id"
-        :book="book"
-        :saved="savedIds.has(book.id)"
-        @preview="dialogs?.openBookDetails($event)" />
-    </section>
+ 
+<!--@sree-sanjana06 > display available books using shared customer card-->
+      <section v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <CustomerBookCard v-for="book in books" :key="book.id" :book="book"
+          variant="browse"
+          :saved="savedIds.has(book.id)"
+          @preview="dialogs?.openBookDetails($event)"
+        />
+      </section>
+
 
     <!--@sree-sanjana06 > existing pagination component-->
     <AppPagination v-if="!loadError && total > 0"

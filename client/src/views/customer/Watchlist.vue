@@ -3,8 +3,8 @@ import { ref, onMounted } from 'vue';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import WatchlistBookCard from '@/components/customer/WatchlistBookCard.vue';
 import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
+import CustomerBookCard from '@/components/customer/CustomerBookCard.vue';
 
 const watchlist = ref([]);
 const loading = ref(true);
@@ -128,13 +128,15 @@ onMounted(loadWatchlist);
 
     <!--@sree-sanjana06 > each card emits actions handled by this page-->
     <section v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-      <WatchlistBookCard v-for="entry in watchlist" :key="entry.id" :entry="entry" @preview="openPreview"
-        @edit="startEdit" @remove="startRemove" />
-    </section>
+    
+<!--@sree-sanjana06 > display saved books using shared customer card-->
+  <CustomerBookCard v-for="entry in watchlist"  :key="entry.id" :book="entry.bookid" variant="watchlist" :comment="entry.comments || ''"
+       @preview="openPreview" @remove="startRemove(entry)" />
 
+</section>
     <!--@sree-sanjana06 > existing book details and adoption request popups-->
     <CustomerBookDialogs ref="dialogs" :watchlist="watchlist" manageWatchlist @saved="watchlist = $event"
-      @edit="startEdit" @remove="startRemove" />
+      @edit="startEdit" />
 
     <!--@sree-sanjana06 > edit the saved note using existing Dialog UI-->
     <Dialog v-model:open="editOpen">

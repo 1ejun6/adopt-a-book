@@ -12,7 +12,7 @@ const props = defineProps({
   watchlist: { type: Array, required: true },
   manageWatchlist: { type: Boolean, default: false }
 });
-const emit = defineEmits(['saved', 'edit', 'remove']);
+const emit = defineEmits(['saved', 'edit']);
 
 //@sree-sanjana06 > all three popups share the currently selected book
 const dialogBook = ref(null);
@@ -71,14 +71,7 @@ async function editSavedBook() {
   emit('edit', entry);
 }
 
-//@sree-sanjana06 > close book details and ask Watchlist page to confirm removal
-async function removeSavedBook() {
-  if (!savedEntry.value) return;
-  const entry = savedEntry.value;
-  dialogOpen.value = false;
-  await nextTick();
-  emit('remove', entry);
-}
+
 
 //@sree-sanjana06 > close details before showing the optional watchlist note popup
 async function openSaveDialog() {
@@ -196,34 +189,34 @@ async function requestCopy() {
           </p>
           
           <!--@sree-sanjana06 > show management actions for books already in Watchlist-->
-          <div class="grid gap-3"
-            :class="manageWatchlist && savedEntry ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
+          
+          <!--@sree-sanjana06 > make both action buttons equal width-->
+          <div class="grid grid-cols-2 gap-3">
 
-            <!--@sree-sanjana06 > existing adoption request functionality-->
+          <Button
+            class="w-full"
+            :disabled="actionLoading || detailsLoading || !!detailsError || dialogBook.status !== 'available' || requestSubmitted"
+            @click="openRequestDialog">
+            {{ requestSubmitted ? 'Request submitted' : 'Request copy' }}
+          </Button>
+
+          <template v-if="manageWatchlist && savedEntry">
             <Button
-              :disabled="actionLoading || detailsLoading || !!detailsError || dialogBook.status !== 'available' || requestSubmitted"
-              @click="openRequestDialog">
-              {{ requestSubmitted ? 'Request submitted' : 'Request copy' }}
+              variant="outline"
+              class="w-full"
+              @click="editSavedBook">
+              Edit note
             </Button>
+          </template>
 
-            <!--@sree-sanjana06 > replace Save button with Edit and Remove on Watchlist page-->
-            <template v-if="manageWatchlist && savedEntry">
-              <Button variant="outline" @click="editSavedBook">
-                Edit saved book
-              </Button>
-              <Button variant="outline" @click="removeSavedBook">
-                Remove from watchlist
-              </Button>
-            </template>
-
-            <!--@sree-sanjana06 > retain original Save button for Home and other pages-->
-            <Button v-else variant="outline"
-              :disabled="actionLoading || detailsLoading || !!detailsError || dialogBook.status !== 'available' || alreadySaved"
-              @click="openSaveDialog">
-              {{ alreadySaved ? 'Already saved' : 'Save to watchlist' }}
-            </Button>
+          <Button v-else
+            variant="outline"
+            class="w-full"
+            :disabled="actionLoading || detailsLoading || !!detailsError || dialogBook.status !== 'available' || alreadySaved"
+            @click="openSaveDialog">
+            {{ alreadySaved ? 'Already saved' : 'Save to watchlist' }}
+          </Button>
           </div>
-
         </div>
       </div>
     </DialogContent>
