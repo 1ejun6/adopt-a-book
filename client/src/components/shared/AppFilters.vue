@@ -41,12 +41,12 @@ const genre = defineModel('genre', { type: String, default: 'all' });
         </template>
 
         <template #filters>
-            <slot name="filters">
-                <select v-model="genre" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
-                    <option value="all">All genres</option>
-                    <option v-for="item in genres" :key="item" :value="item">{{ item }}</option>
-                </select>
-            </slot>
+            <!--@lee-hlmilk > an explicitly empty filter slot means search only > keep genres as the default only when no slot is supplied-->
+            <slot v-if="$slots.filters" name="filters" />
+            <select v-else v-model="genre" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
+                <option value="all">All genres</option>
+                <option v-for="item in genres" :key="item" :value="item">{{ item }}</option>
+            </select>
         </template>
         <template v-if="$slots.actions" #actions>
             <slot name="actions" />

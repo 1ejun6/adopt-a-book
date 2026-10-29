@@ -83,6 +83,11 @@ const filteredAppointments = computed(() => {
     ).sort((a, b) => a.appointmentdate.localeCompare(b.appointmentdate) || a.timeslot.localeCompare(b.timeslot));
 });
 const hasFilters = computed(() => filters.search.trim() || filters.date || filters.status !== 'all');
+const emptyFilterHint = computed(() => filters.view === 'today'
+    ? 'Try another search term or view.'
+    : filters.view === 'awaiting'
+        ? 'Try another search term, date, or view.'
+        : 'Try another search term, date, status, or view.');
 const pageCount = computed(() => Math.max(1, Math.ceil(filteredAppointments.value.length / pageSize)));
 const visibleAppointments = computed(() => filteredAppointments.value.slice((page.value - 1) * pageSize, page.value * pageSize));
 const selectedAppointments = computed(() => visibleAppointments.value.filter(appointment => selectedIds.value.includes(appointment.id)));
@@ -175,7 +180,10 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
 }
 
 watch(filters, () => { page.value = 1; selectedIds.value = []; });
-watch(() => filters.view, () => { filters.status = 'all'; });
+watch(() => filters.view, () => {
+    filters.status = 'all';
+    if (filters.view === 'today') { filters.date = ''; }
+});
 watch(page, () => { selectedIds.value = []; });
 //@lee-hlmilk > pickup links open the exact appointment after loading > consume the target so refreshes do not reopen it
 let appointmentId = navigation.appointment;
@@ -208,8 +216,8 @@ fetchAppointments();
         :error="loadError" searchPlaceholder="Search by Customer, Email, Book, Location..."
         :pagination="{ itemLabel: 'appointments', total: filteredAppointments.length, pageSize, pageCount }" @openRow="openAppointment">
         <template #filters>
-            <AppDatePicker v-model="filters.date" label="Collection date" />
-            <select v-model="filters.status" aria-label="Appointment status" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
+            <AppDatePicker v-if="filters.view !== 'today'" v-model="filters.date" label="Collection date" />
+            <select v-if="!['awaiting', 'today'].includes(filters.view)" v-model="filters.status" aria-label="Appointment status" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
                 <option value="all">All statuses</option>
                 <template v-if="filters.view === 'history'">
                     <option value="collected">Collected</option>
@@ -243,7 +251,7 @@ fetchAppointments();
         <template #cellStatus="{ value }"><StatusBadge :status="value" /></template>
         <template #empty>
             <h2>{{ hasFilters ? 'No matching appointments' : emptyTitles[filters.view] }}</h2>
-            <p class="text-sm text-muted-foreground">{{ hasFilters ? 'Try another search term, date, status, or view.' : 'Pickup bookings will appear in their corresponding view.' }}</p>
+            <p class="text-sm text-muted-foreground">{{ hasFilters ? emptyFilterHint : 'Pickup bookings will appear in their corresponding view.' }}</p>
         </template>
     </AdminList>
 
