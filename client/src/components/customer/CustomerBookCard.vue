@@ -1,4 +1,3 @@
-
 <script setup>
 import { Button } from '@/components/ui/button';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
@@ -28,10 +27,11 @@ function getAuthors(book) {
 </script>
 
 <template>
-  <article class="flex h-full flex-col gap-5 rounded-xl border bg-card p-5">
 
+<!--@sree-sanjana06 > allow cards to size naturally without unnecessary empty space-->
+<article class="flex h-full flex-col gap-3 rounded-xl border bg-card p-5">
     <!--@sree-sanjana06 > shared book cover, title and author-->
-    <div class="flex min-h-44 items-start gap-3">
+    <div class="flex items-start gap-3">
       <div class="min-w-0 flex-1">
         <AppBookIdentity
           :title="book.title"
@@ -40,8 +40,6 @@ function getAuthors(book) {
           coverClass="w-24"
         />
       </div>
-
-      <!--@sree-sanjana06 > bookmark icon for browse books-->
      
       <!--@sree-sanjana06 > save directly or request removal when already saved-->
       <button
@@ -82,48 +80,28 @@ function getAuthors(book) {
       </span>
     </div>
 
-    <!--@sree-sanjana06 > consistent space for book description-->
-    <div class="h-[3.75rem]">
-      <p v-if="book.description"
-        class="line-clamp-3 text-sm text-muted-foreground">
-        {{ book.description }}
-      </p>
-
-      <p v-else class="text-sm text-muted-foreground italic">
-        No description available.
-    </p>
-    </div>
-    
-<!--@sree-sanjana06 > allow users to add or edit notes directly from watchlist-->
-<div class="space-y-2">
-  <div class="h-12">
-    <template v-if="variant === 'watchlist'">
-      <p v-if="comment" class="line-clamp-2 text-sm leading-5 text-muted-foreground" >
-        Note: {{ comment }}
-      </p>
-
-      <p v-else class="text-sm italic text-muted-foreground">
-        No personal note added.
-      </p>
-    </template>
-  </div>
-
-  <Button
-    v-if="variant === 'watchlist'" type="button"
-    variant="outline" size="sm" class="w-full"
-    @click="emit('edit')"
-  >
-    {{ comment ? 'Edit Note' : 'Add Note' }}
-  </Button>
-</div>
-
-
     <!--@sree-sanjana06 > shared collection information-->
     <div class="mt-auto min-h-5">
       <p v-if="book.collectionarea"
         class="text-xs text-muted-foreground">
         Collection: {{ book.collectionarea }}
       </p>
+    </div>
+
+    <!--@sree-sanjana06 > personal notes are managed only in watchlist-->
+    <div v-if="variant === 'watchlist'" class="space-y-2">
+      <p v-if="comment" class="line-clamp-2 text-sm leading-5 text-muted-foreground">
+        Note: {{ comment }}
+      </p>
+
+      <p v-else class="text-sm italic text-muted-foreground">
+        No personal note added.
+      </p>
+
+      <Button type="button" variant="outline" size="sm" class="w-full"
+        @click="emit('edit')">
+        {{ comment ? 'Edit Note' : 'Add Note' }}
+      </Button>
     </div>
 
     <!--@sree-sanjana06 > open book details on either page-->
