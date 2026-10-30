@@ -18,7 +18,7 @@ defineProps({
 });
 
 //@sree-sanjana06 > parent handles book preview and watchlist removal
-const emit = defineEmits(['preview', 'remove']);
+const emit = defineEmits(['preview', 'remove','save', 'unsave']);
 
 //@sree-sanjana06 > convert author array into readable text
 function getAuthors(book) {
@@ -42,12 +42,16 @@ function getAuthors(book) {
       </div>
 
       <!--@sree-sanjana06 > bookmark icon for browse books-->
-      <button v-if="variant === 'browse'"
+     
+      <!--@sree-sanjana06 > save directly or request removal when already saved-->
+      <button
+        v-if="variant === 'browse'"
         type="button"
         class="shrink-0 rounded-lg p-2 hover:bg-muted"
-        :title="saved ? 'Saved to watchlist' : 'Save to watchlist'"
-        :aria-label="saved ? 'View saved book' : 'View book to save'"
-        @click="emit('preview', book)">
+        :title="saved ? 'Remove from watchlist' : 'Save to watchlist'"
+        :aria-label="saved ? 'Remove from watchlist' : 'Save to watchlist'"
+        @click="emit(saved ? 'unsave' : 'save', book)"
+      >
         <HugeiconsIcon
           :icon="saved ? BookmarkCheck02Icon : Bookmark02Icon"
           class="size-6"

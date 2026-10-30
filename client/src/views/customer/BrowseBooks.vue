@@ -85,6 +85,44 @@ async function loadWatchlist() {
   }
 }
 
+
+ //@sree-sanjana06 > save book directly to watchlist without opening a popup
+async function saveBook(book) {
+  try {
+    await api('/watchlist', {
+      method: 'POST',
+      body: {
+        bookid: book.id,
+        comments: ''
+      }
+    });
+
+    await loadWatchlist();
+  } catch (error) {
+    watchlistError.value = error.message;
+  }
+}
+
+//@sree-sanjana06 > remove saved book directly from watchlist
+async function unsaveBook(book) {
+  const entry = watchlist.value.find(
+    item => item.bookid?.id === book.id
+  );
+
+  if (!entry) return;
+
+  try {
+    await api(`/watchlist/${entry.id}`, {
+      method: 'DELETE'
+    });
+
+    await loadWatchlist();
+  } catch (error) {
+    watchlistError.value = error.message;
+  }
+}
+
+
 //@sree-sanjana06 > reset all filters using the same reactive object
 function clearFilters() {
   Object.assign(filters, { search: '', subject: '', sort: 'title' });
@@ -151,10 +189,10 @@ onMounted(loadWatchlist);
  
 <!--@sree-sanjana06 > display available books using shared customer card-->
       <section v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        <CustomerBookCard v-for="book in books" :key="book.id" :book="book"
-          variant="browse"
+        <CustomerBookCard v-for="book in books" :key="book.id" :book="book" variant="browse"
           :saved="savedIds.has(book.id)"
           @preview="dialogs?.openBookDetails($event)"
+          @save="saveBook" @unsave="unsaveBook"
         />
       </section>
 
