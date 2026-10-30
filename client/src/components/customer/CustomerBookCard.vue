@@ -18,7 +18,7 @@ defineProps({
 });
 
 //@sree-sanjana06 > parent handles book preview and watchlist removal
-const emit = defineEmits(['preview', 'remove','save', 'unsave']);
+const emit = defineEmits(['preview', 'remove','save', 'unsave', 'edit']);
 
 //@sree-sanjana06 > convert author array into readable text
 function getAuthors(book) {
@@ -93,14 +93,30 @@ function getAuthors(book) {
         No description available.
     </p>
     </div>
-
-    <!--@sree-sanjana06 > reserve equal note space on both card variants-->
-    <div class="h-12">
-      <p v-if="variant === 'watchlist' && comment"
-        class="line-clamp-2 text-sm leading-5 text-muted-foreground">
+    
+<!--@sree-sanjana06 > allow users to add or edit notes directly from watchlist-->
+<div class="space-y-2">
+  <div class="h-12">
+    <template v-if="variant === 'watchlist'">
+      <p v-if="comment" class="line-clamp-2 text-sm leading-5 text-muted-foreground" >
         Note: {{ comment }}
       </p>
-    </div>
+
+      <p v-else class="text-sm italic text-muted-foreground">
+        No personal note added.
+      </p>
+    </template>
+  </div>
+
+  <Button
+    v-if="variant === 'watchlist'" type="button"
+    variant="outline" size="sm" class="w-full"
+    @click="emit('edit')"
+  >
+    {{ comment ? 'Edit Note' : 'Add Note' }}
+  </Button>
+</div>
+
 
     <!--@sree-sanjana06 > shared collection information-->
     <div class="mt-auto min-h-5">

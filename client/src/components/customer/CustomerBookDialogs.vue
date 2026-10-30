@@ -28,10 +28,6 @@ const requestSubmitted = ref(false);
 const savedThisSession = ref(false);
 const watchlistNote = ref('');
 
-//@sree-sanjana06 > find saved entry matching the book currently displayed
-const savedEntry = computed(() => props.watchlist.find(
-  entry => entry.bookid?.id === dialogBook.value?.id
-));
 
 const alreadySaved = computed(() => savedThisSession.value || props.watchlist.some(
   entry => entry.bookid?.id === dialogBook.value?.id
@@ -62,27 +58,6 @@ async function openBookDetails(book) {
 }
 defineExpose({ openBookDetails });
 
-//@sree-sanjana06 > close book details and ask Watchlist page to edit saved note
-async function editSavedBook() {
-  if (!savedEntry.value) return;
-  const entry = savedEntry.value;
-  dialogOpen.value = false;
-  await nextTick();
-  emit('edit', entry);
-}
-
-
-
-//@sree-sanjana06 > close details before showing the optional watchlist note popup
-async function openSaveDialog() {
-  if (!dialogBook.value || detailsLoading.value || detailsError.value || alreadySaved.value) return;
-  watchlistNote.value = '';
-  actionError.value = '';
-  actionMessage.value = '';
-  dialogOpen.value = false;
-  await nextTick();
-  saveDialogOpen.value = true;
-}
 
 //@sree-sanjana06 > save the book and optional comment using existing POST /watchlist
 async function saveToWatchlist() {
@@ -191,32 +166,18 @@ async function requestCopy() {
           <!--@sree-sanjana06 > show management actions for books already in Watchlist-->
           
           <!--@sree-sanjana06 > make both action buttons equal width-->
-          <div class="grid grid-cols-2 gap-3">
+         
+      <!--@sree-sanjana06 > book details only handles adoption requests; watchlist actions are managed separately-->
+      <div class="w-full">
+        <Button
+          class="w-full"
+          :disabled="actionLoading || detailsLoading || !!detailsError || dialogBook.status !== 'available' || requestSubmitted"
+          @click="openRequestDialog"
+        >
+          {{ requestSubmitted ? 'Request submitted' : 'Request Book' }}
+        </Button>
+      </div>
 
-          <Button
-            class="w-full"
-            :disabled="actionLoading || detailsLoading || !!detailsError || dialogBook.status !== 'available' || requestSubmitted"
-            @click="openRequestDialog">
-            {{ requestSubmitted ? 'Request submitted' : 'Request copy' }}
-          </Button>
-
-          <template v-if="manageWatchlist && savedEntry">
-            <Button
-              variant="outline"
-              class="w-full"
-              @click="editSavedBook">
-              Edit note
-            </Button>
-          </template>
-
-          <Button v-else
-            variant="outline"
-            class="w-full"
-            :disabled="actionLoading || detailsLoading || !!detailsError || dialogBook.status !== 'available' || alreadySaved"
-            @click="openSaveDialog">
-            {{ alreadySaved ? 'Already saved' : 'Save to watchlist' }}
-          </Button>
-          </div>
         </div>
       </div>
     </DialogContent>

@@ -131,7 +131,7 @@ onMounted(loadWatchlist);
     
 <!--@sree-sanjana06 > display saved books using shared customer card-->
   <CustomerBookCard v-for="entry in watchlist"  :key="entry.id" :book="entry.bookid" variant="watchlist" :comment="entry.comments || ''"
-       @preview="openPreview" @remove="startRemove(entry)" />
+       @preview="openPreview" @remove="startRemove(entry)" @edit="startEdit(entry)" />
 
 </section>
     <!--@sree-sanjana06 > existing book details and adoption request popups-->
