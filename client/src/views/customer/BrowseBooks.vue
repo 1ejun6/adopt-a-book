@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import AppPagination from '@/components/shared/AppPagination.vue';
 import BrowseBookFilters from '@/components/customer/BrowseBookFilters.vue';
 import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
-//@sree-sanjana06 > reuse shared book card for browse books and watchlist
 import CustomerBookCard from '@/components/customer/CustomerBookCard.vue';
 
 //@sree-sanjana06 > catalogue, watchlist and book details dialog
@@ -21,7 +20,6 @@ const watchlistError = ref('');
 
 //@sree-sanjana06 > search, genre and sorting filters for Browse Books
 const filters = reactive({ search: '', subject: '', sort: 'title'});
-
 
 //@sree-sanjana06 > pagination and saved-book lookup
 const page = ref(1);
@@ -41,8 +39,9 @@ async function fetchBooks() {
   loadError.value = '';
 
   try {
-    const response = await api('/books', { //!@1ejun6 > where is method?
+    const response = await api('/books', { 
       query: {
+        method: 'GET',
         page: page.value,
         limit: pageSize,
         search: filters.search.trim(),
@@ -78,13 +77,12 @@ async function fetchBooks() {
 async function loadWatchlist() {
   watchlistError.value = '';
   try {
-    const response = await api('/watchlist'); //!@1ejun6 > where is method?
+    const response = await api('/watchlist', { method: 'GET' }); //!@1ejun6 > where is method?
     watchlist.value = response.watchlist || [];
   } catch (error) {
     watchlistError.value = error.message;
   }
 }
-
 
  //@sree-sanjana06 > save book directly to watchlist without opening a popup
 async function saveBook(book) {
@@ -122,7 +120,6 @@ async function unsaveBook(book) {
   }
 }
 
-
 //@sree-sanjana06 > reset all filters using the same reactive object
 function clearFilters() {
   Object.assign(filters, { search: '', subject: '', sort: 'title' });
@@ -141,7 +138,6 @@ onMounted(loadWatchlist);
 
 <template>
   <main class="mx-auto w-full max-w-7xl space-y-8">
-    <!--@sree-sanjana06 > catalogue heading-->
     <header class="space-y-2 border-b pb-6">
       <p class="text-xs uppercase tracking-widest text-muted-foreground">
         Discover your next chapter
@@ -157,8 +153,7 @@ onMounted(loadWatchlist);
       v-model:search="filters.search"
       v-model:subject="filters.subject"
       v-model:sort="filters.sort"
-      @clear="clearFilters"
-    />
+      @clear="clearFilters"/>
 
     <!--@sree-sanjana06 > show result count and watchlist errors-->
     <p class="text-sm text-muted-foreground" role="status">
@@ -186,7 +181,6 @@ onMounted(loadWatchlist);
       </p>
     </div>
 
- 
 <!--@sree-sanjana06 > display available books using shared customer card-->
       <section v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         <CustomerBookCard v-for="book in books" :key="book.id" :book="book" variant="browse"
@@ -195,7 +189,6 @@ onMounted(loadWatchlist);
           @save="saveBook" @unsave="unsaveBook"
         />
       </section>
-
 
     <!--@sree-sanjana06 > existing pagination component-->
     <AppPagination v-if="!loadError && total > 0"
@@ -209,11 +202,8 @@ onMounted(loadWatchlist);
       :disabled="loading"
     />
 
-    <!--@sree-sanjana06 > existing book details, save and request dialogs-->
-    <CustomerBookDialogs
-      ref="dialogs"
-      :watchlist="watchlist"
-      @saved="watchlist = $event; watchlistError = ''"
-    />
+    <!--@sree-sanjana06 > shared book details popup; request workflow handled separately-->
+    <CustomerBookDialogs ref="dialogs" />
+
   </main>
 </template>
