@@ -11,6 +11,7 @@ import { toast } from 'vue-sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import CustomerWatchlist from '../views/customer/Watchlist.vue';
 import CustomerBrowseBooks from '../views/customer/BrowseBooks.vue';
+import MyAdoptions from '../views/customer/MyAdoptions.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -40,13 +41,12 @@ const router = createRouter({
     { path: '', name: 'customerHome', component: CustomerHome, roles: ['customer']},
     { path: 'books', name: 'customerBooks', component: CustomerBrowseBooks, label: 'Browse Books', roles: ['customer']},
     { path: 'watchlist', name: 'customerWatchlist', component: CustomerWatchlist, label: 'Watchlist', roles: ['customer']},
-    { path: 'adoptions', name: 'customerAdoptions',label: 'My Adoptions',roles: ['customer']},
+    { path: 'adoptions', name: 'customerAdoptions',component: MyAdoptions, label: 'My Adoptions',roles: ['customer']},
     {path: 'pickups',name: 'customerPickups',label: 'Pickups', roles: ['customer']},
     {path: 'drives', name: 'customerDrives', label: 'Adoption Drives', roles: ['customer']},
     {path: 'account',name: 'customerAccount', label: 'My Account', roles: ['customer'], end: true}
   ]
 },
-
   ],
 });
 
