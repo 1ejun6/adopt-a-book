@@ -1,3 +1,4 @@
+
 <script setup>
 import { ref, watch } from 'vue';
 import { api } from '@/lib/api';
@@ -14,6 +15,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:open', 'submitted']);
+
 
 //@sree-sanjana06 > request submission states are managed entirely in this component
 const actionLoading = ref(false);
@@ -67,8 +69,7 @@ async function requestCopy() {
       </DialogHeader>
 
       <div v-if="book" class="space-y-6 p-6">
-    
-        <!--@sree-sanjana06 > progress tracker -->
+        <!--@sree-sanjana06 > progress tracker-->
         <div class="grid grid-cols-4 gap-2 sm:gap-4">
           <div class="space-y-2 border-t-2 border-green-700 pt-3">
             <span class="grid size-9 place-items-center rounded-full bg-green-100 text-green-800">✓</span>
@@ -87,16 +88,18 @@ async function requestCopy() {
             <p class="book-dialog__progress-text">Collect your book</p>
           </div>
         </div>
+
+        <!--@sree-sanjana06 > explain that the request is not a reservation-->
         <p class="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
           You're sending a request, not booking a pickup. Nothing is submitted until you confirm below.
         </p>
 
         <div class="grid gap-6 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
-          <!-- selected book -->
           <div class="space-y-3">
             <p class="book-dialog__small-muted">Your selected copy</p>
             <AppBookIdentity :title="book.title" :author="getAuthors(book)" :cover="book.coverurl" coverClass="w-32" />
           </div>
+
           <div class="space-y-5 rounded-xl border p-5">
             <h3 class="font-heading text-2xl">Requesting as</h3>
 
@@ -117,8 +120,7 @@ async function requestCopy() {
               </p>
               <p class="book-dialog__small-muted">You can follow the response in My Adoptions.</p>
             </div>
-
-            <!-- ==================== SUBMISSION FEEDBACK ==================== -->
+            
             <p v-if="actionMessage" class="book-dialog__success" role="status">{{ actionMessage }}</p>
             <p v-if="actionError" class="book-dialog__error" role="alert">{{ actionError }}</p>
 
