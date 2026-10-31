@@ -1,7 +1,6 @@
 const { timingSafeEqual } = require("node:crypto");
 const { errorstatus, errormessage } = require("../utils/errors");
 const { runsql } = require("../services/database");
-const { loadbooks } = require("../seeds/books");
 
 function requirebasetoken(req, res, next) {
   const token = process.env.basetoken;
@@ -31,29 +30,22 @@ async function base(req, res) {
 async function clear(req, res) {
   try {
     await runsql("clear.sql");
-    return res.json({ message: "application data cleared" });
+    return res.json({ message: "database data and auth users cleared" });
   } catch (error) {
     console.error("clear sql failed >", error);
     return res.status(errorstatus(error)).json({ error: errormessage(error, "could not clear database") });
   }
 }
 
-async function seedbooks(req, res) {
-  const query = req.body?.q;
-  if (query !== undefined && (typeof query !== "string" || !query.trim())) {
-    return res.status(400).json({ error: "q must be a non-empty search string" });
-  }
+async function seed(req, res) {
   try {
-    require("../utils/validation").rejectfields(req.body, ["q", "mrtstationid"]);
-    const stationid = require("zod").z.uuid({ error: "choose an MRT station for the imported books" }).parse(req.body?.mrtstationid);
-    await require("../models/mrtstations").validatewrite(stationid);
-    const books = (await loadbooks(query?.trim())).map(book => ({ ...book, mrtstationid: stationid }));
-    const result = await runsql("books.sql", books);
-    return res.json({ message: `${result.inserted} books added from Open Library`, result });
+    require("../utils/validation").rejectfields(req.body, []);
+    const result = await runsql("seed.sql");
+    return res.json({ message: "seed applied", result });
   } catch (error) {
-    console.error("book seed failed >", error);
-    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not seed books") });
+    console.error("seed failed >", error);
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not seed database") });
   }
 }
 
-module.exports = { requirebasetoken, base, seedbooks, clear };
+module.exports = { requirebasetoken, base, seed, clear };

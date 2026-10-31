@@ -18,7 +18,7 @@ const bookschema = z.object({
   ownerid: z.uuid().nullable().optional(),
   condition: z.enum(["like new", "good", "fair"]).nullable().optional(),
   mrtstationid: z.uuid({ error: "choose an MRT station" }),
-  status: z.enum(["available", "reserved", "adopted", "withdrawn"]).default("available")
+  status: z.enum(["available", "reserved", "adopted"]).default("available")
 }).strict();
 
 const bookupdateschema = bookschema.omit({ source: true, createdby: true, ownerid: true, status: true }).partial().extend({
@@ -73,11 +73,6 @@ async function editbook(id, actorid, changes) {
   if (error) throw error;
   return getbookbyid(data.id);
 }
-async function withdrawbooks(ids, actorid) {
-  const { data, error } = await supabase.rpc("withdraw_books", { book_ids: ids, actor_id: actorid });
-  if (error) throw error;
-  return data;
-}
 async function deletebooks(ids, actorid) {
   const { data, error } = await supabase.rpc("delete_books", { book_ids: ids, actor_id: actorid });
   if (error) throw error;
@@ -85,7 +80,7 @@ async function deletebooks(ids, actorid) {
 }
 const publicfields = `id,title,authors,isbn,subjects,publicationyear,description,coverurl,openlibraryid,source,status,condition,collectionarea,mrtstationid,${stations.relation},owner:users!books_ownerid_fkey(name)`;
 async function publicbooks(id) {
-  let query = supabase.from("books").select(publicfields).neq("status", "withdrawn");
+  let query = supabase.from("books").select(publicfields);
   if (id) {
     const { data, error } = await query.eq("id", id).maybeSingle();
   if (error) throw error;
@@ -121,7 +116,7 @@ async function catalogue(query) {
 
 const inventoryschema = catalogueschema.omit({ mrtstationids: true }).extend({
   sort: z.enum(["title", "author", "newest"]).default("title"),
-  status: z.enum(["available", "reserved", "adopted", "withdrawn"]).optional(),
+  status: z.enum(["available", "reserved", "adopted"]).optional(),
   title: z.string().trim().optional(),
   author: z.string().trim().min(1).optional(),
   isbn: z.string().trim().min(1).optional()
@@ -147,4 +142,4 @@ async function inventory(query) {
   };
 }
 
-module.exports = { bookschema, bookupdateschema, createbook, getbookbyid, listingschema, listingupdateschema, ownedbooks, editbook, withdrawbooks, deletebooks, publicbooks, publicfields, catalogueschema, catalogue, inventoryschema, inventory };
+module.exports = { bookschema, bookupdateschema, createbook, getbookbyid, listingschema, listingupdateschema, ownedbooks, editbook, deletebooks, publicbooks, publicfields, catalogueschema, catalogue, inventoryschema, inventory };

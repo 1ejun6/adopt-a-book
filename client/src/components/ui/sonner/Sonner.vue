@@ -5,7 +5,7 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
 </script>
 
 <template>
-  <Toaster position="top-center" :duration="4500" close-button :mobileOffset="10" class="quietToaster">
+  <Toaster position="top-center" :duration="1000" close-button :mobileOffset="10" class="quietToaster">
     <template #success-icon>
       <HugeiconsIcon :icon="CheckmarkCircle02Icon" :size="20" />
     </template>
@@ -23,12 +23,12 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
 </template>
 
 <style>
-/*@1ejun6 > shared quiet card > existing toast messages &&& actions stay unchanged */
+/*@1ejun6 > shared quiet card > keep messages & actions in one layout */
 .quietToaster [data-sonner-toast][data-styled='true'] {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 18px 42px 18px 18px;
+  display: grid;
+  grid-template-columns: 30px repeat(2, minmax(0, 1fr));
+  gap: .625rem;
+  padding: 1.25rem;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--background);
@@ -37,9 +37,10 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
   box-shadow: 0 6px 22px #633b2210;
 
   & [data-icon] {
+    grid-column: 1;
+    grid-row: 1;
     display: grid;
     place-items: center;
-    flex-shrink: 0;
     width: 30px;
     height: 30px;
     margin: 0;
@@ -60,8 +61,11 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
   }
 
   & [data-content] {
-    flex: 1;
+    grid-column: 2 / -1;
+    grid-row: 1;
+    align-self: center;
     min-width: 0;
+    padding-right: 1.25rem;
     gap: 4px;
     border: 0;
     overflow-wrap: anywhere;
@@ -81,19 +85,29 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
     line-height: 1.7;
   }
 
+  /*@1ejun6 > equal auth buttons share one row > centre labels */
   & [data-button] {
-    flex-shrink: 0;
-    align-self: center;
+    grid-row: 2;
+    align-self: stretch;
+    justify-content: center;
     margin: 0;
+    height: auto;
+    min-height: 36px;
+    padding: 0 .625rem;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--primary);
     color: var(--foreground);
-    font-family: inherit;
+    font: inherit;
+    text-align: center;
+    white-space: normal;
   }
 
+  & [data-cancel] { grid-column: 2; background: transparent; }
+  & [data-action] { grid-column: 3; }
+
   & [data-close-button] {
-    top: 12px;
+    top: 10px;
     right: 10px;
     left: auto;
     transform: none;
@@ -105,12 +119,7 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
     color: var(--muted-foreground);
   }
 
-  & [data-close-button]:hover {
-    background: var(--primary);
-  }
-
-  & svg {
-    border: 0;
-  }
+  & [data-close-button]:hover { background: var(--primary); }
+  & svg { border: 0; }
 }
 </style>

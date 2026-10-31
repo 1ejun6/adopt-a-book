@@ -5,6 +5,7 @@ import AdminHome from '../views/admin/Home.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
 import AdminBookInventory from '../views/admin/BookInventory.vue';
+import GuestDrives from '../views/guest/Drives.vue';
 import { auth, role, homeRoute } from '@/lib/auth';
 import { loadSession } from '@/lib/session';
 import { toast } from 'vue-sonner';
@@ -18,6 +19,7 @@ const router = createRouter({
       component: AppLayout,
       children: [
         { path: '', name: 'guestHome', component: GuestHome, label: 'Browse Books', roles: ['guest'] },
+        { path: 'drives', name: 'guestDrives', component: GuestDrives, label: 'Browse Drives', roles: ['guest'] },
         { path: 'login', name: 'login', component: Login, label: 'Login', roles: ['guest'], end: true },
         { path: 'register', name: 'register', component: Register, label: 'Create Account', roles: ['guest'] },
       ],

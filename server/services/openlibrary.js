@@ -5,10 +5,8 @@ function getuseragent() {
   return `adopt-a-book (${contact})`;
 }
 
-//@1ejun6 > match broad genres > ignore detailed subject tags such as places, characters, and catalogue codes.
 function generalgenres(subjects = []) {
   if (!Array.isArray(subjects)) { return []; }
-  //@1ejun6 > check tags separately > science &&& fiction in different tags must not become science fiction
   const tags = subjects.filter(subject => typeof subject === "string")
     .map(subject => subject.normalize("NFKC").toLowerCase().replace(/[’]/g, "'")
       .replace(/[_/–—]+/g, " ").replace(/\s+/g, " ").trim());
@@ -43,11 +41,9 @@ function generalgenres(subjects = []) {
   const matches = rules => rules.filter(([, pattern]) => tags.some(tag => pattern.test(tag))).map(([genre]) => genre);
   const fiction = matches(fictiongenres);
   const isfiction = fiction.length > 0 || tags.some(tag => /\bfiction\b/.test(tag) && !/\bnon[- ]?fiction\b/.test(tag));
-  //@1ejun6 > fiction genres take priority over story topics > do not label science fiction as science
   const genres = [...fiction, ...matches(formats), ...(isfiction ? [] : matches(nonfictiongenres))];
-  if (genres.length) { return genres.slice(0, 3); }
+  if (genres.length) { return [genres[0]]; }
   if (tags.some(tag => /\bnon[- ]?fiction\b/.test(tag))) { return ["Nonfiction"]; }
-  //@1ejun6 > audience is a fallback when no genre is identified > unknown subjects stay empty for manual review
   if (tags.some(tag => /\byoung adult\b/.test(tag))) { return ["Young adult"]; }
   if (tags.some(tag => /\bchildren(?:'s)?\b|\bjuvenile\b|\bpicture books\b/.test(tag))) { return ["Children"]; }
   return isfiction ? ["Fiction"] : [];
@@ -67,7 +63,6 @@ function mapsearchresult(item) {
   };
 }
 
-//@1ejun6 > fetch description for the selected work only > Open Library returns text ||| an object with value
 async function getdescription(id) {
   const workid = String(id).replace(/^\/works\//, "");
   if (!/^OL\d+W$/.test(workid)) {
@@ -104,4 +99,4 @@ async function searchbooks(query) {
   return (payload.docs || []).map(mapsearchresult);
 }
 
-module.exports = { searchbooks, getdescription };
+module.exports = { searchbooks, getdescription, generalgenres };

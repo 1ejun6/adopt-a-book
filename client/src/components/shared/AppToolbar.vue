@@ -1,5 +1,5 @@
 <script setup>
-import { Input } from '@/components/ui/input';
+import AppSearchInput from '@/components/shared/AppSearchInput.vue';
 
 const props = defineProps({
     searchPlaceholder: { type: String, default: 'search...' },
@@ -15,7 +15,7 @@ const search = defineModel('search', { type: String, default: '' });
 
         <!--@lee-hlmilk > search &&& page filters-->
         <div class="flex flex-col gap-2.5 sm:flex-row">
-            <Input type="search" v-model="search" class="h-auto flex-1 p-2.5 text-sm leading-4" :placeholder="props.searchPlaceholder" />
+            <AppSearchInput v-model="search" class="flex-1" :placeholder="props.searchPlaceholder" />
             <div v-if="$slots.filters || $slots.actions" class="flex flex-wrap gap-2.5">
                 <slot name="filters" />
                 <slot name="actions" />

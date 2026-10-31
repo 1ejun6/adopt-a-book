@@ -12,7 +12,7 @@ const badgeColour = computed(() => {
   const status = props.status.toLowerCase().trim();
   if (['available', 'approved', 'pickup confirmed', 'confirmed', 'open'].includes(status)) { return 'green'; }
   if (['rejected', 'cancelled'].includes(status)) { return 'rose'; }
-  if (['adopted', 'closed', 'withdrawn', 'collected'].includes(status)) { return 'neutral'; }
+  if (['adopted', 'closed', 'collected'].includes(status)) { return 'neutral'; }
 
   return 'amber';
 });
