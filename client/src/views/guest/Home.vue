@@ -1,5 +1,55 @@
 <script setup>
+import { onMounted, ref } from 'vue';
+import { toast } from 'vue-sonner';
+import { api } from '@/lib/api';
 import BookShelf from '@/components/guest/BookShelf.vue';
+
+const cachekey = 'guest-bookshelf';
+const books = ref([]);
+const loading = ref(true);
+const loaderror = ref(false);
+
+async function loadbooks(refresh = false) {
+    loading.value = true;
+    loaderror.value = false;
+
+    if (!refresh) {
+        try {
+            const cached = JSON.parse(localStorage.getItem(cachekey));
+            if (Array.isArray(cached) && cached.every(book => book && typeof book.id === 'string' && typeof book.title === 'string')) {
+                books.value = cached;
+                loading.value = false;
+                return;
+            }
+        } catch {
+            //@1ejun6 > storage can be unavailable or contain invalid data > fetch books instead
+        }
+    }
+
+    const toastid = toast.loading('loading books');
+    try {
+        const response = await api('/books', { query: { limit: 5, status: 'available' } });
+        if (!Array.isArray(response.books)) throw new Error('could not load books > please try again');
+        books.value = response.books;
+        try {
+            localStorage.setItem(cachekey, JSON.stringify(books.value));
+        } catch {
+            //@1ejun6 > books still display when browser storage is unavailable
+        }
+        if (!books.value.length) toast.info('no books available yet');
+        else if (refresh) toast.info('books refreshed');
+    } catch (error) {
+        loaderror.value = true;
+        toast.error(error.message || 'could not load books > please try again', {
+            action: { label: 'retry', onClick: () => loadbooks(true) },
+        });
+    } finally {
+        toast.dismiss(toastid);
+        loading.value = false;
+    }
+}
+
+onMounted(loadbooks);
 </script>
 
 <template>
@@ -9,7 +59,10 @@ import BookShelf from '@/components/guest/BookShelf.vue';
             <p>From our shelves to yours</p>
             <h1 class="text-6xl">Different shelves<br>Shared stories</h1>
             <p>Which one feels like your next chapter?</p>
-            <BookShelf />
+            <BookShelf v-if="!loaderror || books.length" :books="books" :isLoading="loading" />
+            <button type="button" class="rounded-md border px-3 py-1 text-sm" :disabled="loading" @click="loadbooks(true)">
+                {{ loading ? 'loading books...' : 'refresh books' }}
+            </button>
         </div>
     </section>
 </template>
