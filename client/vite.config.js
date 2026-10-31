@@ -35,6 +35,7 @@ export default defineConfig(({ mode }) => {
       host: clientUrl.hostname,
       port,
       strictPort: true,
+
     },
     preview: {
       host: clientUrl.hostname,

@@ -32,8 +32,8 @@ async function request(url, options = {}) {
     if (!response.ok || data.error) {
       const status = response.status === 429 ? 429 : 503;
       const message = status === 429
-        ? "location search is busy; try again shortly"
-        : "OneMap lookup unavailable; check server credentials or try again";
+        ? "location search is busy > try again shortly"
+        : String.raw`OneMap lookup unavailable > check server credentials \ try again`;
       const error = failure(message, status);
       error.unauthorized = response.status === 401 || (response.ok && Boolean(data.error));
       throw error;
@@ -43,7 +43,7 @@ async function request(url, options = {}) {
     if (error.status) {
       throw error;
     }
-    throw failure("location lookup unavailable; try again shortly");
+    throw failure("location lookup unavailable > try again shortly");
   }
 }
 
@@ -54,19 +54,19 @@ async function gettoken() {
   if (process.env.onemaptoken) {
     return process.env.onemaptoken;
   }
-  if (!process.env.ONEMAP_EMAIL || !process.env.ONEMAP_PASSWORD) {
-    throw failure("location search is not configured; set OneMap credentials on the server");
+  if (!process.env.onemapemail || !process.env.onemappassword) {
+    throw failure("location search is not configured > set OneMap credentials on your server");
   }
   if (!tokenrequest) {
     tokenrequest = (async () => {
       const data = await request(`${onemapurl}/api/auth/post/getToken`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: process.env.ONEMAP_EMAIL, password: process.env.ONEMAP_PASSWORD })
+        body: JSON.stringify({ email: process.env.onemapemail, password: process.env.onemappassword })
       });
       const expires = Number(data.expiry_timestamp) * 1000;
       if (!data.access_token || !Number.isFinite(expires) || expires <= Date.now() + 60000) {
-        throw failure("OneMap authentication failed; check server credentials");
+        throw failure("OneMap authentication failed > check server credentials");
       }
       token = { value: data.access_token, expires };
       return token.value;
@@ -115,7 +115,7 @@ async function cached(key, ttl, load) {
     return pending.get(key);
   }
   if (pending.size >= 4) {
-    throw failure("location search is busy; try again shortly", 429);
+    throw failure("location search is busy > try again shortly", 429);
   }
   const task = Promise.resolve().then(load).then(value => {
     if (!cache.has(key) && cache.size >= 100) {
@@ -176,9 +176,9 @@ async function nearby(input) {
       : [{ name: "Your selected location", lat: input.lat, lng: input.lng, source: "coordinates" }],
     require("../models/mrtstations").list()
   ]);
-  if (!stations.length) throw failure("MRT catalogue unavailable; contact the administrator");
+  if (!stations.length) throw failure("MRT catalogue unavailable > contact your administrator");
   if (!places.length) {
-    throw failure("postcode or place not found; try another address or Near me", 404);
+    throw failure(String.raw`postcode \ place not found > try another address`, 404);
   }
   const location = places[0];
   const nearbystations = rankedstations(location, stations, input.radiusKm);

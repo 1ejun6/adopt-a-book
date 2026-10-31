@@ -26,7 +26,7 @@ export async function api(endpoint, options = {}) {
         auth.user = null;
         auth.ready = true;
       }
-    } else { error.message = 'could not connect to the server > please try again'; }
+    } else { error.message = 'could not connect to server > please try again'; }
     throw error;
   }
 }
