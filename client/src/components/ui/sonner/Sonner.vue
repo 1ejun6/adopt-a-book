@@ -1,7 +1,7 @@
 <script setup>
 import { Toaster } from 'vue-sonner';
 import { HugeiconsIcon } from '@hugeicons/vue';
-import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading03Icon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading03Icon } from '@hugeicons/core-free-icons';
 </script>
 
 <template>
@@ -14,6 +14,9 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
     </template>
     <template #error-icon>
       <HugeiconsIcon :icon="CancelCircleIcon" :size="20" />
+    </template>
+    <template #close-icon>
+      <HugeiconsIcon :icon="Cancel01Icon" :size="20" />
     </template>
     <!--@1ejun6 > toast.promise uses loading while pending > success when resolved ||| error when rejected-->
     <template #loading-icon>
@@ -39,8 +42,10 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
   & [data-icon] {
     grid-column: 1;
     grid-row: 1;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
     width: 30px;
     height: 30px;
     margin: 0;
@@ -48,6 +53,8 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
     border-radius: 50%;
     background: var(--primary);
     color: #655985;
+
+    & svg { margin: 0; }
   }
 
   &[data-type='success'] [data-icon] {
@@ -65,7 +72,7 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
     grid-row: 1;
     align-self: center;
     min-width: 0;
-    padding-right: 1.25rem;
+    padding-right: 2.5rem;
     gap: 4px;
     border: 0;
     overflow-wrap: anywhere;
@@ -107,12 +114,14 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
   & [data-action] { grid-column: 3; }
 
   & [data-close-button] {
-    top: 10px;
-    right: 10px;
-    left: auto;
+    position: static;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
     transform: none;
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
     border: 0;
     border-radius: 4px;
     background: transparent;

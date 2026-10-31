@@ -1,13 +1,22 @@
 <script setup>
-import { RouterLink } from 'vue-router';
+import { ref } from 'vue';
 import bookspine from '@/assets/bookspine.svg';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
+import BookPreviewDialog from '@/components/guest/BookPreviewDialog.vue';
 
 const props = defineProps({
   books: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
 });
 const colourClasses = ['bg-badge-rose', 'bg-badge-neutral', 'bg-badge-amber', 'bg-badge-green', 'bg-primary'];
+const selectedbook = ref(null);
+const dialogopen = ref(false);
+
+//@1ejun6 > reuse cached shelf data for details > no extra book request
+function openbook(book) {
+  selectedbook.value = book;
+  dialogopen.value = true;
+}
 </script>
 
 <template>
@@ -20,7 +29,9 @@ const colourClasses = ['bg-badge-rose', 'bg-badge-neutral', 'bg-badge-amber', 'b
   <p v-else-if="!props.books.length">no books available yet</p>
   <div v-else-if="props.books.length" class="grid grid-cols-5 gap-10 border-b-10">
     <div v-for="(book, index) in props.books" :key="book.id" :class="colourClasses[index % colourClasses.length]"
-      class="book-spine relative rounded-[6px] hover:-translate-y-2.5" tabindex="0">
+      class="book-spine relative rounded-[6px] hover:-translate-y-2.5" role="button" tabindex="0"
+      :aria-label="`view ${book.title}`" aria-haspopup="dialog" @click="openbook(book)"
+      @keydown.enter.prevent="openbook(book)" @keydown.space.prevent="openbook(book)">
       <img :src="bookspine" alt="" width="80" height="280" class="w-full" />
       <!--@ChitanyaBharathi > title & author overlay spine between its binding lines-->
       <div class="absolute inset-x-[5%] top-[10%] bottom-[10%] flex justify-center">
@@ -30,14 +41,14 @@ const colourClasses = ['bg-badge-rose', 'bg-badge-neutral', 'bg-badge-amber', 'b
       </div>
       <!--@1ejun6 > bottom-10 lifts 224px-wide > left-1/2 & -translate-x-1/2 center it over spine-->
       <div
-        class="book-preview absolute bottom-10 left-1/2 w-50 -translate-x-1/2 bg-background p-2.5 rounded-md text-left space-y-2.5">
+        class="book-preview absolute bottom-10 left-1/2 w-50 -translate-x-1/2 border bg-background p-2.5 rounded-md text-left space-y-2.5">
         <AppBookIdentity :title="book.title" :author="(book.authors || []).join(', ')" :cover="book.coverurl" cover-class="w-8" />
         <p class="line-clamp-2 text-sm">{{ book.description }}</p>
-        <p class="text-sm"><RouterLink to="/register">click here to preview</RouterLink></p>
       </div>
     </div>
   </div>
 
+  <BookPreviewDialog v-model:open="dialogopen" :book="selectedbook" />
 </template>
 
 <style scoped>

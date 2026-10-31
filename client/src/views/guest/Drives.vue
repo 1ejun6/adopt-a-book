@@ -156,11 +156,9 @@ function opendrive(drive) {
           <AppDriveCard :drive="drive" :isLoading="loading" @open="opendrive(drive)" />
         </li>
       </ul>
-      <footer>
-        <AppPagination v-model:page="page" itemLabel="drives" :total="visibledrives.length"
-          :visibleCount="pagedrives.length" :pageSize="pagesize" :pageCount="pagecount" :loading="loading"
-          :disabled="loading" />
-      </footer>
+      <AppPagination v-model:page="page" itemLabel="drives" :total="visibledrives.length"
+        :visibleCount="pagedrives.length" :pageSize="pagesize" :pageCount="pagecount" :loading="loading"
+        :disabled="loading" />
     </template>
 
     <AppDriveDialog v-model:open="dialogopen" :drive="selecteddrive" />

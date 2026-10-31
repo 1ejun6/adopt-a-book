@@ -60,9 +60,6 @@ onMounted(loadbooks);
             <h1 class="text-6xl">Different shelves<br>Shared stories</h1>
             <p>Which one feels like your next chapter?</p>
             <BookShelf v-if="!loaderror || books.length" :books="books" :isLoading="loading" />
-            <button type="button" class="rounded-md border px-3 py-1 text-sm" :disabled="loading" @click="loadbooks(true)">
-                {{ loading ? 'loading books...' : 'refresh books' }}
-            </button>
         </div>
     </section>
 </template>
