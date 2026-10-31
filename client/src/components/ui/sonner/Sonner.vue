@@ -6,7 +6,8 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
 </script>
 
 <template>
-  <Toaster position="top-center" :duration="1000" :mobileOffset="10" class="lavenderToaster" :style="{ '--postcard-art': `url(${postcard})` }">
+  <Toaster position="top-center" :duration="1000" close-button :mobileOffset="10" class="lavenderToaster"
+    :style="{ '--postcard-art': `url(${postcard})` }">
     <template #success-icon>
       <HugeiconsIcon :icon="CheckmarkCircle02Icon" :size="20" />
     </template>
@@ -91,6 +92,40 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
     height: auto;
     min-height: 24px;
     white-space: normal;
+  }
+
+  /*@1ejun6 > equal auth buttons share one row > centre labels */
+  &.rsvptoast {
+    grid-template-columns: 20px repeat(2, minmax(0, 1fr));
+
+    &::before {
+      display: none;
+    }
+
+    & [data-content] {
+      grid-column: 2 / -1;
+    }
+
+    & [data-button] {
+      grid-row: 2;
+      justify-self: stretch;
+      justify-content: center;
+      text-align: center;
+      min-height: 36px;
+      padding: 0 .625rem;
+      background: var(--primary);
+      color: var(--foreground);
+      font: inherit;
+    }
+
+    & [data-cancel] {
+      border: 1px solid var(--border);
+      background: transparent;
+    }
+
+    & [data-action] {
+      grid-column: 3;
+    }
   }
 
   /*@1ejun6 > smaller stamp leaves room for messages on narrow mobile screens */

@@ -1,60 +1,75 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
-import axios from 'axios';
+import { api } from '@/lib/api';
 import { todayInSingapore } from '@/lib/utils';
-import AppFilters from '@/components/shared/AppFilters.vue';
+import AppDriveFilters from '@/components/shared/AppDriveFilters.vue';
 import AppPagination from '@/components/shared/AppPagination.vue';
 import AppDriveCard from '@/components/shared/AppDriveCard.vue';
 import AppDriveDialog from '@/components/shared/AppDriveDialog.vue';
 import { Button } from '@/components/ui/button';
 
+const cachekey = 'guest-adoption-drive';
 const drives = ref([]);
 const loading = ref(true);
-const loadError = ref('');
+const loaderror = ref('');
 const filters = reactive({ search: '', when: 'upcoming', status: 'all', sort: 'asc' });
 const page = ref(1);
-const pageSize = 10;
-const selectedDrive = ref(null);
-const dialogOpen = ref(false);
+const pagesize = 10;
 
-const whenTabs = [
-  { value: 'upcoming', label: 'Upcoming' },
-  { value: 'past', label: 'Past' },
-];
-
-async function fetchDrives() {
+async function fetchdrives(refresh = false) {
   loading.value = true;
-  loadError.value = '';
+  loaderror.value = '';
+  const today = todayInSingapore();
+
+  if (!refresh) {
+    try {
+      const cached = JSON.parse(localStorage.getItem(cachekey));
+      if (Array.isArray(cached) && cached.every(drive => drive && typeof drive.id === 'string' && typeof drive.title === 'string' && typeof drive.eventdate === 'string')) {
+        //@1ejun6 > cached drives can cross midnight > update past dates using Singapore time
+        drives.value = cached.map(drive => ({ ...drive, past: drive.eventdate < today }));
+        loading.value = false;
+        return;
+      }
+    } catch {
+      //@1ejun6 > browser storage unavailable \ invalid > fetch drives from server instead
+    }
+  }
+
   try {
-    const today = todayInSingapore();
-    const response = await axios.get(`${import.meta.env.VITE_SERVER_URL}/drives`);
-    const driveList = response.data.drives || [];
+    const response = await api('/drives');
+    const drivelist = response.drives;
+    if (!Array.isArray(drivelist)) throw new Error('could not load drives > please try again');
 
     // Get book counts for each station
-    const stationIds = [...new Set(driveList.map((d) => d.mrtstationid).filter(Boolean))];
-    const stationBookCounts = {};
+    const stationids = [...new Set(drivelist.map((d) => d.mrtstationid).filter(Boolean))];
+    const stationbookcounts = {};
 
     await Promise.all(
-      stationIds.map(async (id) => {
+      stationids.map(async (id) => {
         try {
-          const bookResponse = await axios.get(`${import.meta.env.VITE_SERVER_URL}/books`, {
-            params: { mrtstationids: id, status: 'available', limit: 1 },
+          const bookresponse = await api('/books', {
+            query: { mrtstationids: id, status: 'available', limit: 1 },
           });
-          stationBookCounts[id] = bookResponse.data.total ?? 0;
+          stationbookcounts[id] = bookresponse.total ?? 0;
         } catch {
-          stationBookCounts[id] = 0;
+          stationbookcounts[id] = null;
         }
       }),
     );
-    // 
-    drives.value = driveList.map((drive) => ({
+    drives.value = drivelist.map((drive) => ({
       ...drive,
       past: drive.eventdate < today,
-      bookCount: stationBookCounts[drive.mrtstationid] ?? 0,
+      bookCount: stationbookcounts[drive.mrtstationid] ?? null,
     }));
+    page.value = Math.min(page.value, pagecount.value);
+    try {
+      localStorage.setItem(cachekey, JSON.stringify(drives.value));
+    } catch {
+      //@1ejun6 > local storage may be blocked \ full > keep fetched drives visible
+    }
   } catch (error) {
-    loadError.value = error.message;
+    loaderror.value = error.message;
     toast.error(error.message);
   } finally {
     loading.value = false;
@@ -66,7 +81,7 @@ const counts = computed(() => {
   return { upcoming: drives.value.length - past, past };
 });
 
-const visibleDrives = computed(() => {
+const visibledrives = computed(() => {
   const search = filters.search.trim().toLowerCase();
   const direction = filters.sort === 'asc' ? 1 : -1;
   return drives.value
@@ -75,104 +90,79 @@ const visibleDrives = computed(() => {
         drive.past === (filters.when === 'past') &&
         (filters.status === 'all' || drive.status === filters.status) &&
         (!search ||
-          [drive.title, drive.location, drive.mrtstation.name].some((text) =>
+          [drive.title, drive.location, drive.mrtstation?.name || ''].some((text) =>
             text.toLowerCase().includes(search),
           )),
     )
     .sort((a, b) => (a.eventdate > b.eventdate ? 1 : -1) * direction);
 });
 
-const pageCount = computed(() => Math.max(1, Math.ceil(visibleDrives.value.length / pageSize)));
-const pageDrives = computed(() =>
-  visibleDrives.value.slice((page.value - 1) * pageSize, page.value * pageSize),
+const pagecount = computed(() => Math.max(1, Math.ceil(visibledrives.value.length / pagesize)));
+const pagedrives = computed(() =>
+  visibledrives.value.slice((page.value - 1) * pagesize, page.value * pagesize),
 );
 
 watch(filters, () => {
   page.value = 1;
 });
 
-function openDrive(drive) {
-  selectedDrive.value = drive;
-  dialogOpen.value = true;
-}
+onMounted(() => fetchdrives());
+const selecteddrive = ref(null);
+const dialogopen = ref(false);
 
-function clearFilters() {
-  filters.search = '';
-  filters.status = 'all';
+function opendrive(drive) {
+  selecteddrive.value = drive;
+  dialogopen.value = true;
 }
-
-onMounted(fetchDrives);
 </script>
 
 <template>
-  <section class="mx-auto w-full max-w-3xl flex flex-col gap-5">
+  <section class="mx-auto w-full max-w-3xl space-y-5">
     <header>
-      <h1>Book Drives</h1>
-      <p>meet fellow readers and give books a new home</p>
+      <h1>book drives</h1>
+      <p>meet fellow readers & give books a new home</p>
     </header>
 
-    <AppFilters
-      v-model:search="filters.search"
-      v-model:status="filters.when"
-      :tabs="whenTabs"
-      :counts="loading ? {} : counts"
-      searchPlaceholder="Search by drive, venue, MRT..."
-    >
-      <template #filters>
-        <select v-model="filters.status" class="rounded-md border p-2 text-sm sm:w-auto">
-          <option value="all">All statuses</option>
-          <option value="open">Open</option>
-          <option value="closed">Closed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+    <AppDriveFilters v-model:search="filters.search" v-model:when="filters.when" v-model:status="filters.status"
+      v-model:sort="filters.sort" :counts="counts" :loading="loading" />
+    <!--@1ejun6 > loading placeholders use drive card props-->
+    <ul v-if="loading" class="space-y-2.5">
+      <li v-for="index in 3" :key="index">
+        <AppDriveCard :isLoading="loading" />
+      </li>
+    </ul>
 
-        <select v-model="filters.sort" class="rounded-md border p-2 text-sm sm:w-auto">
-          <option value="asc">Date: soonest first</option>
-          <option value="desc">Date: latest first</option>
-        </select>
-      </template>
-    </AppFilters>
-    <!-- @brod Loading message -->
-    <p v-if="loading" class="py-5 text-center text-sm">Loading book drives…</p>
-    
     <!-- @brod Load Error message -->
-    <div v-else-if="loadError" class="flex flex-col items-center gap-2 rounded-lg border p-5 text-center" role="alert">
-      <h2>We couldn't load the book drives</h2>
-      <p class="text-sm">{{ loadError }}</p>
-      <Button @click="fetchDrives">Try again</Button>
+    <div v-else-if="loaderror && !drives.length"
+      class="space-y-2.5 rounded-lg border p-5 text-center" role="alert">
+      <h2>could not load book drives</h2>
+      <p class="text-sm">{{ loaderror }}</p>
+      <Button @click="fetchdrives(true)">try again</Button>
     </div>
 
 
     <!-- @brod No drives message -->
-    <div v-else-if="!visibleDrives.length" class="flex flex-col items-center rounded-lg border p-5 text-center">
-      <template v-if="filters.search.trim() || filters.status !== 'all'">
-        <h2>No drives match your filters</h2>
-        <p class="text-sm">Try adjusting your filters</p>
-        <Button variant="outline" @click="clearFilters">Clear filters</Button>
-      </template>
-      <template v-else>
-        <h2>No {{ filters.when }} drives</h2>
-        <p class="text-sm">Check back for future community events.</p>
-      </template>
-    </div>
+    <template v-else-if="!visibledrives.length">
+      <div v-if="!filters.search.trim() && filters.status === 'all'" class="space-y-2.5 rounded-lg border p-5 text-center">
+        <h2>no {{ filters.when }} drives</h2>
+        <p class="text-sm">check back for future community events</p>
+      </div>
+    </template>
 
     <!-- @brod Load Drives list  -->
     <template v-else>
-      <ul class="flex flex-col">
-        <li v-for="drive in pageDrives" :key="drive.id">
-          <AppDriveCard :drive="drive" @open="openDrive(drive)" />
+      <ul class="space-y-2.5">
+        <li v-for="drive in pagedrives" :key="drive.id">
+          <AppDriveCard :drive="drive" :isLoading="loading" @open="opendrive(drive)" />
         </li>
       </ul>
-      <AppPagination
-        v-model:page="page"
-        itemLabel="drives"
-        :total="visibleDrives.length"
-        :visibleCount="pageDrives.length"
-        :pageSize="pageSize"
-        :pageCount="pageCount"
-      />
+      <footer>
+        <AppPagination v-model:page="page" itemLabel="drives" :total="visibledrives.length"
+          :visibleCount="pagedrives.length" :pageSize="pagesize" :pageCount="pagecount" :loading="loading"
+          :disabled="loading" />
+      </footer>
     </template>
 
-    <AppDriveDialog v-model:open="dialogOpen" :drive="selectedDrive" />
+    <AppDriveDialog v-model:open="dialogopen" :drive="selecteddrive" />
   </section>
 </template>

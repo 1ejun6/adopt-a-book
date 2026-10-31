@@ -87,7 +87,7 @@ async function fetchBooks() {
     } catch (error) {
         if (id !== requestId) { return; }
         loadError.value = error.message;
-        toast.error(error.message, { action: { label: 'retry', onClick: fetchBooks } });
+        toast.error(error.message, { duration: Infinity, action: { label: 'retry', onClick: fetchBooks } });
         books.value = [];
     } finally {
         if (id === requestId) { loading.value = false; }
