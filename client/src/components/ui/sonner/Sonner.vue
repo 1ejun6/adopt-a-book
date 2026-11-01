@@ -43,7 +43,7 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
     grid-column: 1;
     grid-row: 1;
     justify-content: center;
-    align-self: center;
+    align-self: start;
     width: 30px;
     height: 30px;
     margin: 0;
@@ -67,10 +67,10 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
   & [data-content] {
     grid-column: 2 / -1;
     grid-row: 1;
-    align-self: center;
+    align-self: start;
     min-width: 0;
     padding-right: 2.5rem;
-    gap: 4px;
+    gap: .625rem;
     overflow-wrap: anywhere;
   }
 
@@ -112,7 +112,7 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
     grid-column: 3;
     grid-row: 1;
     justify-self: end;
-    align-self: center;
+    align-self: start;
     transform: none;
     width: 30px;
     height: 30px;

@@ -4,7 +4,8 @@ import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { toast } from 'vue-sonner';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bookmark02Icon } from '@hugeicons/core-free-icons';
+import { Bookmark02Icon, Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon } from '@hugeicons/vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FocusScope } from 'reka-ui';
@@ -34,37 +35,45 @@ let loadid = 0;
 let controller;
 const commentToasts = new Set();
 
-//@1ejun6 > save book first > optional comment stays in toast until saved or dismissed
+//@1ejun6 > book is already saved > empty comment closes toast without another request
 function showSavedToast(entry) {
   const id = `watchlist-comment-${entry.bookid.id}`;
   const comment = ref('');
   const busy = ref(false);
-  const options = { id, duration: Infinity, closeButton: true, style: { pointerEvents: 'auto' } };
-  const description = () => h(FocusScope, { asChild: true, trapped: true, loop: true }, () => h('form', { class: 'space-y-2.5', onSubmit: saveComment }, [
-    h('label', { class: 'block' }, [
-      `optional comment for ${entry.bookid.title}`,
-      h(Input, { modelValue: comment.value, 'onUpdate:modelValue': value => { comment.value = value; }, maxlength: 300, disabled: busy.value, placeholder: 'add a comment' }),
+  const error = ref('');
+  const options = { id, duration: Infinity, style: { pointerEvents: 'auto' } };
+  const content = () => h(FocusScope, { asChild: true, trapped: true, loop: true }, () => h('div', { class: 'w-full space-y-2.5 rounded-lg border bg-background p-5 font-body text-sm shadow-sm' }, [
+    h('div', { class: 'flex items-start gap-2.5' }, [
+      h(HugeiconsIcon, { icon: error.value ? CancelCircleIcon : CheckmarkCircle02Icon, class: `size-5 shrink-0 ${error.value ? 'text-destructive' : 'text-success-foreground'}`, 'aria-hidden': true }),
+      h('div', { class: 'min-w-0 flex-1' }, [
+        h('p', { role: error.value ? 'alert' : undefined }, error.value || 'saved to watchlist'),
+        h('p', { class: 'truncate text-xs text-muted-foreground', title: entry.bookid.title }, entry.bookid.title),
+      ]),
+      h('button', { type: 'button', title: 'dismiss', onClick: () => toast.dismiss(id) }, [h(HugeiconsIcon, { icon: Cancel01Icon, class: 'size-5', 'aria-hidden': true })]),
     ]),
-    h('div', { class: 'flex gap-2.5' }, [
-      h(Button, { type: 'submit', size: 'sm', disabled: busy.value || !comment.value.trim() }, () => busy.value ? 'saving…' : 'save comment'),
-      h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: () => toast.dismiss(id) }, () => 'skip'),
+    h('form', { class: 'flex gap-2.5', onSubmit: saveComment }, [
+      h(Input, { modelValue: comment.value, 'onUpdate:modelValue': value => { comment.value = value; }, maxlength: 300, disabled: busy.value, placeholder: 'optional comment', class: 'h-9 text-sm' }),
+      h(Button, { type: 'submit', class: 'shrink-0', disabled: busy.value }, () => busy.value ? 'saving…' : 'save'),
     ]),
   ]));
   async function saveComment(event) {
     event.preventDefault();
-    if (busy.value || !comment.value.trim()) return;
+    if (busy.value) return;
+    if (!comment.value.trim()) { toast.dismiss(id); return; }
     busy.value = true;
+    error.value = '';
     try {
       await api(`/watchlist/${entry.id}`, { method: 'PATCH', body: { comments: comment.value.trim() } });
-      toast.success('comment saved', { ...options, description: undefined, duration: 1000 });
-    } catch (error) {
-      toast.error(error.message, { ...options, description });
+      toast.dismiss(id);
+      toast.success('comment saved', { duration: 1000, style: { pointerEvents: 'auto' } });
+    } catch (failure) {
+      error.value = failure.message;
     } finally {
       busy.value = false;
     }
   }
   commentToasts.add(id);
-  toast.success('saved to watchlist', { ...options, description });
+  toast.custom(content, options);
 }
 
 function getAuthors(book) {
