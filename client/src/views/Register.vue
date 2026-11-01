@@ -22,8 +22,8 @@ async function register() {
             body: { name: form.name.trim(), email: form.email.trim(), password: form.password }
         };
 
-        const response = await api('/register', data);
-        console.log(response.message || 'registration successful');
+        await api('/register', data);
+        toast.success('account created > log in to continue');
         form.password = '';
 
         await router.push('/login');

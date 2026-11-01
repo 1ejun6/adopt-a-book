@@ -29,6 +29,7 @@ async function logout() {
     await logoutSession();
     status.value = false;
     await router.push('/login');
+    toast.success('logged out');
   } catch (error) {
     toast.error(error.message);
   } finally {

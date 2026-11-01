@@ -27,9 +27,9 @@ const route = useRoute();
       Logout
     </button>
   </nav>
-  <!--@1ejun6 > show desktop links when customer menu has enough room -->
-  <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden lg:flex [&>div]:w-full">
-    <!--@1ejun6 > fill reka menu wrapper so account & logout stay at right -->
+  <!--@1ejun6 > md is 768px-->
+  <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden md:flex [&>div]:w-full">
+    <!--@1ejun6 > overrides menu max-w-max > allowing it to grow wider than its links > tailwind selector >  sets width to 100%-->
     <NavigationMenuList class="w-full">
       <!--@1ejun6 > margin left > login link-->
       <NavigationMenuItem v-for="link in links" :key="link.name" :class="{ 'ml-auto': link.end }">
