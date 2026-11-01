@@ -8,7 +8,6 @@ import AppDriveFilters from '@/components/shared/AppDriveFilters.vue';
 import AppPagination from '@/components/shared/AppPagination.vue';
 import AppDriveCard from '@/components/shared/AppDriveCard.vue';
 import AppDriveDialog from '@/components/shared/AppDriveDialog.vue';
-import { Button } from '@/components/ui/button';
 
 const cachekey = 'guest-adoption-drive';
 const drives = ref([]);
@@ -77,7 +76,7 @@ async function fetchdrives(refresh = false) {
     }
   } catch (error) {
     loaderror.value = error.message;
-    toast.error(error.message);
+    toast.error(error.message, { duration: Infinity, action: { label: 'retry', onClick: () => fetchdrives(true) } });
   } finally {
     loading.value = false;
   }
@@ -141,16 +140,8 @@ function opendrive(drive) {
       </li>
     </ul>
 
-    <!-- @brod Load Error message -->
-    <div v-else-if="loaderror && !drives.length" class="space-y-2.5 rounded-lg border p-5 text-center" role="alert">
-      <h2>could not load book drives</h2>
-      <p class="text-sm">{{ loaderror }}</p>
-      <Button @click="fetchdrives(true)">try again</Button>
-    </div>
-
-
     <!-- @brod No drives message -->
-    <template v-else-if="!visibledrives.length">
+    <template v-else-if="!loaderror && !visibledrives.length">
       <p v-if="nearby" class="text-sm" role="status">no drives near this location > try a wider distance</p>
       <div v-if="!filters.search.trim() && filters.status === 'all' && !nearby"
         class="space-y-2.5 rounded-lg border p-5 text-center">
@@ -160,7 +151,7 @@ function opendrive(drive) {
     </template>
 
     <!-- @brod Load Drives list  -->
-    <template v-else>
+    <template v-else-if="drives.length">
       <ul class="space-y-2.5">
         <li v-for="drive in pagedrives" :key="drive.id">
           <AppDriveCard :drive="drive" :isLoading="loading" @open="opendrive(drive)" />

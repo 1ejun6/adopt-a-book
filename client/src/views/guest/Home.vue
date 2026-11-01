@@ -37,10 +37,11 @@ async function loadbooks(refresh = false) {
             //@1ejun6 > books still display when browser storage is unavailable
         }
         if (!books.value.length) toast.info('no books available yet');
-        else if (refresh) toast.info('books refreshed');
+        else if (refresh) toast.success('books refreshed');
     } catch (error) {
         loaderror.value = true;
         toast.error(error.message || 'could not load books > please try again', {
+            duration: Infinity,
             action: { label: 'retry', onClick: () => loadbooks(true) },
         });
     } finally {

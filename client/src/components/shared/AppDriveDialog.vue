@@ -90,7 +90,7 @@ async function fetchBooks() {
     totalBooks.value = response.total || 0;
   } catch (error) {
     bookError.value = error.message;
-    toast.error(error.message);
+    toast.error(error.message, { duration: Infinity, style: { pointerEvents: 'auto' }, action: { label: 'retry', onClick: fetchBooks } });
   } finally {
     loadingBooks.value = false;
   }
@@ -143,9 +143,8 @@ watch(
             </li>
           </ul>
 
-          <p v-else-if="bookError">{{ bookError }}</p>
-          <p v-else-if="!books.length">no available books at this station yet</p>
-          <template v-else>
+          <p v-else-if="!bookError && !books.length">no available books at this station yet</p>
+          <template v-else-if="!bookError">
             <ul class="space-y-2.5">
               <li v-for="book in books" :key="book.id">
                 <AppBookIdentity :title="book.title" :author="book.authors?.join(', ')" :cover="book.coverurl" />

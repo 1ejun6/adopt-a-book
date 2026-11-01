@@ -103,7 +103,7 @@ async function deleteBooks() {
         const { deletedids = [] } = await api('/admin/books', { method: 'DELETE', body: { ids: bookids } });
         for (const id of deletedids) { bookDetails.delete(id); }
         await fetchBooks();
-        toast.info(`${deletedids.length} deleted`, {
+        toast.success(`${deletedids.length} deleted`, {
             description: titles.map((title, index) => `${index + 1}. ${title}`).join('\n'),
             style: { whiteSpace: 'pre-line' }
         });
