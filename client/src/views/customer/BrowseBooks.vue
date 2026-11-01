@@ -1,5 +1,6 @@
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/lib/api';
 import { toast } from 'vue-sonner';
 import AppPagination from '@/components/shared/AppPagination.vue';
@@ -20,10 +21,17 @@ const watchlistLoading = ref(true);
 const saving = reactive(new Map());
 
 //@sree-sanjana06 > search, genre and sorting filters for Browse Books
-const filters = reactive({ search: '', subject: '', sort: 'title' });
+const route = useRoute();
+const router = useRouter();
+const querytext = value => typeof value === 'string' ? value : '';
+const querypage = () => {
+  const value = Number(querytext(route.query.page));
+  return Number.isSafeInteger(value) && value > 0 ? value : 1;
+};
+const filters = computed(() => ({ search: querytext(route.query.search), subject: querytext(route.query.subject), sort: ['title', 'author', 'newest'].includes(route.query.sort) ? route.query.sort : 'title' }));
 
 //@sree-sanjana06 > pagination and saved-book lookup
-const page = ref(1);
+const page = ref(querypage());
 const pageSize = 15;
 const total = ref(0);
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
@@ -37,23 +45,42 @@ const savedIds = computed(() => {
 });
 
 let requestId = 0;
+let controller;
+let watchlistcontroller;
+
+//@1ejun6 > filters own search URL updates > page changes preserve those filters
+function setpage(value, replace = false) {
+  const query = { ...route.query };
+  if (value === 1) delete query.page;
+  else query.page = String(value);
+  return router[replace ? 'replace' : 'push']({ query });
+}
+
+function cancelbooks() {
+  requestId++;
+  controller?.abort();
+}
 
 //@sree-sanjana06 > fetch matching books using existing catalogue API
 async function fetchBooks() {
-  const id = ++requestId;
+  cancelbooks();
+  const id = requestId;
+  const request = new AbortController();
+  controller = request;
   loading.value = true;
   loadError.value = '';
 
   try {
     const response = await api('/books', {
       method: 'GET',
+      signal: request.signal,
       query: {
         page: page.value,
         limit: pageSize,
-        search: filters.search.trim(),
+        search: filters.value.search.trim(),
         status: 'available',
-        subject: filters.subject.trim() || undefined,
-        sort: filters.sort
+        subject: filters.value.subject.trim() || undefined,
+        sort: filters.value.sort
       }
     });
 
@@ -64,14 +91,14 @@ async function fetchBooks() {
 
     //@sree-sanjana06 > correct page if results now have fewer pages
     if (page.value > pageCount.value) {
-      page.value = pageCount.value;
+      await setpage(pageCount.value, true);
       return;
     }
 
     books.value = Array.isArray(response.books) ? response.books : [];
     if (!books.value.length) toast.info('no books found > adjust search & filters', { id: 'browse-empty' });
   } catch (error) {
-    if (id !== requestId) return;
+    if (id !== requestId || request.signal.aborted) return;
     loadError.value = error.message;
     toast.error(error.message, { duration: Infinity, closeButton: true, action: { label: 'retry', onClick: fetchBooks } });
     books.value = [];
@@ -83,16 +110,20 @@ async function fetchBooks() {
 
 //@sree-sanjana06 > fetch saved books to identify existing watchlist entries
 async function loadWatchlist() {
+  watchlistcontroller?.abort();
+  const request = new AbortController();
+  watchlistcontroller = request;
   watchlistLoading.value = true;
   watchlistError.value = false;
   try {
-    const response = await api('/watchlist', { method: 'GET' });
+    const response = await api('/watchlist', { method: 'GET', signal: request.signal });
     watchlist.value = response.watchlist || [];
   } catch (error) {
+    if (request.signal.aborted) return;
     watchlistError.value = true;
     toast.error(error.message, { duration: Infinity, closeButton: true, action: { label: 'retry', onClick: loadWatchlist } });
   } finally {
-    watchlistLoading.value = false;
+    if (watchlistcontroller === request) watchlistLoading.value = false;
   }
 }
 
@@ -105,11 +136,13 @@ async function toggleSave(book) {
     if (entry) {
       await api(`/watchlist/${entry.id}`, { method: 'DELETE' });
       watchlist.value = watchlist.value.filter(item => item.id !== entry.id);
+      toast.dismiss(`watchlist-comment-${book.id}`);
       toast.success('removed from watchlist');
     } else {
       const response = await api('/watchlist', { method: 'POST', body: { bookid: book.id, comments: '' } });
-      watchlist.value.push({ ...response.entry, bookid: book });
-      toast.success('saved to watchlist');
+      const savedEntry = { ...response.entry, bookid: book };
+      watchlist.value.push(savedEntry);
+      dialogs.value?.showSavedToast(savedEntry);
     }
   } catch (error) {
     toast.error(error.message);
@@ -118,14 +151,22 @@ async function toggleSave(book) {
   }
 }
 
-//@sree-sanjana06 > reset to page 1 when filters change, then fetch results
-watch(filters, () => {
-  if (page.value === 1) fetchBooks();
-  else page.value = 1;
+watch(page, value => {
+  if (value !== querypage()) setpage(value);
 });
 
-watch(page, fetchBooks, { immediate: true });
+//@1ejun6 > reload & browser navigation restore controls from URL before fetching
+watch(() => [route.query.search, route.query.subject, route.query.sort, route.query.page], () => {
+  if (route.name !== 'customerBooks') return;
+  page.value = querypage();
+  fetchBooks();
+}, { immediate: true });
+
 onMounted(loadWatchlist);
+onBeforeUnmount(() => {
+  cancelbooks();
+  watchlistcontroller?.abort();
+});
 </script>
 
 <template>
@@ -137,7 +178,7 @@ onMounted(loadWatchlist);
     </header>
 
     <!--@sree-sanjana06 > reusable customer filters built with AppToolbar-->
-    <BrowseBookFilters v-model:search="filters.search" v-model:subject="filters.subject" v-model:sort="filters.sort" />
+    <BrowseBookFilters @pending="cancelbooks(); loading = true" @refresh="fetchBooks" />
 
     <p v-if="!loadError && !loading" class="text-sm text-muted-foreground" role="status">{{ total }} books found</p>
 
@@ -146,15 +187,18 @@ onMounted(loadWatchlist);
         <CustomerBookCard v-for="index in 6" :key="index" loading />
       </template>
       <template v-else>
-        <CustomerBookCard v-for="book in books" :key="book.id" :book="book" :saved="savedIds.has(book.id)" :busy="watchlistLoading || watchlistError || saving.has(book.id)" @preview="dialogs?.openBookDetails($event)" @save="toggleSave" @unsave="toggleSave" />
+        <CustomerBookCard v-for="book in books" :key="book.id" :book="book" :saved="savedIds.has(book.id)"
+          :busy="watchlistLoading || watchlistError || saving.has(book.id)" @preview="dialogs?.openBookDetails($event)"
+          @save="toggleSave" @unsave="toggleSave" />
       </template>
     </section>
 
     <!--@sree-sanjana06 > existing pagination component-->
-    <AppPagination v-if="!loadError && total > 0" v-model:page="page" itemLabel="books" :total="total" :visibleCount="books.length" :pageSize="pageSize" :pageCount="pageCount" :loading="loading" :disabled="loading" />
+    <AppPagination v-if="!loadError && total > 0" v-model:page="page" itemLabel="books" :total="total"
+      :visibleCount="books.length" :pageSize="pageSize" :pageCount="pageCount" :loading="loading" :disabled="loading" />
 
     <!--@sree-sanjana06 > shared book details popup; request workflow handled separately-->
-    <CustomerBookDialogs ref="dialogs" :savedIds="savedIds" />
+    <CustomerBookDialogs ref="dialogs" :savedIds="savedIds" :canSave="!watchlistLoading && !watchlistError" :busyIds="new Set(saving.keys())" @save="toggleSave" />
 
   </section>
 </template>
