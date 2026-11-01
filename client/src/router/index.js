@@ -35,7 +35,7 @@ const router = createRouter({
         { path: 'adoptions', name: 'customerAdoptions',component: MyAdoptions, label: 'My Adoptions',roles: ['customer']},
         {path: 'pickups',name: 'customerPickups',label: 'Pickups', roles: ['customer']},
         {path: 'drives', name: 'customerDrives', label: 'Adoption Drives', roles: ['customer']},
-        {path: 'account',name: 'customerAccount', label: 'My Account', roles: ['customer'], end: true}
+        {path: 'account',name: 'customerAccount', label: 'Account', roles: ['customer'], end: true}
       ]
     }
   ]
