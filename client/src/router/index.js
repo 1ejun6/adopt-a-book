@@ -5,7 +5,7 @@ import AdminHome from '../views/admin/Home.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
 import AdminBookInventory from '../views/admin/BookInventory.vue';
-import GuestDrives from '../views/guest/Drives.vue';
+import GuestDrives from '../views/guest/AdoptionDrives.vue';
 import { auth, role, homeRoute } from '@/lib/auth';
 import { loadSession } from '@/lib/session';
 import { toast } from 'vue-sonner';

@@ -34,8 +34,7 @@ const booklabel = computed(() => `${bookcount.value ?? '—'} ${bookcount.value 
 
 <template>
   <div v-if="props.isLoading"
-    class="flex items-center gap-2.5 rounded-lg border p-5 sm:gap-5" role="status"
-    aria-label="loading book drive" aria-busy="true">
+    class="flex items-center gap-2.5 rounded-lg border p-5 sm:gap-5" role="status" aria-busy="true">
     <Skeleton class="size-14 shrink-0" />
     <div class="flex-1 space-y-2.5">
       <Skeleton class="h-6 w-3/4" />
@@ -46,7 +45,7 @@ const booklabel = computed(() => `${bookcount.value ?? '—'} ${bookcount.value 
       </div>
     </div>
   </div>
-  <button v-else-if="drive" type="button" :aria-label="`${drive.title} > ${status}`"
+  <button v-else-if="drive" type="button"
     class="washi-tape washi-tape-hover flex w-full items-center gap-2.5 rounded-lg border p-5 sm:gap-5 text-left text-sm"
     @click="emit('open')">
     <time :datetime="drive.eventdate" class="grid size-14 shrink-0 self-start place-content-center rounded-lg border text-center"

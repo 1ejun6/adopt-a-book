@@ -54,12 +54,16 @@ onMounted(loadbooks);
 
 <template>
     <section class="mx-auto w-full max-w-xl content-center">
-        <!--@ChitanyaBharathi > space-y-5 > even gap between every child > no margin on each one-->
+        <!--@1ejun6 > text gaps stay compact > give bookshelf a clearer separation -->
         <div class="space-y-5 text-center">
-            <p>From our shelves to yours</p>
-            <h1 class="text-6xl">Different shelves<br>Shared stories</h1>
-            <p>Which one feels like your next chapter?</p>
-            <BookShelf v-if="!loaderror || books.length" :books="books" :isLoading="loading" />
+            <div class="grid gap-2.5">
+                <p>From our shelves to yours</p>
+                <h1 class="text-6xl">Different shelves<br>Shared stories</h1>
+                <p>Which one feels like your next chapter?</p>
+            </div>
+            <div v-if="!loaderror || books.length">
+                <BookShelf :books="books" :isLoading="loading" />
+            </div>
         </div>
     </section>
 </template>

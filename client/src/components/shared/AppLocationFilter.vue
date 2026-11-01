@@ -10,7 +10,7 @@ import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 
 const props = defineProps({
   defaultRadius: { type: Number, default: 3 },
-  placeholder: { type: String, default: 'postcode or place, eg. 238801 or Bishan' }
+  placeholder: { type: String, default: 'postcode or place' }
 });
 
 const stationIds = defineModel('stationIds', { type: String, default: '' });
@@ -93,19 +93,22 @@ function clear() {
   stationIds.value = '';
   emit('change', null);
 }
+
+defineExpose({ clear });
 </script>
 
 <template>
   <!--@ChitanyaBharathi > the form is the card itself > no extra wrapper-->
-  <form class="space-y-5 rounded-lg border p-5" @submit.prevent="searchPlace">
+  <form @submit.prevent="searchPlace">
     <Field>
-      <FieldLabel :for="inputId">Location</FieldLabel>
+      <FieldLabel :for="inputId" class="sr-only">location</FieldLabel>
       <div class="flex gap-2.5">
         <Button type="button" variant="outline" size="icon" :disabled="loading" @click="nearMe">
           <HugeiconsIcon :icon="Location08Icon" aria-hidden="true" />
+          <span class="sr-only">use current location</span>
         </Button>
-        <Input :id="inputId" v-model="query" type="search" :placeholder="props.placeholder" />
-        <Button type="submit" :disabled="loading || (!query.trim() && !location)">Search</Button>
+        <Input :id="inputId" v-model="query" type="search" :placeholder="props.placeholder" class="flex-1" />
+        <Button type="submit" :disabled="loading || (!query.trim() && !location)">search</Button>
       </div>
     </Field>
 
@@ -116,7 +119,5 @@ function clear() {
     </Field>
 
     <FieldDescription v-if="loading">loading location...</FieldDescription>
-    <FieldDescription v-else-if="location">{{ location.name }} selected > adjust distance & click search</FieldDescription>
-    <FieldDescription v-else>enter a postcode \ select your location > choose a distance & click search</FieldDescription>
   </form>
 </template>

@@ -34,16 +34,16 @@ const tabs = [
       <AppDriveLegend class="w-full sm:ml-auto sm:w-auto" />
     </div>
     <div class="flex flex-col gap-2.5 sm:flex-row">
-      <AppSearchInput v-model="search" class="flex-1" aria-label="search drives"
+      <AppSearchInput v-model="search" class="flex-1"
         placeholder="search drives by name \ venue \ mrt" />
       <div class="flex gap-2.5">
-        <select v-model="status" class="min-w-0 flex-1 rounded-md border p-2.5 text-sm" aria-label="drive status">
+        <select v-model="status" title="drive status" class="min-w-0 flex-1 rounded-md border p-2.5 text-sm">
           <option value="all">all statuses</option>
           <option value="open">open</option>
           <option value="closed">closed</option>
           <option value="cancelled">cancelled</option>
         </select>
-        <select v-model="sort" class="min-w-0 flex-1 rounded-md border p-2.5 text-sm" aria-label="sort drives by date">
+        <select v-model="sort" title="sort drives by date" class="min-w-0 flex-1 rounded-md border p-2.5 text-sm">
           <option value="asc">earliest first</option>
           <option value="desc">latest first</option>
         </select>

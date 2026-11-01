@@ -42,14 +42,11 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
   & [data-icon] {
     grid-column: 1;
     grid-row: 1;
-    display: flex;
-    align-items: center;
     justify-content: center;
     align-self: center;
     width: 30px;
     height: 30px;
     margin: 0;
-    border: 0;
     border-radius: 50%;
     background: var(--primary);
     color: #655985;
@@ -74,19 +71,16 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
     min-width: 0;
     padding-right: 2.5rem;
     gap: 4px;
-    border: 0;
     overflow-wrap: anywhere;
   }
 
   & [data-title] {
-    border: 0;
     font-size: 13px;
     font-weight: 600;
     line-height: 1.6;
   }
 
   & [data-description] {
-    border: 0;
     color: var(--muted-foreground);
     font-size: 12px;
     line-height: 1.7;
@@ -129,6 +123,5 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
   }
 
   & [data-close-button]:hover { background: var(--primary); }
-  & svg { border: 0; }
 }
 </style>

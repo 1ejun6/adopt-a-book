@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
 import { todayInSingapore } from '@/lib/utils';
+import AppLocationFilter from '@/components/shared/AppLocationFilter.vue';
 import AppDriveFilters from '@/components/shared/AppDriveFilters.vue';
 import AppPagination from '@/components/shared/AppPagination.vue';
 import AppDriveCard from '@/components/shared/AppDriveCard.vue';
@@ -14,7 +15,13 @@ const drives = ref([]);
 const loading = ref(true);
 const loaderror = ref('');
 const filters = reactive({ search: '', when: 'upcoming', status: 'all', sort: 'asc' });
+const nearby = ref(null);
 const page = ref(1);
+
+function applylocation(result) {
+  nearby.value = result ? new Set(result.stations.map(station => station.id)) : null;
+  page.value = 1;
+}
 const pagesize = 10;
 
 async function fetchdrives(refresh = false) {
@@ -88,6 +95,7 @@ const visibledrives = computed(() => {
     .filter(
       (drive) =>
         drive.past === (filters.when === 'past') &&
+        (!nearby.value || nearby.value.has(drive.mrtstationid)) &&
         (filters.status === 'all' || drive.status === filters.status) &&
         (!search ||
           [drive.title, drive.location, drive.mrtstation?.name || ''].some((text) =>
@@ -125,6 +133,7 @@ function opendrive(drive) {
 
     <AppDriveFilters v-model:search="filters.search" v-model:when="filters.when" v-model:status="filters.status"
       v-model:sort="filters.sort" :counts="counts" :loading="loading" />
+    <AppLocationFilter @change="applylocation" />
     <!--@1ejun6 > loading placeholders use drive card props-->
     <ul v-if="loading" class="space-y-2.5">
       <li v-for="index in 3" :key="index">
@@ -133,8 +142,7 @@ function opendrive(drive) {
     </ul>
 
     <!-- @brod Load Error message -->
-    <div v-else-if="loaderror && !drives.length"
-      class="space-y-2.5 rounded-lg border p-5 text-center" role="alert">
+    <div v-else-if="loaderror && !drives.length" class="space-y-2.5 rounded-lg border p-5 text-center" role="alert">
       <h2>could not load book drives</h2>
       <p class="text-sm">{{ loaderror }}</p>
       <Button @click="fetchdrives(true)">try again</Button>
@@ -143,7 +151,9 @@ function opendrive(drive) {
 
     <!-- @brod No drives message -->
     <template v-else-if="!visibledrives.length">
-      <div v-if="!filters.search.trim() && filters.status === 'all'" class="space-y-2.5 rounded-lg border p-5 text-center">
+      <p v-if="nearby" class="text-sm" role="status">no drives near this location > try a wider distance</p>
+      <div v-if="!filters.search.trim() && filters.status === 'all' && !nearby"
+        class="space-y-2.5 rounded-lg border p-5 text-center">
         <h2>no {{ filters.when }} drives</h2>
         <p class="text-sm">check back for future community events</p>
       </div>

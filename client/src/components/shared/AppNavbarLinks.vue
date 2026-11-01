@@ -28,7 +28,7 @@ const route = useRoute();
     </button>
   </nav>
   <!--@1ejun6 > md is 768px-->
-  <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden max-w-none md:flex [&>div]:w-full">
+  <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden md:flex [&>div]:w-full">
     <!--@1ejun6 > overrides menu max-w-max > allowing it to grow wider than its links > tailwind selector >  sets width to 100%-->
     <NavigationMenuList class="w-full">
       <!--@1ejun6 > margin left > login link-->
