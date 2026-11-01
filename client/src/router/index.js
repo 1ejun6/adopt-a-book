@@ -30,24 +30,15 @@ const router = createRouter({
       component: AppLayout,
       children: [
         { path: '', name: 'customerHome', component: CustomerHome, roles: ['customer'] },
-      ],
-    },
-    
-{
-  path: '/customer',
-  component: AppLayout,
-  children: [
-    // @sanjana I need to make the components still, so i havent included the components in this.
-    { path: '', name: 'customerHome', component: CustomerHome, roles: ['customer']},
-    { path: 'books', name: 'customerBooks', component: CustomerBrowseBooks, label: 'Browse Books', roles: ['customer']},
-    { path: 'watchlist', name: 'customerWatchlist', component: CustomerWatchlist, label: 'Watchlist', roles: ['customer']},
-    { path: 'adoptions', name: 'customerAdoptions',component: MyAdoptions, label: 'My Adoptions',roles: ['customer']},
-    {path: 'pickups',name: 'customerPickups',label: 'Pickups', roles: ['customer']},
-    {path: 'drives', name: 'customerDrives', label: 'Adoption Drives', roles: ['customer']},
-    {path: 'account',name: 'customerAccount', label: 'My Account', roles: ['customer'], end: true}
+        { path: 'books', name: 'customerBooks', component: CustomerBrowseBooks, label: 'Browse Books', roles: ['customer']},
+        { path: 'watchlist', name: 'customerWatchlist', component: CustomerWatchlist, label: 'Watchlist', roles: ['customer']},
+        { path: 'adoptions', name: 'customerAdoptions',component: MyAdoptions, label: 'My Adoptions',roles: ['customer']},
+        {path: 'pickups',name: 'customerPickups',label: 'Pickups', roles: ['customer']},
+        {path: 'drives', name: 'customerDrives', label: 'Adoption Drives', roles: ['customer']},
+        {path: 'account',name: 'customerAccount', label: 'My Account', roles: ['customer'], end: true}
+      ]
+    }
   ]
-},
-  ],
 });
 
 //@1ejun6 > gets child pages from every route group &&& combines them into one list

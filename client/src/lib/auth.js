@@ -9,9 +9,6 @@ export const role = computed(() => auth.user?.role || 'guest');
 
 //@sree-sanjana06 > direct customers to their homepage when clicking the logo
 export const homeRoute = computed(() => ({
-  name: role.value === 'admin'
-    ? 'adminBooks'
-    : role.value === 'customer'
-      ? 'customerHome'
-      : 'guestHome'
+  name: role.value === 'admin' ? 'adminBooks'
+    : role.value === 'customer' ? 'customerHome' : 'guestHome'
 }));
