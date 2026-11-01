@@ -43,12 +43,11 @@ const fields = computed(() => {
                 <DialogTitle>Book details</DialogTitle>
                 <DialogDescription>details for the selected inventory book</DialogDescription>
             </DialogHeader>
-            <hr>
-            <div class="space-y-5">
-                <div class="flex flex-wrap items-center justify-between gap-5 py-5">
+            <div class="dialog-body">
+                <div class="flex flex-wrap items-center gap-5">
                     <AppBookIdentity :title="currentBook.title" :author="currentBook.author" :cover="currentBook.cover"
-                        class="min-w-0 flex-1" />
-                    <AppStatusBadge :status="currentBook.status" class="text-sm" />
+                        class="flex-1" />
+                    <AppStatusBadge :status="currentBook.status" />
                 </div>
                 <p class="whitespace-pre-line">{{ currentBook.description || 'No description recorded.' }}</p>
                 <dl class="grid gap-2.5 sm:grid-cols-[auto_minmax(0,1fr)]">
@@ -57,11 +56,10 @@ const fields = computed(() => {
                         <dd class="min-w-0">{{ field.value || 'Not provided' }}</dd>
                     </template>
                 </dl>
+                <DialogFooter>
+                    <Button type="button" class="w-full" @click="emit('edit', book)">Edit</Button>
+                </DialogFooter>
             </div>
-            <hr>
-            <DialogFooter>
-                <Button type="button" class="w-full" @click="emit('edit', book)">Edit</Button>
-            </DialogFooter>
         </DialogContent>
     </Dialog>
 </template>

@@ -42,7 +42,7 @@ function getAuthors(book) {
   </article>
 
   <!--@sree-sanjana06 > allow cards to size naturally without unnecessary empty space-->
-  <article v-else-if="book" class="washi-tape washi-tape-hover cursor-pointer space-y-3 rounded-xl border p-5" role="button" tabindex="0" aria-haspopup="dialog" @click="emit('preview', book)" @keydown.enter.self.prevent="emit('preview', book)" @keydown.space.self.prevent="emit('preview', book)">
+  <article v-else-if="book" class="washi-tape washi-tape-hover min-w-0 cursor-pointer space-y-3 rounded-xl border p-5" role="button" tabindex="0" aria-haspopup="dialog" @click="emit('preview', book)" @keydown.enter.self.prevent="emit('preview', book)" @keydown.space.self.prevent="emit('preview', book)">
     <!--@sree-sanjana06 > shared book cover, title and author-->
     <div class="flex items-start gap-3">
       <AppBookIdentity :title="book.title" :author="getAuthors(book)" :cover="book.coverurl" coverClass="w-24" class="flex-1" />

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
 import CustomerBookCard from '@/components/customer/CustomerBookCard.vue';
 
@@ -105,7 +105,7 @@ onMounted(loadWatchlist);
     <!--@sree-sanjana06 > watchlist heading and total saved books-->
     <header class="space-y-2 border-b pb-6">
       <p class="text-xs uppercase tracking-widest text-muted-foreground">Your reading corner</p>
-      <h1 class="font-heading text-4xl">My Watchlist</h1>
+      <h1 class="text-4xl">My Watchlist</h1>
       <p class="text-muted-foreground">Your saved books and private notes. Saving doesn't reserve a copy.</p>
       <p v-if="!loading && !error" class="text-sm text-muted-foreground">
         {{ watchlist.length }} saved books
@@ -121,7 +121,7 @@ onMounted(loadWatchlist);
 
     <!--@sree-sanjana06 > show empty state after removing the final saved book-->
     <div v-else-if="watchlist.length === 0" class="rounded-xl border bg-card p-8 text-center">
-      <h2 class="font-heading text-2xl">Your shelf is waiting</h2>
+      <h2 class="text-2xl">Your shelf is waiting</h2>
       <p class="mt-2 text-sm text-muted-foreground">
         Save a book while browsing to find it here later.
       </p>
@@ -140,12 +140,13 @@ onMounted(loadWatchlist);
 
     <!--@sree-sanjana06 > edit the saved note using existing Dialog UI-->
     <Dialog v-model:open="editOpen">
-      <DialogContent class="max-w-xl">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle class="font-heading text-3xl">Edit saved book</DialogTitle>
+          <DialogTitle>Edit saved book</DialogTitle>
+          <DialogDescription>update your private comment for this book</DialogDescription>
         </DialogHeader>
 
-        <div class="space-y-4">
+        <div class="dialog-body">
           <p class="text-muted-foreground">
             {{ editingEntry?.bookid?.title }}
           </p>
@@ -153,45 +154,46 @@ onMounted(loadWatchlist);
           <div class="space-y-2">
             <label for="edit-watchlist-note">Your note (optional)</label>
             <textarea id="edit-watchlist-note" v-model="note" maxlength="300" rows="4" :disabled="busy"
-              class="w-full rounded-lg border bg-background p-3 outline-none focus-visible:ring-2 focus-visible:ring-ring"></textarea>
-            <p class="text-sm text-muted-foreground">
+              class="w-full rounded-lg border p-3"></textarea>
+            <p class="text-muted-foreground">
               Only visible to you · {{ note.length }}/300 characters
             </p>
           </div>
 
-          <p v-if="actionError" class="text-sm text-destructive" role="alert">{{ actionError }}</p>
+          <p v-if="actionError" class="text-destructive" role="alert">{{ actionError }}</p>
 
-          <div class="flex justify-end gap-3">
+          <DialogFooter class="justify-end">
             <Button variant="outline" :disabled="busy" @click="editOpen = false">Cancel</Button>
             <Button :disabled="busy" @click="saveNote">
               {{ busy ? 'Saving...' : 'Save changes' }}
             </Button>
-          </div>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
 
     <!--@sree-sanjana06 > confirm removal before deleting from backend-->
     <Dialog v-model:open="removeOpen">
-      <DialogContent class="max-w-lg">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle class="font-heading text-3xl">Remove from watchlist?</DialogTitle>
+          <DialogTitle>Remove from watchlist?</DialogTitle>
+          <DialogDescription>confirm removal from your watchlist</DialogDescription>
         </DialogHeader>
 
-        <div class="space-y-5">
+        <div class="dialog-body">
           <p class="text-muted-foreground">
             Remove {{ removingEntry?.bookid?.title }} from your saved books?
             You can save it again later if it is available.
           </p>
 
-          <p v-if="actionError" class="text-sm text-destructive" role="alert">{{ actionError }}</p>
+          <p v-if="actionError" class="text-destructive" role="alert">{{ actionError }}</p>
 
-          <div class="flex justify-end gap-3">
+          <DialogFooter class="justify-end">
             <Button variant="outline" :disabled="busy" @click="removeOpen = false">Cancel</Button>
             <Button :disabled="busy" @click="removeBook">
               {{ busy ? 'Removing...' : 'Remove book' }}
             </Button>
-          </div>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

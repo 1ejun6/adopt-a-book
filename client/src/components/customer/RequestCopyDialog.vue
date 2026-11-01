@@ -17,10 +17,10 @@ const emit = defineEmits(['submit']);
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-h-[90vh] max-w-5xl p-0">
-      <DialogHeader class="border-b p-5 pr-20">
+    <DialogContent class="max-h-[90vh] max-w-5xl">
+      <DialogHeader>
         <DialogTitle class="text-3xl">Request a copy</DialogTitle>
-        <DialogDescription class="sr-only">{{ book?.title }}</DialogDescription>
+        <DialogDescription>review the selected copy before submitting</DialogDescription>
       </DialogHeader>
 
       <div v-if="book" class="space-y-6 p-6">
@@ -48,7 +48,7 @@ const emit = defineEmits(['submit']);
         <p class="rounded-lg p-4 text-muted-foreground">You're sending a request, not booking a pickup. Nothing is
           submitted until you confirm below.</p>
 
-        <div class="grid gap-6 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
           <div class="space-y-3">
             <p class="text-muted-foreground">Your selected copy</p>
             <AppBookIdentity :title="book.title" :author="props.book.authors?.join(', ') || 'author not listed'"

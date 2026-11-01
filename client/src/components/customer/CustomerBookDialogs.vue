@@ -3,15 +3,13 @@ import { ref, computed, h, nextTick, watch, onBeforeUnmount } from 'vue';
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { toast } from 'vue-sonner';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Bookmark02Icon, Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FocusScope } from 'reka-ui';
-import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
+import BookPreviewDialog from '@/components/guest/BookPreviewDialog.vue';
 import RequestCopyDialog from '@/components/customer/RequestCopyDialog.vue';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const props = defineProps({
   savedIds: { type: Set, default: () => new Set() },
@@ -36,13 +34,19 @@ let controller;
 const commentToasts = new Set();
 
 //@1ejun6 > book is already saved > empty comment closes toast without another request
-function showSavedToast(entry) {
+function showSavedToast(entry, trigger) {
   const id = `watchlist-comment-${entry.bookid.id}`;
   const comment = ref('');
   const busy = ref(false);
   const error = ref('');
   const options = { id, duration: Infinity, style: { pointerEvents: 'auto' } };
-  const content = () => h(FocusScope, { asChild: true, trapped: true, loop: true }, () => h('div', { class: 'w-full space-y-2.5 rounded-lg border bg-background p-5 font-body text-sm shadow-sm' }, [
+  //@1ejun6 > bookmark is disabled while saving > restore its focus when toast closes
+  const content = () => h(FocusScope, { asChild: true, trapped: true, loop: true, onUnmountAutoFocus: event => {
+    event.preventDefault();
+    if (trigger?.isConnected) trigger.focus();
+  } }, () => h('div', { class: 'w-full space-y-2.5 rounded-lg border bg-background p-5 font-body text-sm', onKeydown: event => {
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); toast.dismiss(id); }
+  } }, [
     h('div', { class: 'flex items-start gap-2.5' }, [
       h(HugeiconsIcon, { icon: error.value ? CancelCircleIcon : CheckmarkCircle02Icon, class: `size-5 shrink-0 ${error.value ? 'text-destructive' : 'text-success-foreground'}`, 'aria-hidden': true }),
       h('div', { class: 'min-w-0 flex-1' }, [
@@ -52,7 +56,7 @@ function showSavedToast(entry) {
       h('button', { type: 'button', title: 'dismiss', onClick: () => toast.dismiss(id) }, [h(HugeiconsIcon, { icon: Cancel01Icon, class: 'size-5', 'aria-hidden': true })]),
     ]),
     h('form', { class: 'flex gap-2.5', onSubmit: saveComment }, [
-      h(Input, { modelValue: comment.value, 'onUpdate:modelValue': value => { comment.value = value; }, maxlength: 300, disabled: busy.value, placeholder: 'optional comment', class: 'h-9 text-sm' }),
+      h(Input, { modelValue: comment.value, 'onUpdate:modelValue': value => { comment.value = value; }, maxlength: 300, disabled: busy.value, placeholder: 'optional comment', class: 'text-sm' }),
       h(Button, { type: 'submit', class: 'shrink-0', disabled: busy.value }, () => busy.value ? 'saving…' : 'save'),
     ]),
   ]));
@@ -75,33 +79,6 @@ function showSavedToast(entry) {
   commentToasts.add(id);
   toast.custom(content, options);
 }
-
-function getAuthors(book) {
-  return Array.isArray(book?.authors) && book.authors.length
-    ? book.authors.join(', ')
-    : 'Unknown author';
-}
-
-//@sree-sanjana06 > remove Open Library references from descriptions
-function cleanDescription(description) {
-  if (typeof description !== 'string') return '';
-
-  return description
-    .split(/\(?\[source\](?:\[\d+\])?\)?/i)[0]
-    .split(/\n\s*(?:Preceded by:|Followed by:|Contains:|-{4,}|\[\d+\]:\s*https?:\/\/)/i)[0]
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-const description = computed(() => cleanDescription(dialogBook.value?.description));
-const fields = computed(() => [
-  { label: 'subject', value: dialogBook.value?.subjects?.join(', ') },
-  { label: 'published', value: dialogBook.value?.publicationyear },
-  { label: 'ISBN', value: dialogBook.value?.isbn },
-  { label: 'condition', value: dialogBook.value?.condition || 'not listed' },
-  { label: 'collection', value: dialogBook.value?.collectionarea },
-].filter(field => field.value));
 
 //@sree-sanjana06 > standardise application status values
 function getApplicationStatus(application) {
@@ -133,7 +110,7 @@ const requestButtonLabel = computed(() => {
     if (['pending', 'pending review'].includes(status)) return 'Request Pending';
     return status === 'approved' ? 'Already Approved' : 'Already Requested';
   }
-  return dialogBook.value?.status === 'available' ? 'Request Book' : 'Book Unavailable';
+  return dialogBook.value?.status === 'available' ? 'request' : 'Book Unavailable';
 });
 
 function showerror(error, retry) {
@@ -240,66 +217,11 @@ defineExpose({ openBookDetails, showSavedToast });
 </script>
 
 <template>
-  <!--@sree-sanjana06 > shared preview for Home, Browse Books, Watchlist and My Adoptions-->
-  <Dialog v-model:open="dialogOpen">
-    <DialogContent class="max-w-3xl p-0">
-      <DialogHeader class="border-b p-5 pr-20">
-        <DialogTitle class="text-3xl">Book details</DialogTitle>
-        <DialogDescription class="sr-only">{{ dialogBook?.title }}</DialogDescription>
-      </DialogHeader>
+  <BookPreviewDialog v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError" :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)" @save="emit('save', $event)">
+    <template v-if="!viewOnly" #actions>
+      <Button class="w-full" :disabled="!canRequestBook" @click="openRequestDialog">{{ requestButtonLabel }}</Button>
+    </template>
+  </BookPreviewDialog>
 
-      <div v-if="dialogBook" class="space-y-5 p-5">
-        <div v-if="detailsLoading" class="space-y-5" role="status" aria-busy="true">
-          <AppBookIdentity loading coverClass="w-16" />
-          <Skeleton class="h-5 w-24" />
-          <Skeleton class="h-4 w-full" />
-          <Skeleton class="h-4 w-2/3" />
-          <div class="grid grid-cols-2 gap-5">
-            <div v-for="index in 5" :key="index" class="space-y-2.5">
-              <Skeleton class="h-4 w-1/2" />
-              <Skeleton class="h-4" />
-            </div>
-          </div>
-        </div>
-
-        <div v-else-if="!detailsError" class="space-y-5">
-          <div class="flex items-center gap-2.5">
-            <AppBookIdentity :title="dialogBook.title" :author="getAuthors(dialogBook)" :cover="dialogBook.coverurl" coverClass="w-16" class="flex-1" />
-            <button v-if="props.canSave || props.savedIds.has(dialogBook.id)" type="button" class="shrink-0 rounded-lg p-2" :disabled="!props.canSave || props.busyIds.has(dialogBook.id)" :title="props.savedIds.has(dialogBook.id) ? 'remove from watchlist' : 'save to watchlist'" :aria-pressed="props.savedIds.has(dialogBook.id)" @click="emit('save', dialogBook)">
-              <HugeiconsIcon :icon="Bookmark02Icon" class="size-6" :class="{ 'fill-success-foreground text-success-foreground': props.savedIds.has(dialogBook.id) }" aria-hidden="true" />
-            </button>
-          </div>
-
-          <!--@sree-sanjana06 > book description-->
-          <div class="space-y-2">
-            <h3>Description</h3>
-            <p v-if="description" class="text-muted-foreground leading-6">{{ description }}</p>
-            <p v-else class="text-muted-foreground italic">No description available.</p>
-          </div>
-
-          <dl class="grid grid-cols-2 gap-5">
-            <div v-for="field in fields" :key="field.label" class="space-y-2.5">
-              <dt class="text-muted-foreground">{{ field.label }}</dt>
-              <dd>{{ field.value }}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <!-- ==================== REQUEST ACTION ==================== -->
-        <!--@sree-sanjana06 > hide the entire request section for My Adoptions-->
-        <div v-if="!viewOnly && !detailsLoading && !detailsError" class="space-y-4 border-t pt-5">
-          <h3>A book, not a checkout.</h3>
-          <p class="text-muted-foreground">Request this donated copy for free. The team reviews your request before you
-            arrange collection.</p>
-
-
-          <Button class="w-full" :disabled="!canRequestBook" @click="openRequestDialog">{{ requestButtonLabel
-            }}</Button>
-        </div>
-      </div>
-    </DialogContent>
-  </Dialog>
-
-  <RequestCopyDialog v-model:open="requestDialogOpen" :book="dialogBook" :reader="auth.user" :loading="actionLoading"
-    :submitted="requestSubmitted" :disabled="!!existingApplication || !!applicationsError" @submit="requestCopy" />
+  <RequestCopyDialog v-model:open="requestDialogOpen" :book="dialogBook" :reader="auth.user" :loading="actionLoading" :submitted="requestSubmitted" :disabled="!!existingApplication || !!applicationsError" @submit="requestCopy" />
 </template>

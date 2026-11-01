@@ -133,6 +133,9 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/*@1ejun6 > body spacing stays here > panel & header & footer use base components */
+.dialog-body { @apply space-y-2.5 p-5; }
+
 @media (hover: hover) and (pointer: fine) {
   /*@1ejun6 > use these styles only in this situation */
   /*@1ejun6 > https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover &&& https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer */

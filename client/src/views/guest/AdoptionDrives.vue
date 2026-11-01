@@ -4,10 +4,10 @@ import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
 import { todayInSingapore } from '@/lib/utils';
 import AppLocationFilter from '@/components/shared/AppLocationFilter.vue';
-import AppDriveFilters from '@/components/shared/AppDriveFilters.vue';
+import AppAdoptionDriveFilters from '@/components/shared/AppAdoptionDriveFilters.vue';
 import AppPagination from '@/components/shared/AppPagination.vue';
-import AppDriveCard from '@/components/shared/AppDriveCard.vue';
-import AppDriveDialog from '@/components/shared/AppDriveDialog.vue';
+import AppAdoptionDriveCard from '@/components/shared/AppAdoptionDriveCard.vue';
+import AppAdoptionDriveDialog from '@/components/shared/AppAdoptionDriveDialog.vue';
 
 const cachekey = 'guest-adoption-drive';
 const drives = ref([]);
@@ -31,7 +31,7 @@ async function fetchdrives(refresh = false) {
   if (!refresh) {
     try {
       const cached = JSON.parse(localStorage.getItem(cachekey));
-      if (Array.isArray(cached) && cached.every(drive => drive && typeof drive.id === 'string' && typeof drive.title === 'string' && typeof drive.eventdate === 'string')) {
+      if (Array.isArray(cached) && cached.every(drive => drive && typeof drive.id === 'string' && typeof drive.title === 'string' && typeof drive.eventdate === 'string' && Number.isInteger(drive.spotsleft))) {
         //@1ejun6 > cached drives can cross midnight > update past dates using Singapore time
         drives.value = cached.map(drive => ({ ...drive, past: drive.eventdate < today }));
         loading.value = false;
@@ -43,9 +43,9 @@ async function fetchdrives(refresh = false) {
   }
 
   try {
-    const response = await api('/drives');
+    const response = await api('/drives', { method: 'GET' });
     const drivelist = response.drives;
-    if (!Array.isArray(drivelist)) throw new Error('could not load drives > please try again');
+    if (!Array.isArray(drivelist)) throw new Error('could not load adoption drives > please try again');
 
     // Get book counts for each station
     const stationids = [...new Set(drivelist.map((d) => d.mrtstationid).filter(Boolean))];
@@ -55,6 +55,7 @@ async function fetchdrives(refresh = false) {
       stationids.map(async (id) => {
         try {
           const bookresponse = await api('/books', {
+            method: 'GET',
             query: { mrtstationids: id, status: 'available', limit: 1 },
           });
           stationbookcounts[id] = bookresponse.total ?? 0;
@@ -126,26 +127,26 @@ function opendrive(drive) {
 <template>
   <section class="mx-auto w-full max-w-3xl space-y-5">
     <header>
-      <h1>book drives</h1>
+      <h1>adoption drives</h1>
       <p>meet fellow readers & give books a new home</p>
     </header>
 
-    <AppDriveFilters v-model:search="filters.search" v-model:when="filters.when" v-model:status="filters.status"
+    <AppAdoptionDriveFilters v-model:search="filters.search" v-model:when="filters.when" v-model:status="filters.status"
       v-model:sort="filters.sort" :counts="counts" :loading="loading" />
     <AppLocationFilter @change="applylocation" />
     <!--@1ejun6 > loading placeholders use drive card props-->
     <ul v-if="loading" class="space-y-2.5">
       <li v-for="index in 3" :key="index">
-        <AppDriveCard :isLoading="loading" />
+        <AppAdoptionDriveCard :isLoading="loading" />
       </li>
     </ul>
 
     <!-- @brod No drives message -->
     <template v-else-if="!loaderror && !visibledrives.length">
-      <p v-if="nearby" class="text-sm" role="status">no drives near this location > try a wider distance</p>
+      <p v-if="nearby" class="text-sm" role="status">no adoption drives near this location > try a wider distance</p>
       <div v-if="!filters.search.trim() && filters.status === 'all' && !nearby"
         class="space-y-2.5 rounded-lg border p-5 text-center">
-        <h2>no {{ filters.when }} drives</h2>
+        <h2>no {{ filters.when }} adoption drives</h2>
         <p class="text-sm">check back for future community events</p>
       </div>
     </template>
@@ -154,14 +155,14 @@ function opendrive(drive) {
     <template v-else-if="drives.length">
       <ul class="space-y-2.5">
         <li v-for="drive in pagedrives" :key="drive.id">
-          <AppDriveCard :drive="drive" :isLoading="loading" @open="opendrive(drive)" />
+          <AppAdoptionDriveCard :drive="drive" :isLoading="loading" @open="opendrive(drive)" />
         </li>
       </ul>
-      <AppPagination v-model:page="page" itemLabel="drives" :total="visibledrives.length"
+      <AppPagination v-model:page="page" itemLabel="adoption drives" :total="visibledrives.length"
         :visibleCount="pagedrives.length" :pageSize="pagesize" :pageCount="pagecount" :loading="loading"
         :disabled="loading" />
     </template>
 
-    <AppDriveDialog v-model:open="dialogopen" :drive="selecteddrive" />
+    <AppAdoptionDriveDialog v-model:open="dialogopen" :drive="selecteddrive" />
   </section>
 </template>

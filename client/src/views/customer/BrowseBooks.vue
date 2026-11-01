@@ -130,6 +130,7 @@ async function loadWatchlist() {
 //@1ejun6 > change bookmark immediately > clearing pending state restores saved value if request fails
 async function toggleSave(book) {
   if (watchlistLoading.value || watchlistError.value || saving.has(book.id)) return;
+  const trigger = document.activeElement;
   const entry = watchlist.value.find(item => item.bookid?.id === book.id);
   saving.set(book.id, !entry);
   try {
@@ -142,7 +143,7 @@ async function toggleSave(book) {
       const response = await api('/watchlist', { method: 'POST', body: { bookid: book.id, comments: '' } });
       const savedEntry = { ...response.entry, bookid: book };
       watchlist.value.push(savedEntry);
-      dialogs.value?.showSavedToast(savedEntry);
+      dialogs.value?.showSavedToast(savedEntry, trigger);
     }
   } catch (error) {
     toast.error(error.message);
@@ -172,7 +173,6 @@ onBeforeUnmount(() => {
 <template>
   <section class="mx-auto w-full max-w-7xl space-y-8">
     <header class="space-y-2 border-b pb-6">
-      <p class="text-xs uppercase tracking-widest text-muted-foreground">Discover your next chapter</p>
       <h1 class="text-4xl">Find your next read</h1>
       <p class="text-muted-foreground">A shared collection. A new home for every book.</p>
     </header>
