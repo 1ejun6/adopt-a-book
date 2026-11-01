@@ -1,8 +1,7 @@
 <script setup>
-//!@1ejun6 > why are you loading watchlist? should it not be a post for watchlist?
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { api } from '@/lib/api';
-import { Button } from '@/components/ui/button';
+import { toast } from 'vue-sonner';
 import AppPagination from '@/components/shared/AppPagination.vue';
 import BrowseBookFilters from '@/components/customer/BrowseBookFilters.vue';
 import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
@@ -16,19 +15,26 @@ const dialogs = ref(null);
 //@sree-sanjana06 > loading and error states
 const loading = ref(false);
 const loadError = ref('');
-const watchlistError = ref('');
+const watchlistError = ref(false);
+const watchlistLoading = ref(true);
+const saving = reactive(new Map());
 
 //@sree-sanjana06 > search, genre and sorting filters for Browse Books
-const filters = reactive({ search: '', subject: '', sort: 'title'});
+const filters = reactive({ search: '', subject: '', sort: 'title' });
 
 //@sree-sanjana06 > pagination and saved-book lookup
 const page = ref(1);
 const pageSize = 15;
 const total = ref(0);
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
-const savedIds = computed(() => new Set(
-  watchlist.value.map(entry => entry.bookid?.id).filter(Boolean)
-));
+const savedIds = computed(() => {
+  const ids = new Set(watchlist.value.map(entry => entry.bookid?.id).filter(Boolean));
+  for (const [id, saved] of saving) {
+    if (saved) ids.add(id);
+    else ids.delete(id);
+  }
+  return ids;
+});
 
 let requestId = 0;
 
@@ -39,9 +45,9 @@ async function fetchBooks() {
   loadError.value = '';
 
   try {
-    const response = await api('/books', { 
+    const response = await api('/books', {
+      method: 'GET',
       query: {
-        method: 'GET',
         page: page.value,
         limit: pageSize,
         search: filters.search.trim(),
@@ -63,9 +69,11 @@ async function fetchBooks() {
     }
 
     books.value = Array.isArray(response.books) ? response.books : [];
+    if (!books.value.length) toast.info('no books found > adjust search & filters', { id: 'browse-empty' });
   } catch (error) {
     if (id !== requestId) return;
     loadError.value = error.message;
+    toast.error(error.message, { duration: Infinity, closeButton: true, action: { label: 'retry', onClick: fetchBooks } });
     books.value = [];
     total.value = 0;
   } finally {
@@ -75,54 +83,39 @@ async function fetchBooks() {
 
 //@sree-sanjana06 > fetch saved books to identify existing watchlist entries
 async function loadWatchlist() {
-  watchlistError.value = '';
+  watchlistLoading.value = true;
+  watchlistError.value = false;
   try {
-    const response = await api('/watchlist', { method: 'GET' }); //!@1ejun6 > where is method?
+    const response = await api('/watchlist', { method: 'GET' });
     watchlist.value = response.watchlist || [];
   } catch (error) {
-    watchlistError.value = error.message;
+    watchlistError.value = true;
+    toast.error(error.message, { duration: Infinity, closeButton: true, action: { label: 'retry', onClick: loadWatchlist } });
+  } finally {
+    watchlistLoading.value = false;
   }
 }
 
- //@sree-sanjana06 > save book directly to watchlist without opening a popup
-async function saveBook(book) {
+//@1ejun6 > change bookmark immediately > clearing pending state restores saved value if request fails
+async function toggleSave(book) {
+  if (watchlistLoading.value || watchlistError.value || saving.has(book.id)) return;
+  const entry = watchlist.value.find(item => item.bookid?.id === book.id);
+  saving.set(book.id, !entry);
   try {
-    await api('/watchlist', {
-      method: 'POST',
-      body: {
-        bookid: book.id,
-        comments: ''
-      }
-    });
-
-    await loadWatchlist();
+    if (entry) {
+      await api(`/watchlist/${entry.id}`, { method: 'DELETE' });
+      watchlist.value = watchlist.value.filter(item => item.id !== entry.id);
+      toast.success('removed from watchlist');
+    } else {
+      const response = await api('/watchlist', { method: 'POST', body: { bookid: book.id, comments: '' } });
+      watchlist.value.push({ ...response.entry, bookid: book });
+      toast.success('saved to watchlist');
+    }
   } catch (error) {
-    watchlistError.value = error.message;
+    toast.error(error.message);
+  } finally {
+    saving.delete(book.id);
   }
-}
-
-//@sree-sanjana06 > remove saved book directly from watchlist
-async function unsaveBook(book) {
-  const entry = watchlist.value.find(
-    item => item.bookid?.id === book.id
-  );
-
-  if (!entry) return;
-
-  try {
-    await api(`/watchlist/${entry.id}`, {
-      method: 'DELETE'
-    });
-
-    await loadWatchlist();
-  } catch (error) {
-    watchlistError.value = error.message;
-  }
-}
-
-//@sree-sanjana06 > reset all filters using the same reactive object
-function clearFilters() {
-  Object.assign(filters, { search: '', subject: '', sort: 'title' });
 }
 
 //@sree-sanjana06 > reset to page 1 when filters change, then fetch results
@@ -131,79 +124,37 @@ watch(filters, () => {
   else page.value = 1;
 });
 
-//@sree-sanjana06 > fetch on first load and whenever page changes
 watch(page, fetchBooks, { immediate: true });
 onMounted(loadWatchlist);
 </script>
 
 <template>
-  <main class="mx-auto w-full max-w-7xl space-y-8">
+  <section class="mx-auto w-full max-w-7xl space-y-8">
     <header class="space-y-2 border-b pb-6">
-      <p class="text-xs uppercase tracking-widest text-muted-foreground">
-        Discover your next chapter
-      </p>
-      <h1 class="font-heading text-4xl">Find your next read</h1>
-      <p class="text-muted-foreground">
-        A shared collection. A new home for every book.
-      </p>
+      <p class="text-xs uppercase tracking-widest text-muted-foreground">Discover your next chapter</p>
+      <h1 class="text-4xl">Find your next read</h1>
+      <p class="text-muted-foreground">A shared collection. A new home for every book.</p>
     </header>
 
     <!--@sree-sanjana06 > reusable customer filters built with AppToolbar-->
-    <BrowseBookFilters
-      v-model:search="filters.search"
-      v-model:subject="filters.subject"
-      v-model:sort="filters.sort"
-      @clear="clearFilters"/>
+    <BrowseBookFilters v-model:search="filters.search" v-model:subject="filters.subject" v-model:sort="filters.sort" />
 
-    <!--@sree-sanjana06 > show result count and watchlist errors-->
-    <p class="text-sm text-muted-foreground" role="status">
-      {{ loading ? 'Loading books...' : `${total} books found` }}
-    </p>
-    <p v-if="watchlistError" class="text-sm text-destructive">
-      Could not check your saved books. {{ watchlistError }}
-    </p>
+    <p v-if="!loadError && !loading" class="text-sm text-muted-foreground" role="status">{{ total }} books found</p>
 
-    <!--@sree-sanjana06 > loading, error and empty result states-->
-    <div v-if="loadError" class="space-y-3 rounded-xl border p-5">
-      <p class="text-destructive">{{ loadError }}</p>
-      <Button variant="outline" @click="fetchBooks">Try Again</Button>
-    </div>
-
-    <p v-else-if="loading" class="text-muted-foreground">
-      Finding books for you...
-    </p>
-
-    <div v-else-if="!books.length"
-      class="space-y-3 rounded-xl border bg-card p-8 text-center">
-      <h2 class="font-heading text-2xl">No books found</h2>
-      <p class="text-sm text-muted-foreground">
-        Try another search or change your filters.
-      </p>
-    </div>
-
-<!--@sree-sanjana06 > display available books using shared customer card-->
-      <section v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        <CustomerBookCard v-for="book in books" :key="book.id" :book="book" variant="browse"
-          :saved="savedIds.has(book.id)"
-          @preview="dialogs?.openBookDetails($event)"
-          @save="saveBook" @unsave="unsaveBook"
-        />
-      </section>
+    <section v-if="!loadError" class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <template v-if="loading">
+        <CustomerBookCard v-for="index in 6" :key="index" loading />
+      </template>
+      <template v-else>
+        <CustomerBookCard v-for="book in books" :key="book.id" :book="book" :saved="savedIds.has(book.id)" :busy="watchlistLoading || watchlistError || saving.has(book.id)" @preview="dialogs?.openBookDetails($event)" @save="toggleSave" @unsave="toggleSave" />
+      </template>
+    </section>
 
     <!--@sree-sanjana06 > existing pagination component-->
-    <AppPagination v-if="!loadError && total > 0"
-      v-model:page="page"
-      itemLabel="books"
-      :total="total"
-      :visibleCount="books.length"
-      :pageSize="pageSize"
-      :pageCount="pageCount"
-      :loading="loading"
-      :disabled="loading"
-    />
+    <AppPagination v-if="!loadError && total > 0" v-model:page="page" itemLabel="books" :total="total" :visibleCount="books.length" :pageSize="pageSize" :pageCount="pageCount" :loading="loading" :disabled="loading" />
 
     <!--@sree-sanjana06 > shared book details popup; request workflow handled separately-->
-    <CustomerBookDialogs ref="dialogs" />
+    <CustomerBookDialogs ref="dialogs" :savedIds="savedIds" />
 
-  </main>
+  </section>
 </template>

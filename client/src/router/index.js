@@ -1,10 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import GuestHome from '../views/guest/Home.vue';
 import CustomerHome from '../views/customer/Home.vue';
-import AdminHome from '../views/admin/Home.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
-import AdminBookInventory from '../views/admin/BookInventory.vue';
 import { auth, role, homeRoute } from '@/lib/auth';
 import { loadSession } from '@/lib/session';
 import { toast } from 'vue-sonner';

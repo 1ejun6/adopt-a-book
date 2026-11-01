@@ -2,52 +2,26 @@
 import { ref, computed, nextTick } from 'vue';
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
+import { toast } from 'vue-sonner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
-import AppStatusBadge from '@/components/shared/AppStatusBadge.vue';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import './CustomerBookDialogs.css';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-//@sree-sanjana06 > preserve existing props and events for other customer pages
-defineProps({
-  watchlist: { type: Array, required: true },
-  manageWatchlist: { type: Boolean, default: false }
-});
-
-defineEmits(['saved', 'edit']);
-
+const props = defineProps({ savedIds: { type: Set, default: () => new Set() } });
 const dialogBook = ref(null);
 const dialogOpen = ref(false);
 const detailsLoading = ref(false);
 const detailsError = ref('');
-
-//@sree-sanjana06 > allow My Adoptions to open a read-only book preview
 const viewOnly = ref(false);
-
-
 const requestDialogOpen = ref(false);
 const requestSubmitted = ref(false);
 const actionLoading = ref(false);
-const actionMessage = ref('');
-const actionError = ref('');
-
-//@sree-sanjana06 > track existing applications for the selected customer
 const applications = ref([]);
 const applicationsLoading = ref(false);
 const applicationsError = ref('');
-
-//@sree-sanjana06 > statuses that prevent another request for the same copy
-const activeStatuses = [
-  'pending',
-  'pending review',
-  'approved',
-  'pickup requested',
-  'pickup confirmed',
-  'collected',
-  'completed'
-];
-
-// ==================== SHARED HELPERS ====================
+const activeStatuses = ['pending', 'pending review', 'approved', 'pickup requested', 'pickup confirmed', 'collected', 'completed'];
 
 function getAuthors(book) {
   return Array.isArray(book?.authors) && book.authors.length
@@ -67,6 +41,15 @@ function cleanDescription(description) {
     .trim();
 }
 
+const description = computed(() => cleanDescription(dialogBook.value?.description));
+const fields = computed(() => [
+  { label: 'subject', value: dialogBook.value?.subjects?.join(', ') },
+  { label: 'published', value: dialogBook.value?.publicationyear },
+  { label: 'ISBN', value: dialogBook.value?.isbn },
+  { label: 'condition', value: dialogBook.value?.condition || 'not listed' },
+  { label: 'collection', value: dialogBook.value?.collectionarea },
+].filter(field => field.value));
+
 //@sree-sanjana06 > standardise application status values
 function getApplicationStatus(application) {
   return String(application.status || '')
@@ -75,241 +58,160 @@ function getApplicationStatus(application) {
     .replace(/[_-]+/g, ' ');
 }
 
-// ==================== EXISTING APPLICATION CHECK ====================
-
-//@sree-sanjana06 > use the confirmed backend response field adoptionapplications
 async function loadApplications() {
   applicationsLoading.value = true;
   applicationsError.value = '';
-
   try {
-    const response = await api('/applications', {
-      method: 'GET'
-    });
-
-    if (!Array.isArray(response?.adoptionapplications)) {
-      throw new Error('Unexpected adoption applications response.');
-    }
-
+    const response = await api('/applications', { method: 'GET' });
+    if (!Array.isArray(response.adoptionapplications)) throw new Error('could not check adoption requests > try again');
     applications.value = response.adoptionapplications;
   } catch (error) {
     applications.value = [];
-    applicationsError.value = 'Unable to verify your existing adoption requests.';
+    applicationsError.value = error.message;
     throw error;
   } finally {
     applicationsLoading.value = false;
   }
 }
 
-//@sree-sanjana06 > compare exact book copy IDs, not titles
-const existingApplication = computed(() => {
-  if (!dialogBook.value?.id) return null;
+const existingApplication = computed(() => applications.value.find(application => {
+  const id = typeof application.bookid === 'object' ? application.bookid?.id : application.bookid;
+  return id === dialogBook.value?.id && activeStatuses.includes(getApplicationStatus(application));
+}));
 
-  return applications.value.find(application => {
-    const applicationBookId =
-      typeof application.bookid === 'object'
-        ? application.bookid?.id
-        : application.bookid;
+const canRequestBook = computed(() => !viewOnly.value && !detailsLoading.value && !detailsError.value && !applicationsLoading.value && !applicationsError.value && !actionLoading.value && !requestSubmitted.value && !existingApplication.value && dialogBook.value?.status === 'available');
 
-    return applicationBookId === dialogBook.value.id &&
-      activeStatuses.includes(getApplicationStatus(application));
-  }) || null;
-});
-
-//@sree-sanjana06 > only allow requests when no active application exists
-const canRequestBook = computed(() =>
-  !viewOnly.value &&
-  !detailsLoading.value &&
-  !detailsError.value &&
-  !applicationsLoading.value &&
-  !applicationsError.value &&
-  !actionLoading.value &&
-  !requestSubmitted.value &&
-  !existingApplication.value &&
-  dialogBook.value?.status === 'available'
-);
-
-//@sree-sanjana06 > explain why a customer cannot request this copy
 const requestButtonLabel = computed(() => {
   if (requestSubmitted.value) return 'Request Submitted';
   if (applicationsLoading.value) return 'Checking Requests';
   if (applicationsError.value) return 'Request Unavailable';
-
   if (existingApplication.value) {
     const status = getApplicationStatus(existingApplication.value);
-
-    if (['pending', 'pending review'].includes(status)) {
-      return 'Request Pending';
-    }
-
-    if (status === 'approved') return 'Already Approved';
-
-    return 'Already Requested';
+    if (['pending', 'pending review'].includes(status)) return 'Request Pending';
+    return status === 'approved' ? 'Already Approved' : 'Already Requested';
   }
-
-  if (dialogBook.value?.status !== 'available') {
-    return 'Book Unavailable';
-  }
-
-  return 'Request Book';
+  return dialogBook.value?.status === 'available' ? 'Request Book' : 'Book Unavailable';
 });
 
-//@sree-sanjana06 > shared preview supports normal and view-only modes
+function showerror(error, retry) {
+  toast.error(error.message || 'could not load book information', { id: 'book-dialog-error', duration: Infinity, closeButton: true, style: { pointerEvents: 'auto' }, action: { label: 'retry', onClick: retry } });
+}
+
 async function openBookDetails(book, options = {}) {
   if (!book?.id) return;
-
   viewOnly.value = options.viewOnly === true;
   dialogBook.value = book;
   dialogOpen.value = true;
-
+  requestDialogOpen.value = false;
   detailsLoading.value = true;
   detailsError.value = '';
-  actionMessage.value = '';
-  actionError.value = '';
   requestSubmitted.value = false;
-  requestDialogOpen.value = false;
-
   applications.value = [];
   applicationsError.value = '';
 
   try {
-    const result = await api(`/books/${book.id}`);
-    dialogBook.value = result.book;
+    const response = await api(`/books/${book.id}`, { method: 'GET' });
+    dialogBook.value = response.book;
   } catch (error) {
     detailsError.value = error.message;
+    showerror(error, () => openBookDetails(book, options));
   } finally {
     detailsLoading.value = false;
   }
 
-  //@sree-sanjana06 > no request check is needed in My Adoptions view-only mode
-  if (!viewOnly.value) {
+  if (!viewOnly.value && !detailsError.value) {
     try {
       await loadApplications();
+      if (existingApplication.value) toast.info('you already requested this copy > check my adoptions', { style: { pointerEvents: 'auto' } });
+      else if (dialogBook.value?.status !== 'available') toast.info('this book is unavailable for requests', { style: { pointerEvents: 'auto' } });
     } catch (error) {
-      console.error('Unable to check existing applications:', error);
+      showerror(error, () => openBookDetails(book, options));
     }
   }
 }
 
-defineExpose({ openBookDetails });
-
-// ==================== REQUEST CONFIRMATION ====================
-
-//@sree-sanjana06 > open confirmation only when the selected copy is eligible
 async function openRequestDialog() {
   if (!canRequestBook.value) return;
-
-  actionError.value = '';
-  actionMessage.value = '';
-
   dialogOpen.value = false;
   await nextTick();
-
   requestDialogOpen.value = true;
 }
 
-// ==================== SUBMIT ADOPTION REQUEST ====================
-
-//@sree-sanjana06 > recheck existing requests before sending POST /applications
 async function requestCopy() {
   if (!dialogBook.value || actionLoading.value || requestSubmitted.value || viewOnly.value) return;
-
   actionLoading.value = true;
-  actionError.value = '';
-  actionMessage.value = '';
-
   try {
     await loadApplications();
-
     if (existingApplication.value) {
-      actionError.value = 'You already have an active adoption request for this book.';
+      toast.info('you already requested this copy > check my adoptions', { style: { pointerEvents: 'auto' } });
       return;
     }
-
     if (dialogBook.value.status !== 'available') {
-      actionError.value = 'This book is no longer available for requests.';
+      toast.info('this book is no longer available for requests', { style: { pointerEvents: 'auto' } });
       return;
     }
-
-    await api('/applications', {
-      method: 'POST',
-      body: { bookid: dialogBook.value.id }
-    });
-
-    //@sree-sanjana06 > immediately prevent another submission in this session
+    await api('/applications', { method: 'POST', body: { bookid: dialogBook.value.id } });
     requestSubmitted.value = true;
-    applications.value.push({
-      bookid: dialogBook.value.id,
-      status: 'pending'
-    });
-
-    actionMessage.value = 'Adoption request submitted successfully.';
+    applications.value.push({ bookid: dialogBook.value.id, status: 'pending' });
+    toast.success('adoption request submitted', { style: { pointerEvents: 'auto' } });
   } catch (error) {
-    actionError.value = error.message || 'Unable to submit your adoption request.';
+    showerror(error, requestCopy);
   } finally {
     actionLoading.value = false;
   }
 }
+
+defineExpose({ openBookDetails });
 </script>
 
 <template>
-  <!-- ==================== BOOK DETAILS ==================== -->
   <!--@sree-sanjana06 > shared preview for Home, Browse Books, Watchlist and My Adoptions-->
   <Dialog v-model:open="dialogOpen">
-    <DialogContent class="w-[calc(100vw-2rem)] max-w-4xl p-0" :showCloseButton="false">
-      <DialogHeader class="flex flex-row items-center justify-between border-b p-5">
-        <DialogTitle class="font-heading text-3xl">Book details</DialogTitle>
-        <Button variant="outline" @click="dialogOpen = false">Close</Button>
+    <DialogContent class="max-w-3xl p-0">
+      <DialogHeader class="border-b p-5 pr-20">
+        <DialogTitle class="text-3xl">Book details</DialogTitle>
+        <DialogDescription class="sr-only">{{ dialogBook?.title }}</DialogDescription>
       </DialogHeader>
 
-      <div v-if="dialogBook" class="space-y-6 p-6">
-        <p v-if="detailsLoading" class="book-dialog__muted">Loading book details...</p>
-        <p v-if="detailsError" class="book-dialog__error">{{ detailsError }}</p>
+      <div v-if="dialogBook" class="space-y-5 p-5">
+        <div v-if="detailsLoading" class="space-y-5" role="status" aria-busy="true">
+          <AppBookIdentity loading coverClass="w-16" />
+          <Skeleton class="h-5 w-24" />
+          <Skeleton class="h-4 w-full" />
+          <Skeleton class="h-4 w-2/3" />
+          <div class="grid grid-cols-2 gap-5">
+            <div v-for="index in 5" :key="index" class="space-y-2.5">
+              <Skeleton class="h-4 w-1/2" />
+              <Skeleton class="h-4" />
+            </div>
+          </div>
+        </div>
 
-        <div class="space-y-5">
-          <AppBookIdentity :title="dialogBook.title" :author="getAuthors(dialogBook)" :cover="dialogBook.coverurl" coverClass="w-32" />
-          <AppStatusBadge v-if="dialogBook.status" :status="dialogBook.status" />
+        <div v-else-if="!detailsError" class="space-y-5">
+          <AppBookIdentity :title="dialogBook.title" :author="getAuthors(dialogBook)" :cover="dialogBook.coverurl" coverClass="w-16" />
+          <Badge v-if="props.savedIds.has(dialogBook.id)" variant="green">saved to watchlist</Badge>
 
           <!--@sree-sanjana06 > book description-->
           <div class="space-y-2">
-            <h3 class="font-heading text-xl">Description</h3>
-            <p v-if="cleanDescription(dialogBook.description)" class="book-dialog__description">{{ cleanDescription(dialogBook.description) }}</p>
-            <p v-else class="book-dialog__small-muted italic">No description available.</p>
+            <h3>Description</h3>
+            <p v-if="description" class="text-muted-foreground leading-6">{{ description }}</p>
+            <p v-else class="text-muted-foreground italic">No description available.</p>
           </div>
 
-          <!--@sree-sanjana06 > show metadata only when available-->
-          <dl class="grid grid-cols-[7rem_1fr] gap-x-4 gap-y-3">
-            <template v-if="dialogBook.subjects?.length">
-              <dt class="book-dialog__muted">Subjects</dt>
-              <dd>{{ dialogBook.subjects.join(', ') }}</dd>
-            </template>
-            <template v-if="dialogBook.publicationyear">
-              <dt class="book-dialog__muted">Published</dt>
-              <dd>{{ dialogBook.publicationyear }}</dd>
-            </template>
-            <template v-if="dialogBook.isbn">
-              <dt class="book-dialog__muted">ISBN</dt>
-              <dd>{{ dialogBook.isbn }}</dd>
-            </template>
-            <template v-if="dialogBook.condition">
-              <dt class="book-dialog__muted">Condition</dt>
-              <dd class="capitalize">{{ dialogBook.condition }}</dd>
-            </template>
-            <template v-if="dialogBook.collectionarea">
-              <dt class="book-dialog__muted">Collection</dt>
-              <dd>{{ dialogBook.collectionarea }}</dd>
-            </template>
+          <dl class="grid grid-cols-2 gap-5">
+            <div v-for="field in fields" :key="field.label" class="space-y-2.5">
+              <dt class="text-muted-foreground">{{ field.label }}</dt>
+              <dd>{{ field.value }}</dd>
+            </div>
           </dl>
         </div>
 
         <!-- ==================== REQUEST ACTION ==================== -->
         <!--@sree-sanjana06 > hide the entire request section for My Adoptions-->
-        <div v-if="!viewOnly" class="space-y-4 border-t pt-5">
-          <h3 class="font-heading text-xl">A book, not a checkout.</h3>
-          <p class="book-dialog__muted">Request this donated copy for free. The team reviews your request before you arrange collection.</p>
+        <div v-if="!viewOnly && !detailsLoading && !detailsError" class="space-y-4 border-t pt-5">
+          <h3>A book, not a checkout.</h3>
+          <p class="text-muted-foreground">Request this donated copy for free. The team reviews your request before you arrange collection.</p>
 
-          <p v-if="existingApplication" class="text-sm text-muted-foreground">You already have an active request for this copy. Track its progress in My Adoptions.</p>
-          <p v-if="applicationsError" class="book-dialog__error">{{ applicationsError }}</p>
 
           <Button class="w-full" :disabled="!canRequestBook" @click="openRequestDialog">{{ requestButtonLabel }}</Button>
         </div>
@@ -317,13 +219,11 @@ async function requestCopy() {
     </DialogContent>
   </Dialog>
 
-  <!-- ==================== REQUEST CONFIRMATION ==================== -->
-  <!--@sree-sanjana06 > retain the existing confirmation popup for eligible requests-->
   <Dialog v-model:open="requestDialogOpen">
-    <DialogContent class="max-h-[90vh] w-[calc(100vw-2rem)] max-w-5xl overflow-y-auto p-0" :showCloseButton="false">
-      <DialogHeader class="flex flex-row items-center justify-between border-b p-5">
-        <DialogTitle class="font-heading text-3xl">Request a copy</DialogTitle>
-        <Button variant="outline" @click="requestDialogOpen = false">Close</Button>
+    <DialogContent class="max-h-[90vh] max-w-5xl p-0">
+      <DialogHeader class="border-b p-5 pr-20">
+        <DialogTitle class="text-3xl">Request a copy</DialogTitle>
+        <DialogDescription class="sr-only">{{ dialogBook?.title }}</DialogDescription>
       </DialogHeader>
 
       <div v-if="dialogBook" class="space-y-6 p-6">
@@ -332,48 +232,46 @@ async function requestCopy() {
         <div class="grid grid-cols-4 gap-2 sm:gap-4">
           <div class="space-y-2 border-t-2 border-green-700 pt-3">
             <span class="grid size-9 place-items-center rounded-full bg-green-100 text-green-800">✓</span>
-            <p class="book-dialog__progress-text">Choose a book</p>
+            <p class="text-xs sm:text-sm">Choose a book</p>
           </div>
           <div class="space-y-2 border-t-2 border-foreground pt-3">
             <span class="grid size-9 place-items-center rounded-full bg-foreground text-background">2</span>
-            <p class="book-dialog__progress-text font-semibold">Request &amp; review</p>
+            <p class="text-xs sm:text-sm font-semibold">Request &amp; review</p>
           </div>
           <div class="space-y-2 border-t-2 pt-3 text-muted-foreground">
-            <span class="grid size-9 place-items-center rounded-full bg-muted">3</span>
-            <p class="book-dialog__progress-text">Arrange pickup</p>
+            <span class="grid size-9 place-items-center rounded-full">3</span>
+            <p class="text-xs sm:text-sm">Arrange pickup</p>
           </div>
           <div class="space-y-2 border-t-2 pt-3 text-muted-foreground">
-            <span class="grid size-9 place-items-center rounded-full bg-muted">4</span>
-            <p class="book-dialog__progress-text">Collect your book</p>
+            <span class="grid size-9 place-items-center rounded-full">4</span>
+            <p class="text-xs sm:text-sm">Collect your book</p>
           </div>
         </div>
 
-        <p class="rounded-lg bg-muted p-4 text-sm text-muted-foreground">You're sending a request, not booking a pickup. Nothing is submitted until you confirm below.</p>
+        <p class="rounded-lg p-4 text-muted-foreground">You're sending a request, not booking a pickup. Nothing is submitted until you confirm below.</p>
 
         <div class="grid gap-6 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
           <div class="space-y-3">
-            <p class="book-dialog__small-muted">Your selected copy</p>
+            <p class="text-muted-foreground">Your selected copy</p>
             <AppBookIdentity :title="dialogBook.title" :author="getAuthors(dialogBook)" :cover="dialogBook.coverurl" coverClass="w-32" />
           </div>
 
           <div class="space-y-5 rounded-xl border p-5">
-            <h3 class="font-heading text-2xl">Requesting as</h3>
+            <h3 class="text-2xl">Requesting as</h3>
 
             <dl class="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm sm:grid-cols-[7rem_minmax(0,1fr)]">
-              <dt class="book-dialog__muted">Reader</dt>
+              <dt class="text-muted-foreground">Reader</dt>
               <dd class="break-words">{{ auth.user?.name || 'Reader' }}</dd>
-              <dt class="book-dialog__muted">Email</dt>
+              <dt class="text-muted-foreground">Email</dt>
               <dd class="break-all">{{ auth.user?.email || 'Not available' }}</dd>
             </dl>
 
             <div class="space-y-3 border-t pt-5">
-              <h4 class="font-heading text-xl">The team reviews each request</h4>
-              <p class="book-dialog__small-muted">You're asking for this donated copy, free of charge. Submitting doesn't reserve it. If approved, you can arrange a pickup time.</p>
-              <p class="book-dialog__small-muted">You can follow the response in My Adoptions.</p>
+              <h4 class="text-xl">The team reviews each request</h4>
+              <p class="text-muted-foreground">You're asking for this donated copy, free of charge. Submitting doesn't reserve it. If approved, you can arrange a pickup time.</p>
+              <p class="text-muted-foreground">You can follow the response in My Adoptions.</p>
             </div>
 
-            <p v-if="actionMessage" class="book-dialog__success" role="status">{{ actionMessage }}</p>
-            <p v-if="actionError" class="book-dialog__error" role="alert">{{ actionError }}</p>
 
             <Button class="w-full" :disabled="actionLoading || requestSubmitted || !!existingApplication || !!applicationsError" @click="requestCopy">
               {{ requestSubmitted ? 'Request Submitted' : actionLoading ? 'Submitting...' : 'Submit Request' }}

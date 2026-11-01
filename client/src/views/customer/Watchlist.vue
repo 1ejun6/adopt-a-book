@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,6 +7,7 @@ import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
 import CustomerBookCard from '@/components/customer/CustomerBookCard.vue';
 
 const watchlist = ref([]);
+const savedIds = computed(() => new Set(watchlist.value.map(entry => entry.bookid?.id).filter(Boolean)));
 const loading = ref(true);
 const error = ref('');
 const actionError = ref('');
@@ -23,7 +24,7 @@ async function loadWatchlist() {
   loading.value = true;
   error.value = '';
   try {
-    const result = await api('/watchlist');
+    const result = await api('/watchlist', { method: 'GET' });
     watchlist.value = result.watchlist || [];
   } catch (err) {
     error.value = err.message;
@@ -135,8 +136,7 @@ onMounted(loadWatchlist);
 
 </section>
     <!--@sree-sanjana06 > existing book details and adoption request popups-->
-    <CustomerBookDialogs ref="dialogs" :watchlist="watchlist" manageWatchlist @saved="watchlist = $event"
-      @edit="startEdit" />
+    <CustomerBookDialogs ref="dialogs" :savedIds="savedIds" />
 
     <!--@sree-sanjana06 > edit the saved note using existing Dialog UI-->
     <Dialog v-model:open="editOpen">

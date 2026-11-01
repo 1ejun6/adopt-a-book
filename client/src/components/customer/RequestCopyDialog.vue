@@ -5,8 +5,7 @@ import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import './CustomerBookDialogs.css';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 //@sree-sanjana06 > receive selected book and popup state from CustomerBookDialogs.vue
 const props = defineProps({
@@ -60,73 +59,62 @@ async function requestCopy() {
 </script>
 
 <template>
-  <!--@sree-sanjana06 > separate request confirmation and submission workflow-->
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="max-h-[90vh] w-[calc(100vw-2rem)] max-w-5xl overflow-y-auto p-0" :showCloseButton="false">
-      <DialogHeader class="flex flex-row items-center justify-between border-b p-5">
-        <DialogTitle class="font-heading text-3xl">Request a copy</DialogTitle>
-        <Button variant="outline" @click="emit('update:open', false)">Close</Button>
+    <DialogContent class="max-h-[90vh] max-w-5xl p-0">
+      <DialogHeader class="border-b p-5 pr-20">
+        <DialogTitle class="text-3xl">Request a copy</DialogTitle>
+        <DialogDescription class="sr-only">{{ book?.title }}</DialogDescription>
       </DialogHeader>
 
       <div v-if="book" class="space-y-6 p-6">
-        <!--@sree-sanjana06 > progress tracker-->
+
+        <!--@sree-sanjana06 > request progress tracker-->
         <div class="grid grid-cols-4 gap-2 sm:gap-4">
           <div class="space-y-2 border-t-2 border-green-700 pt-3">
             <span class="grid size-9 place-items-center rounded-full bg-green-100 text-green-800">✓</span>
-            <p class="book-dialog__progress-text">Choose a book</p>
+            <p class="text-xs sm:text-sm">Choose a book</p>
           </div>
           <div class="space-y-2 border-t-2 border-foreground pt-3">
             <span class="grid size-9 place-items-center rounded-full bg-foreground text-background">2</span>
-            <p class="book-dialog__progress-text font-semibold">Request &amp; review</p>
+            <p class="text-xs sm:text-sm font-semibold">Request &amp; review</p>
           </div>
           <div class="space-y-2 border-t-2 pt-3 text-muted-foreground">
-            <span class="grid size-9 place-items-center rounded-full bg-muted">3</span>
-            <p class="book-dialog__progress-text">Arrange pickup</p>
+            <span class="grid size-9 place-items-center rounded-full">3</span>
+            <p class="text-xs sm:text-sm">Arrange pickup</p>
           </div>
           <div class="space-y-2 border-t-2 pt-3 text-muted-foreground">
-            <span class="grid size-9 place-items-center rounded-full bg-muted">4</span>
-            <p class="book-dialog__progress-text">Collect your book</p>
+            <span class="grid size-9 place-items-center rounded-full">4</span>
+            <p class="text-xs sm:text-sm">Collect your book</p>
           </div>
         </div>
 
-        <!--@sree-sanjana06 > explain that the request is not a reservation-->
-        <p class="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
-          You're sending a request, not booking a pickup. Nothing is submitted until you confirm below.
-        </p>
+        <p class="rounded-lg p-4 text-muted-foreground">You're sending a request, not booking a pickup. Nothing is submitted until you confirm below.</p>
 
         <div class="grid gap-6 md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
           <div class="space-y-3">
-            <p class="book-dialog__small-muted">Your selected copy</p>
+            <p class="text-muted-foreground">Your selected copy</p>
             <AppBookIdentity :title="book.title" :author="getAuthors(book)" :cover="book.coverurl" coverClass="w-32" />
           </div>
 
           <div class="space-y-5 rounded-xl border p-5">
-            <h3 class="font-heading text-2xl">Requesting as</h3>
+            <h3 class="text-2xl">Requesting as</h3>
 
-            <!--@sree-sanjana06 > logged-in customer information-->
             <dl class="grid grid-cols-[5rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm sm:grid-cols-[7rem_minmax(0,1fr)]">
-              <dt class="book-dialog__muted">Reader</dt>
+              <dt class="text-muted-foreground">Reader</dt>
               <dd class="break-words">{{ auth.user?.name || 'Reader' }}</dd>
-              <dt class="book-dialog__muted">Email</dt>
+              <dt class="text-muted-foreground">Email</dt>
               <dd class="break-all">{{ auth.user?.email || 'Not available' }}</dd>
             </dl>
 
-            <!--@sree-sanjana06 > adoption review explanation-->
             <div class="space-y-3 border-t pt-5">
-              <h4 class="font-heading text-xl">The team reviews each request</h4>
-              <p class="book-dialog__small-muted">
-                You're asking for this donated copy, free of charge. Submitting doesn't reserve it.
-                If your request is approved, you can arrange a pickup time.
-              </p>
-              <p class="book-dialog__small-muted">You can follow the response in My Adoptions.</p>
+              <h4 class="text-xl">The team reviews each request</h4>
+              <p class="text-muted-foreground">You're asking for this donated copy, free of charge. Submitting doesn't reserve it. If approved, you can arrange a pickup time.</p>
+              <p class="text-muted-foreground">You can follow the response in My Adoptions.</p>
             </div>
-            
-            <p v-if="actionMessage" class="book-dialog__success" role="status">{{ actionMessage }}</p>
-            <p v-if="actionError" class="book-dialog__error" role="alert">{{ actionError }}</p>
 
-            <!--@sree-sanjana06 > submit adoption request-->
+
             <Button class="w-full" :disabled="actionLoading || requestSubmitted" @click="requestCopy">
-              {{ requestSubmitted ? 'Request submitted' : actionLoading ? 'Submitting...' : 'Submit request' }}
+              {{ requestSubmitted ? 'Request Submitted' : actionLoading ? 'Submitting...' : 'Submit Request' }}
             </Button>
           </div>
         </div>

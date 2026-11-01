@@ -304,7 +304,7 @@ onMounted(loadApplications);
 
     <!-- ==================== BOOK DETAILS DIALOG ==================== -->
     <!--@sree-sanjana06 > reuse the existing customer book preview popup-->
-    <CustomerBookDialogs ref="dialogs" :watchlist="[]" />
+    <CustomerBookDialogs ref="dialogs" />
 
   </main>
 </template>
