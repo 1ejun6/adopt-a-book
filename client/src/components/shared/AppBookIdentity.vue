@@ -19,7 +19,7 @@ watch(() => props.cover, () => { coverFailed.value = false; });
 
 <template>
     <!--@lee-hlmilk > loading state-->
-    <div v-if="props.loading" class="flex w-full min-w-0" :class="vertical ? 'flex-col gap-4' : 'items-center gap-2.5'" aria-busy="true" role="status">
+    <div v-if="props.loading" class="flex w-full min-w-0 gap-2.5" :class="vertical ? 'flex-col' : 'items-center'" aria-busy="true" role="status">
         <!--@1ejun6 > loading-->
         <!--@lee-hlmilk > prevent cover from shrinking > keep 2-3 book proportions-->
         <Skeleton :class="props.coverClass" class="shrink-0 aspect-[2/3]"></Skeleton>
@@ -31,16 +31,16 @@ watch(() => props.cover, () => { coverFailed.value = false; });
     </div>
 
     <!--@lee-hlmilk > book cover  title &&& author-->
-    <div v-else class="flex w-full min-w-0" :class="vertical ? 'flex-col gap-4' : wrap ? 'items-start gap-2.5' : 'items-center gap-2.5'">
-        <div :class="[props.coverClass, wrap ? 'flex items-center justify-center' : 'grid place-items-center']" class="shrink-0 aspect-[2/3] rounded-lg">
+    <div v-else class="flex w-full min-w-0 gap-2.5" :class="vertical ? 'flex-col' : wrap ? 'items-start' : 'items-center'">
+        <div :class="[props.coverClass, wrap ? 'flex items-center justify-center' : 'grid place-items-center']" class="shrink-0 aspect-[2/3]">
             <img v-if="props.cover && !coverFailed" :key="props.cover" :src="props.cover" alt="" width="48" height="72"
                 loading="lazy" decoding="async" class="w-full" :class="{ 'h-full object-contain': wrap }" draggable="false"
                 @error="coverFailed = true" /> <!--@1ejun6 > download covers when you scroll near them > let other content render while preparing image-->
             <HugeiconsIcon v-else :icon="Book02Icon" class="size-5" aria-hidden="true" />
         </div>
         <div class="min-w-0 flex-1">
-            <strong class="block font-heading font-normal text-lg" :class="wrap ? 'line-clamp-2 break-words' : 'truncate'" :title="props.title">{{ props.title }}</strong>
-            <small class="block text-sm text-muted-foreground" :class="wrap ? 'line-clamp-2' : 'truncate'" :title="props.author">{{ props.author }}</small>
+            <strong class="font-heading font-normal text-lg" :class="wrap ? 'line-clamp-2 break-words' : 'block truncate'" :title="props.title">{{ props.title }}</strong>
+            <small class="text-sm text-muted-foreground" :class="wrap ? 'line-clamp-2' : 'block truncate'" :title="props.author">{{ props.author }}</small>
         </div>
     </div>
 </template>

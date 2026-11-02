@@ -151,14 +151,24 @@ async function requestCopy() {
 watch(dialogOpen, value => { if (!value) cancelload(); }, { flush: 'sync' });
 watch(requestDialogOpen, value => { if (!value && !dialogOpen.value) cancelload(); }, { flush: 'sync' });
 onBeforeUnmount(cancelload);
-defineExpose({ openBookDetails });
+function closeBookDetails(book) {
+  if (!book || dialogBook.value?.id === book.id) dialogOpen.value = false;
+}
+defineExpose({ openBookDetails, closeBookDetails });
 </script>
 
 <template>
   <AppBookPreviewDialog v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError"
     :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)"
     @save="emit('save', $event)">
+    <template v-if="$slots['book-action']" #book-action>
+      <slot name="book-action" :book="dialogBook" />
+    </template>
+    <template v-if="$slots.details" #details>
+      <slot name="details" :book="dialogBook" />
+    </template>
     <template v-if="!viewOnly" #actions>
+      <slot name="extra-actions" :book="dialogBook" />
       <Button class="w-full" :disabled="!canRequestBook" @click="openRequestDialog">{{ requestButtonLabel }}</Button>
     </template>
   </AppBookPreviewDialog>

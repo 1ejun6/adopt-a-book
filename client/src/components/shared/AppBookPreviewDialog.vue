@@ -65,19 +65,21 @@ const fields = computed(() => [
           <div class="flex items-center gap-2.5">
             <AppBookIdentity :title="props.book.title" :author="props.book.authors?.join(', ') || 'author not listed'"
               :cover="props.book.coverurl" coverClass="w-16" class="flex-1" />
-            <button v-if="props.canSave || props.saved" type="button" class="shrink-0 rounded-lg p-2"
+            <slot name="book-action" :book="props.book">
+            <button v-if="props.canSave || props.saved" type="button" class="rounded-lg p-2"
               :disabled="!props.canSave || props.busy"
               :title="props.saved ? 'remove from watchlist' : 'save to watchlist'" :aria-pressed="props.saved"
               @click="emit('save', props.book)">
               <HugeiconsIcon :icon="Bookmark02Icon" class="size-6"
                 :class="{ 'fill-success-foreground text-success-foreground': props.saved }" aria-hidden="true" />
             </button>
+            </slot>
           </div>
 
           <div class="space-y-2.5">
             <h3>Description</h3>
-            <p v-if="description" class="text-muted-foreground leading-6 text-sm">{{ description }}</p>
-            <p v-else class="text-muted-foreground italic text-sm">no description available</p>
+            <p v-if="description" class="text-muted-foreground">{{ description }}</p>
+            <p v-else class="text-muted-foreground italic">no description available</p>
           </div>
 
           <dl class="grid grid-cols-2 gap-2.5">
@@ -92,6 +94,8 @@ const fields = computed(() => [
             </div>
           </dl>
         </div>
+
+        <slot v-if="!props.loading && !props.error" name="details" :book="props.book" />
 
         <DialogFooter v-if="!props.loading && !props.error && $slots.actions">
           <slot name="actions" />
