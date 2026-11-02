@@ -11,6 +11,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import CustomerWatchlist from '../views/customer/Watchlist.vue';
 import CustomerBrowseBooks from '../views/customer/BrowseBooks.vue';
 import MyAdoptions from '../views/customer/MyAdoptions.vue';
+import MyPickups from '../views/customer/MyPickups.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -33,7 +34,7 @@ const router = createRouter({
         { path: 'books', name: 'customerBooks', component: CustomerBrowseBooks, label: 'Browse Books', roles: ['customer']},
         { path: 'watchlist', name: 'customerWatchlist', component: CustomerWatchlist, label: 'Watchlist', roles: ['customer']},
         { path: 'adoptions', name: 'customerAdoptions',component: MyAdoptions, label: 'My Adoptions',roles: ['customer']},
-        {path: 'pickups',name: 'customerPickups',label: 'Pickups', roles: ['customer']},
+        {path: 'pickups',name: 'customerPickups',component: MyPickups, label: 'Pickups', roles: ['customer']},
         {path: 'drives', name: 'customerDrives', label: 'Adoption Drives', roles: ['customer']},
         {path: 'account',name: 'customerAccount', label: 'Account', roles: ['customer'], end: true}
       ]
