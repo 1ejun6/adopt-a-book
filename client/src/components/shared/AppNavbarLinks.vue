@@ -16,7 +16,7 @@ const route = useRoute();
 <template>
   <!--@1ejun6 > * > every direct child element of element with these classes-->
   <nav v-if="mobile" id="mobile"
-    class="grid gap-2.5 p-5 md:hidden *:rounded-lg *:p-2.5 *:text-right">
+    class="grid gap-2.5 p-5 lg:hidden *:rounded-lg *:p-2.5 *:text-right">
     <!--@1ejun6 > each link sits on its own row-->
     <RouterLink v-for="link in links" :key="link.name" :to="{ name: link.name }" class="washi-tape washi-tape-hover"
       :data-active="route.name === link.name ? true : undefined" @click="emit('navigate')">
@@ -27,8 +27,8 @@ const route = useRoute();
       Logout
     </button>
   </nav>
-  <!--@1ejun6 > md is 768px-->
-  <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden max-w-none md:flex [&>div]:w-full">
+  <!-- Desktop links share the same breakpoint as the mobile menu. -->
+  <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden max-w-none lg:flex [&>div]:w-full">
     <!--@1ejun6 > overrides menu max-w-max > allowing it to grow wider than its links > tailwind selector >  sets width to 100%-->
     <NavigationMenuList class="w-full">
       <!--@1ejun6 > margin left > login link-->
@@ -37,11 +37,11 @@ const route = useRoute();
           <RouterLink :to="{ name: link.name }" @click="emit('navigate')">{{ link.label }}</RouterLink>
         </NavigationMenuLink>
       </NavigationMenuItem>
-      <NavigationMenuItem v-if="auth.ready && auth.user" class="ml-auto">
-        <button type="button" :class="navigationMenuTriggerStyle()" :disabled="logoutLoading" @click="emit('logout')">
-          Logout
-        </button>
+
+      <NavigationMenuItem v-if="auth.ready && auth.user" :class="{ 'ml-auto': !links.some(link => link.end) }">
+        <button type="button" :class="navigationMenuTriggerStyle()" :disabled="logoutLoading" @click="emit('logout')">Logout</button>
       </NavigationMenuItem>
+
     </NavigationMenuList>
   </NavigationMenu>
 </template>

@@ -768,6 +768,7 @@ begin
   select coalesce(jsonb_agg(
     jsonb_build_object('id',d.id,'title',d.title,'location',d.location,'eventdate',d.eventdate,
       'description',d.description,'maxcapacity',d.maxcapacity,'status',d.status,'mrtstationid',d.mrtstationid,
+      'spotsleft',greatest(d.maxcapacity-cardinality(d.userids),0),
       'mrtstation',case when s.id is null then null else jsonb_build_object('id',s.id,'name',s.name,'codes',s.codes,'lat',s.lat,'lng',s.lng,'selectable',s.selectable) end)
     || case when customer_id is null then '{}'::jsonb else jsonb_build_object(
       'registered',customer_id=any(d.userids),'attendees',cardinality(d.userids),'createdat',d.createdat,'updatedat',d.updatedat) end

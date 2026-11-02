@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source('../');
 @import './base.css';
 
 @theme inline {
@@ -137,3 +137,6 @@ h1, h2, h3, h4, h5, h6 {
     cursor: url('./front.svg') 26 15, auto !important; /*@1ejun6 > fallback cursor > overwrite */
   }
 }
+
+/* Shared dialog bodies retain spacing independently of the shell. */
+.dialog-body { @apply space-y-2.5 p-5; }

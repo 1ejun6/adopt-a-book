@@ -1,14 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import GuestHome from '../views/guest/Home.vue';
+import CustomerAdoptionDrives from '../views/customer/AdoptionDrives.vue';
+import CustomerAccount from '../views/customer/Account.vue';
 import CustomerHome from '../views/customer/Home.vue';
 import AdminHome from '../views/admin/Home.vue';
+import AdminBookInventory from '../views/admin/BookInventory.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
-import AdminBookInventory from '../views/admin/BookInventory.vue';
+import GuestAdoptionDrives from '../views/guest/AdoptionDrives.vue';
 import { auth, role, homeRoute } from '@/lib/auth';
 import { loadSession } from '@/lib/session';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
+import CustomerWatchlist from '../views/customer/Watchlist.vue';
+import CustomerBrowseBooks from '../views/customer/BrowseBooks.vue';
+import MyAdoptions from '../views/customer/MyAdoptions.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -18,7 +24,8 @@ const router = createRouter({
       component: AppLayout,
       children: [
         { path: '', name: 'guestHome', component: GuestHome, label: 'Browse Books', roles: ['guest'] },
-        { path: 'login', name: 'login', component: Login, label: 'Login', roles: ['guest'] },
+        { path: 'drives', name: 'guestDrives', component: GuestAdoptionDrives, label: 'Adoption Drives', roles: ['guest'] },
+        { path: 'login', name: 'login', component: Login, label: 'Login', roles: ['guest'], end: true },
         { path: 'register', name: 'register', component: Register, label: 'Create Account', roles: ['guest'] },
       ],
     },
@@ -26,8 +33,14 @@ const router = createRouter({
       path: '/customer',
       component: AppLayout,
       children: [
-        { path: '', name: 'customerHome', component: CustomerHome, label: 'Home', roles: ['customer'] },
-      ],
+        { path: '', name: 'customerHome', component: CustomerHome, roles: ['customer'] },
+        { path: 'books', name: 'customerBooks', component: CustomerBrowseBooks, label: 'Browse Books', roles: ['customer']},
+        { path: 'watchlist', name: 'customerWatchlist', component: CustomerWatchlist, label: 'Watchlist', roles: ['customer']},
+        { path: 'adoptions', name: 'customerAdoptions',component: MyAdoptions, label: 'My Adoptions',roles: ['customer']},
+        {path: 'pickups',name: 'customerPickups',label: 'Pickups', roles: ['customer']},
+        {path: 'drives', name: 'customerDrives', component: CustomerAdoptionDrives, label: 'Adoption Drives', roles: ['customer']},
+        {path: 'account',name: 'customerAccount', component: CustomerAccount, label: 'Account', roles: ['customer'], end: true}
+      ]
     },
     {
       path: '/admin',
@@ -36,11 +49,11 @@ const router = createRouter({
         { path: '', name: 'adminHome', component: AdminHome, label: 'Home', roles: ['admin'] },
         { path: 'books', name: 'adminBooks', component: AdminBookInventory, label: 'Book Inventory', roles: ['admin'] },
       ],
-    },
-  ],
+    }
+  ]
 });
 
-//@1ejun6 > gets child pages from every route group & combines them into one list
+//@1ejun6 > gets child pages from every route group &&& combines them into one list
 const pages = router.options.routes.flatMap(group => group.children);
 
 //@1ejun6 > ~to~ is destination route

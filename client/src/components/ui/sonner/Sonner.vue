@@ -2,11 +2,11 @@
 import postcard from './postcard.svg';
 import { Toaster } from 'vue-sonner';
 import { HugeiconsIcon } from '@hugeicons/vue';
-import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading03Icon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading03Icon } from '@hugeicons/core-free-icons';
 </script>
 
 <template>
-  <Toaster position="top-center" :duration="1000" :mobileOffset="10" class="lavenderToaster" :style="{ '--postcard-art': `url(${postcard})` }">
+  <Toaster position="top-center" :duration="1000" close-button :mobileOffset="10" class="lavenderToaster" :style="{ '--postcard-art': `url(${postcard})` }">
     <template #success-icon>
       <HugeiconsIcon :icon="CheckmarkCircle02Icon" :size="20" />
     </template>
@@ -17,6 +17,9 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
       <HugeiconsIcon :icon="CancelCircleIcon" :size="20" />
     </template>
     <!--@1ejun6 > toast.promise uses loading while pending > success when resolved \ error when rejected-->
+    <template #close-icon>
+      <HugeiconsIcon :icon="Cancel01Icon" :size="20" />
+    </template>
     <template #loading-icon>
       <HugeiconsIcon :icon="Loading03Icon" :size="20" class="animate-spin" />
     </template>
@@ -29,7 +32,7 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
   --stripe-color: #bcb8ff;
   --stamp-size: 50px;
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) var(--stamp-size);
+  grid-template-columns: 20px repeat(2, minmax(0, 1fr)) var(--stamp-size);
   gap: .625rem;
   padding: .625rem;
   border: 5px solid transparent;
@@ -54,7 +57,7 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
 
   &::before {
     content: '';
-    grid-column: 3;
+    grid-column: 4;
     grid-row: 1;
     width: var(--stamp-size);
     height: var(--stamp-size);
@@ -72,8 +75,9 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
   }
 
   & [data-content] {
-    grid-column: 2;
+    grid-column: 2 / 4;
     grid-row: 1;
+    padding-right: 1rem;
     gap: 0;
     min-width: 0;
     overflow-wrap: anywhere;
@@ -84,13 +88,26 @@ import { CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading
   }
 
   & [data-button] {
-    grid-column: 2;
-    justify-self: start;
+    grid-row: 2;
+    justify-self: stretch;
+    justify-content: center;
     margin: 0;
     max-width: 100%;
     height: auto;
-    min-height: 24px;
+    min-height: 36px;
     white-space: normal;
+  }
+
+  & [data-cancel] { grid-column: 2; }
+  & [data-action] { grid-column: 3; }
+  & [data-close-button] {
+    top: .625rem;
+    right: .625rem;
+    left: auto;
+    transform: none;
+    background: var(--background);
+    border-color: var(--border);
+    color: inherit;
   }
 
   /*@1ejun6 > smaller stamp leaves room for messages on narrow mobile screens */
