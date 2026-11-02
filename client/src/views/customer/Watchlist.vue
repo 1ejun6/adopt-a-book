@@ -1,5 +1,5 @@
 <script setup>
-import { h, ref, computed, reactive, nextTick, onBeforeUnmount, onMounted } from 'vue';
+import { h, ref, computed, reactive, onBeforeUnmount, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
 import { RouterLink } from 'vue-router';
@@ -51,11 +51,9 @@ function openEntry(entry) {
   }), { id, duration: Infinity, style: { pointerEvents: 'auto' } });
 }
 
-async function editPreviewNote(book) {
+function editPreviewNote(book) {
   const entry = entriesByBook.value.get(book?.id);
   if (!entry || deleting.has(entry.id)) return;
-  dialogs.value?.closeBookDetails();
-  await nextTick();
   openEntry(entry);
 }
 
@@ -142,7 +140,7 @@ onBeforeUnmount(() => {
         </section>
       </template>
       <template #extra-actions="{ book }">
-        <Button variant="outline" class="size-9 shrink-0 p-0" title="Edit note"
+        <Button variant="outline" class="w-full" title="Edit note"
           :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="editPreviewNote(book)">
           <HugeiconsIcon :icon="PencilEdit02Icon" class="size-4" aria-hidden="true" />
           <span class="sr-only">Edit note</span>
