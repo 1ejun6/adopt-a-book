@@ -43,7 +43,7 @@ async function login() {
     <section class="mx-auto w-full max-w-md content-center">
         <div class="carddupe">
             <h1>Login</h1>
-            <p>welcome back!!</p>
+            <p class="text-sm">welcome back!!</p>
             <form @submit.prevent="login">
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>

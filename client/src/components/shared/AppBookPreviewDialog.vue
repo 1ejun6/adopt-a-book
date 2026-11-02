@@ -63,23 +63,30 @@ const fields = computed(() => [
 
         <div v-else-if="!props.error" class="space-y-2.5">
           <div class="flex items-center gap-2.5">
-            <AppBookIdentity :title="props.book.title" :author="props.book.authors?.join(', ') || 'author not listed'" :cover="props.book.coverurl" coverClass="w-16" class="flex-1" />
-            <button v-if="props.canSave || props.saved" type="button" class="shrink-0 rounded-lg p-2" :disabled="!props.canSave || props.busy" :title="props.saved ? 'remove from watchlist' : 'save to watchlist'" :aria-pressed="props.saved" @click="emit('save', props.book)">
-              <HugeiconsIcon :icon="Bookmark02Icon" class="size-6" :class="{ 'fill-success-foreground text-success-foreground': props.saved }" aria-hidden="true" />
+            <AppBookIdentity :title="props.book.title" :author="props.book.authors?.join(', ') || 'author not listed'"
+              :cover="props.book.coverurl" coverClass="w-16" class="flex-1" />
+            <button v-if="props.canSave || props.saved" type="button" class="shrink-0 rounded-lg p-2"
+              :disabled="!props.canSave || props.busy"
+              :title="props.saved ? 'remove from watchlist' : 'save to watchlist'" :aria-pressed="props.saved"
+              @click="emit('save', props.book)">
+              <HugeiconsIcon :icon="Bookmark02Icon" class="size-6"
+                :class="{ 'fill-success-foreground text-success-foreground': props.saved }" aria-hidden="true" />
             </button>
           </div>
 
           <div class="space-y-2.5">
             <h3>Description</h3>
-            <p v-if="description" class="text-muted-foreground leading-6">{{ description }}</p>
-            <p v-else class="text-muted-foreground italic">No description available.</p>
+            <p v-if="description" class="text-muted-foreground leading-6 text-sm">{{ description }}</p>
+            <p v-else class="text-muted-foreground italic text-sm">no description available</p>
           </div>
 
           <dl class="grid grid-cols-2 gap-2.5">
             <div v-for="field in fields" :key="field.label" class="space-y-2.5">
               <dt class="text-muted-foreground">{{ field.label }}</dt>
               <dd>
-                <a v-if="field.label === 'collection'" :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${field.value}, Singapore`)}`" target="_blank" rel="noopener noreferrer" class="underline">{{ field.value }}</a>
+                <a v-if="field.label === 'collection'"
+                  :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${field.value}, Singapore`)}`"
+                  target="_blank" rel="noopener noreferrer" class="underline">{{ field.value }}</a>
                 <template v-else>{{ field.value }}</template>
               </dd>
             </div>

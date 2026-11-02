@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source('../');
 @import './base.css';
 
 @theme inline {
@@ -41,7 +41,6 @@ h1, h2, h3, h4, h5, h6 {
   --destructive: #a3333b;
   --success: #e9f2e7;
   --success-foreground: #30513a;
-  --success-border: #c0d3c0;
   /*@1ejun6 >  lee-hlmilk > for badges */
   --badge-green: #e3eee4;
   --badge-amber: #fff0d5;

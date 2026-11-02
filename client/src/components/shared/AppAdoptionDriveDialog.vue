@@ -1,15 +1,12 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
+import AppAdoptionDriveBooks from '@/components/shared/AppAdoptionDriveBooks.vue';
 import { toast } from 'vue-sonner';
-import { api } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
-
-const bookLimit = 5;
 
 const props = defineProps({
   drive: { type: Object, default: null },
@@ -57,47 +54,6 @@ const fields = computed(() => {
 //@1ejun6 > zero is a valid remaining count > never assume all slots are free
 const spots = computed(() => Number.isInteger(props.drive.spotsleft) ? `${props.drive.spotsleft} ${props.drive.spotsleft === 1 ? 'slot' : 'slots'}` : null);
 
-const books = ref([]);
-const totalBooks = ref(0);
-const loadingBooks = ref(false);
-const bookError = ref('');
-
-//@brod > Fetch books when dialog opens
-async function fetchBooks() {
-  if (!props.drive.mrtstationid) {
-    books.value = [];
-    totalBooks.value = 0;
-    return;
-  }
-  loadingBooks.value = true;
-  bookError.value = '';
-  try {
-    const response = await api('/books', {
-      method: 'GET',
-      query: {
-        mrtstationids: props.drive.mrtstationid,
-        status: 'available',
-        limit: bookLimit,
-      }
-    });
-    books.value = response.books || [];
-    totalBooks.value = response.total || 0;
-  } catch (error) {
-    bookError.value = error.message;
-    toast.error(error.message, { duration: Infinity, style: { pointerEvents: 'auto' }, action: { label: 'retry', onClick: fetchBooks } });
-  } finally {
-    loadingBooks.value = false;
-  }
-}
-
-// @brod > Fetch books when dialog opens
-watch(
-  () => open.value && props.drive,
-  (active) => {
-    if (active) fetchBooks();
-  },
-  { immediate: true },
-);
 </script>
 
 <template>
@@ -117,7 +73,9 @@ watch(
             <template v-for="field in fields" :key="field.label">
               <dt class="text-muted-foreground">{{ field.label }}</dt>
               <dd>
-                <a v-if="field.value && field.label === 'venue'" :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(/singapore/i.test(drive.location) ? drive.location : `${drive.location}, Singapore`)}`" target="_blank" rel="noopener noreferrer" class="underline">{{ field.value }}</a>
+                <a v-if="field.value && field.label === 'venue'"
+                  :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(/singapore/i.test(drive.location) ? drive.location : `${drive.location}, Singapore`)}`"
+                  target="_blank" rel="noopener noreferrer" class="underline">{{ field.value }}</a>
                 <template v-else>{{ field.value || 'not provided' }}</template>
               </dd>
             </template>
@@ -127,33 +85,13 @@ watch(
             </template>
           </dl>
 
-          <section v-if="drive.mrtstationid" class="space-y-2.5">
-            <h3>book list</h3>
-
-            <ul v-if="loadingBooks" class="space-y-2.5">
-              <li v-for="i in 3" :key="i">
-                <AppBookIdentity loading />
-              </li>
-            </ul>
-
-            <p v-else-if="!bookError && !books.length">no available books at this station yet</p>
-            <template v-else-if="!bookError">
-              <ul class="space-y-2.5">
-                <li v-for="book in books" :key="book.id">
-                  <AppBookIdentity :title="book.title" :author="book.authors?.join(', ')" :cover="book.coverurl" />
-                </li>
-              </ul>
-              <p v-if="totalBooks > books.length" class="text-xs">
-                & {{ totalBooks - books.length }} more
-              </p>
-            </template>
-          </section>
+          <AppAdoptionDriveBooks v-if="open && drive.mrtstationid" :stationId="drive.mrtstationid" />
         </div>
 
         <DialogFooter class="flex-col text-center">
           <slot name="actions" :drive="drive">
             <Button v-if="canRsvp" @click="requestrsvp">rsvp</Button>
-            <p v-else class="grid min-h-9 place-items-center">{{ actionMessage }}</p>
+            <p v-else class="grid min-h-9 place-items-center text-sm">{{ actionMessage }}</p>
           </slot>
         </DialogFooter>
       </div>

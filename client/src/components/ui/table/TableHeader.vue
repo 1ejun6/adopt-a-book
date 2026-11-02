@@ -13,8 +13,6 @@ const props = defineProps({
 </template>
 
 <style scoped>
-thead {
-  clip-path: inset(0 round 8px 8px 0 0); /*@1ejun6 > round header without clipping row tape*/
-}
+/*@1ejun6 > round header without clipping row tape*/
 </style>
 

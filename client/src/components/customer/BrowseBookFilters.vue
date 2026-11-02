@@ -64,13 +64,13 @@ const genres = ['Adventure','Art','Biography','Business','Children', 'Comics','C
 
     <template #filters>
       <!--@sree-sanjana06 > choose a genre instead of typing it-->
-      <select v-model="filters.subject" aria-label="Filter by genre" class="w-44 rounded-lg border p-2.5 text-sm">
+      <select v-model="filters.subject" class="w-44 rounded-lg border p-2.5 text-sm">
         <option value="">All genres</option>
         <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
       </select>
 
       <!--@sree-sanjana06 > sort available books-->
-      <select v-model="filters.sort" aria-label="Sort books" class="rounded-lg border p-2.5 text-sm">
+      <select v-model="filters.sort" class="rounded-lg border p-2.5 text-sm">
         <option value="title">Title A–Z</option>
         <option value="author">Author A–Z</option>
         <option value="newest">Newest</option>

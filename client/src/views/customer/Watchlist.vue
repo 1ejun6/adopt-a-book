@@ -1,201 +1,102 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onBeforeUnmount, onMounted } from 'vue';
 import { api } from '@/lib/api';
+import { RouterLink } from 'vue-router';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
 import CustomerBookCard from '@/components/customer/CustomerBookCard.vue';
+import WatchlistEntryDialog from '@/components/customer/WatchlistEntryDialog.vue';
 
 const watchlist = ref([]);
 const savedIds = computed(() => new Set(watchlist.value.map(entry => entry.bookid?.id).filter(Boolean)));
 const loading = ref(true);
 const error = ref('');
-const actionError = ref('');
-const busy = ref(false);
 const dialogs = ref(null);
-const editingEntry = ref(null);
-const removingEntry = ref(null);
-const editOpen = ref(false);
-const removeOpen = ref(false);
-const note = ref('');
+const selectedEntry = ref(null);
+const entryAction = ref('edit');
+const entryDialogOpen = ref(false);
+let controller;
 
 //@sree-sanjana06 > load saved books belonging to logged-in customer
 async function loadWatchlist() {
+  controller?.abort();
+  const request = new AbortController();
+  controller = request;
   loading.value = true;
   error.value = '';
   try {
-    const result = await api('/watchlist', { method: 'GET' });
-    watchlist.value = result.watchlist || [];
+    const result = await api('/watchlist', { method: 'GET', signal: request.signal });
+    if (request.signal.aborted) return;
+    if (!Array.isArray(result.watchlist)) throw new Error('could not load your saved books > please try again');
+    watchlist.value = result.watchlist;
   } catch (err) {
+    if (request.signal.aborted) return;
     error.value = err.message;
   } finally {
-    loading.value = false;
+    if (controller === request) loading.value = false;
   }
 }
 
-//@sree-sanjana06 > reuse existing Book Details popup
-function openPreview(book) {
-  dialogs.value?.openBookDetails(book);
-}
 //@sree-sanjana06 > open edit popup with existing private note
-function startEdit(entry) {
-  editingEntry.value = entry;
-  note.value = entry.comments || '';
-  actionError.value = '';
-  editOpen.value = true;
-}
-//@sree-sanjana06 > update only the note on this watchlist entry
-async function saveNote() {
-  if (!editingEntry.value || busy.value || note.value.length > 300) return;
-  busy.value = true;
-  actionError.value = '';
-
-  try {
-    const id = editingEntry.value.id;
-    const comments = note.value.trim();
-
-    await api(`/watchlist/${id}`, {
-      method: 'PATCH', //@sree-sanjana06 > partial
-      body: { comments }
-    });
-
-    //@sree-sanjana06 > update displayed note without reloading the page
-    watchlist.value = watchlist.value.map(entry =>
-      entry.id === id ? { ...entry, comments } : entry
-    );
-    editOpen.value = false;
-  } catch (err) {
-    actionError.value = err.message;
-  } finally {
-    busy.value = false;
-  }
-}
-
 //@sree-sanjana06 > ask for confirmation before deleting saved entry
-function startRemove(entry) {
-  removingEntry.value = entry;
-  actionError.value = '';
-  removeOpen.value = true;
+function openEntry(entry, action) {
+  selectedEntry.value = entry;
+  entryAction.value = action;
+  entryDialogOpen.value = true;
 }
 
-//@sree-sanjana06 > delete entry from backend and update page immediately
-async function removeBook() {
-  if (!removingEntry.value || busy.value) return;
-  busy.value = true;
-  actionError.value = '';
+//@sree-sanjana06 > update displayed note without reloading the page
+function updateNote({ id, comments }) {
+  watchlist.value = watchlist.value.map(entry => entry.id === id ? { ...entry, comments } : entry);
+}
 
-  try {
-    const id = removingEntry.value.id;
-    await api(`/watchlist/${id}`, { method: 'DELETE' });
-
-    watchlist.value = watchlist.value.filter(entry => entry.id !== id);
-    removeOpen.value = false;
-  } catch (err) {
-    actionError.value = err.message;
-  } finally {
-    busy.value = false;
-  }
+function removeEntry(id) {
+  watchlist.value = watchlist.value.filter(entry => entry.id !== id);
 }
 
 onMounted(loadWatchlist);
+onBeforeUnmount(() => controller?.abort());
 </script>
 
 <template>
   <main class="mx-auto w-full max-w-7xl space-y-8">
     <!--@sree-sanjana06 > watchlist heading and total saved books-->
-    <header class="space-y-2 border-b pb-6">
-      <p class="text-xs uppercase tracking-widest text-muted-foreground">Your reading corner</p>
-      <h1 class="text-4xl">My Watchlist</h1>
-      <p class="text-muted-foreground">Your saved books and private notes. Saving doesn't reserve a copy.</p>
-      <p v-if="!loading && !error" class="text-sm text-muted-foreground">
-        {{ watchlist.length }} saved books
-      </p>
+    <header class="space-y-2">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h1 class="text-4xl">My Watchlist</h1>
+        <p v-if="!loading && !error" class="text-sm text-muted-foreground" role="status">
+          {{ watchlist.length }} saved {{ watchlist.length === 1 ? 'book' : 'books' }}
+        </p>
+      </div>
+      <p class="text-muted-foreground text-sm">your saved books and private notes saving doesn't reserve a copy</p>
     </header>
 
-    <p v-if="loading" class="text-muted-foreground">Loading your saved books...</p>
-
-    <div v-else-if="error" class="space-y-3">
-      <p class="text-destructive">{{ error }}</p>
+    <section v-if="loading" class="grid gap-5 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+      <CustomerBookCard v-for="index in 6" :key="index" loading />
+    </section>
+    <div v-else-if="error" class="space-y-4 rounded-xl border bg-card p-5" role="alert">
+      <h2 class="text-xl">We couldn’t load your watchlist</h2>
+      <p class="text-destructive text-sm">{{ error }}</p>
       <Button variant="outline" @click="loadWatchlist">Try Again</Button>
     </div>
-
     <!--@sree-sanjana06 > show empty state after removing the final saved book-->
-    <div v-else-if="watchlist.length === 0" class="rounded-xl border bg-card p-8 text-center">
-      <h2 class="text-2xl">Your shelf is waiting</h2>
-      <p class="mt-2 text-sm text-muted-foreground">
-        Save a book while browsing to find it here later.
-      </p>
+    <div v-else-if="!watchlist.length" class="washi-tape space-y-4 rounded-xl border bg-card p-8 text-center" data-active>
+      <h2>Your shelf is waiting</h2>
+      <p class="text-sm text-muted-foreground">save a book while browsing to find it here later</p>
+      <Button asChild><RouterLink :to="{ name: 'customerBooks' }">Browse books</RouterLink></Button>
     </div>
-
     <!--@sree-sanjana06 > each card emits actions handled by this page-->
+    <!--@sree-sanjana06 > display saved books using shared customer card-->
     <section v-else class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-    
-<!--@sree-sanjana06 > display saved books using shared customer card-->
-  <CustomerBookCard v-for="entry in watchlist"  :key="entry.id" :book="entry.bookid" variant="watchlist" :comment="entry.comments || ''"
-       @preview="openPreview" @remove="startRemove(entry)" @edit="startEdit(entry)" />
+      <CustomerBookCard v-for="entry in watchlist" :key="entry.id" :book="entry.bookid" variant="watchlist"
+        :comment="entry.comments || ''" @preview="dialogs?.openBookDetails($event)" @remove="openEntry(entry, 'remove')"
+        @edit="openEntry(entry, 'edit')" />
+    </section>
 
-</section>
+    <!--@sree-sanjana06 > reuse existing Book Details popup-->
     <!--@sree-sanjana06 > existing book details and adoption request popups-->
     <CustomerBookDialogs ref="dialogs" :savedIds="savedIds" />
-
-    <!--@sree-sanjana06 > edit the saved note using existing Dialog UI-->
-    <Dialog v-model:open="editOpen">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit saved book</DialogTitle>
-          <DialogDescription>update your private comment for this book</DialogDescription>
-        </DialogHeader>
-
-        <div class="dialog-body">
-          <p class="text-muted-foreground">
-            {{ editingEntry?.bookid?.title }}
-          </p>
-
-          <div class="space-y-2">
-            <label for="edit-watchlist-note">Your note (optional)</label>
-            <textarea id="edit-watchlist-note" v-model="note" maxlength="300" rows="4" :disabled="busy"
-              class="w-full rounded-lg border p-3"></textarea>
-            <p class="text-muted-foreground">
-              Only visible to you · {{ note.length }}/300 characters
-            </p>
-          </div>
-
-          <p v-if="actionError" class="text-destructive" role="alert">{{ actionError }}</p>
-
-          <DialogFooter class="justify-end">
-            <Button variant="outline" :disabled="busy" @click="editOpen = false">Cancel</Button>
-            <Button :disabled="busy" @click="saveNote">
-              {{ busy ? 'Saving...' : 'Save changes' }}
-            </Button>
-          </DialogFooter>
-        </div>
-      </DialogContent>
-    </Dialog>
-
-    <!--@sree-sanjana06 > confirm removal before deleting from backend-->
-    <Dialog v-model:open="removeOpen">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Remove from watchlist?</DialogTitle>
-          <DialogDescription>confirm removal from your watchlist</DialogDescription>
-        </DialogHeader>
-
-        <div class="dialog-body">
-          <p class="text-muted-foreground">
-            Remove {{ removingEntry?.bookid?.title }} from your saved books?
-            You can save it again later if it is available.
-          </p>
-
-          <p v-if="actionError" class="text-destructive" role="alert">{{ actionError }}</p>
-
-          <DialogFooter class="justify-end">
-            <Button variant="outline" :disabled="busy" @click="removeOpen = false">Cancel</Button>
-            <Button :disabled="busy" @click="removeBook">
-              {{ busy ? 'Removing...' : 'Remove book' }}
-            </Button>
-          </DialogFooter>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <WatchlistEntryDialog v-model:open="entryDialogOpen" :entry="selectedEntry" :action="entryAction"
+      @saved="updateNote" @removed="removeEntry" />
   </main>
 </template>

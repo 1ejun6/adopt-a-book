@@ -52,6 +52,10 @@ async function updateaccount(req, res) {
     if (password && password.trim()) authfields.password = password;
 
     const { error: autherror } = await supabase.auth.admin.updateUserById(req.user.id, authfields);
+    if (autherror?.code === "same_password") {
+      return res.status(422).json({ error: "choose a password different from your current password" });
+    }
+    if (autherror?.code === "weak_password") return res.status(422).json({ error: autherror.message });
     if (autherror) throw autherror;
 
     const account = { ...currentaccount, ...updatefields };
@@ -64,4 +68,27 @@ async function updateaccount(req, res) {
   }
 }
 
-module.exports = { home, readaccount, updateaccount };
+async function updatepassword(req, res) {
+  try {
+    require("../utils/validation").rejectfields(req.body, ["password"]);
+    const { password } = req.body;
+    if (typeof password !== "string" || !password.trim()) {
+      return res.status(422).json({ error: "please enter a new password" });
+    }
+    const { error } = await supabase.auth.admin.updateUserById(req.user.id, { password });
+    if (error) {
+      if (error.code === "same_password") {
+        return res.status(422).json({ error: "choose a password different from your current password" });
+      }
+      if (error.code === "weak_password") {
+        return res.status(422).json({ error: error.message });
+      }
+      throw error;
+    }
+    return res.json({ message: "password updated" });
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not update your password > please try again") });
+  }
+}
+
+module.exports = { home, readaccount, updateaccount, updatepassword };

@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import GuestHome from '../views/guest/Home.vue';
+import CustomerAdoptionDrives from '../views/customer/AdoptionDrives.vue';
+import CustomerAccount from '../views/customer/Account.vue';
 import CustomerHome from '../views/customer/Home.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
@@ -34,8 +36,8 @@ const router = createRouter({
         { path: 'watchlist', name: 'customerWatchlist', component: CustomerWatchlist, label: 'Watchlist', roles: ['customer']},
         { path: 'adoptions', name: 'customerAdoptions',component: MyAdoptions, label: 'My Adoptions',roles: ['customer']},
         {path: 'pickups',name: 'customerPickups',label: 'Pickups', roles: ['customer']},
-        {path: 'drives', name: 'customerDrives', label: 'Adoption Drives', roles: ['customer']},
-        {path: 'account',name: 'customerAccount', label: 'Account', roles: ['customer'], end: true}
+        {path: 'drives', name: 'customerDrives', component: CustomerAdoptionDrives, label: 'Adoption Drives', roles: ['customer']},
+        {path: 'account',name: 'customerAccount', component: CustomerAccount, label: 'Account', roles: ['customer'], end: true}
       ]
     }
   ]
