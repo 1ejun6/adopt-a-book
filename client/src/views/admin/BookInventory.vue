@@ -1,4 +1,5 @@
 <script setup>
+import AppPage from '@/components/shared/AppPage.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
@@ -93,7 +94,7 @@ async function fetchBooks() {
     } catch (error) {
         if (id !== requestId) { return; }
         loadError.value = error.message;
-        toast.error(error.message, { action: { label: 'retry', onClick: fetchBooks } });
+        toast.error(error.message, { duration: Infinity, action: { label: 'retry', onClick: fetchBooks } });
         books.value = [];
     } finally {
         if (id === requestId) { loading.value = false; }
@@ -109,7 +110,7 @@ async function deleteBooks() {
         const { deletedids = [] } = await api('/admin/books', { method: 'DELETE', body: { ids: bookids } });
         for (const id of deletedids) { bookDetails.delete(id); }
         await fetchBooks();
-        toast.info(`${deletedids.length} deleted`, {
+        toast.success(`${deletedids.length} deleted`, {
             description: titles.map((title, index) => `${index + 1}. ${title}`).join('\n'),
             style: { whiteSpace: 'pre-line' }
         });
@@ -138,7 +139,7 @@ const columns = [
 ];
 </script>
 <template>
-    <section class="mx-auto min-w-0 w-full max-w-7xl space-y-5">
+    <AppPage class="space-y-5">
         <header class="flex flex-wrap items-center justify-between gap-5">
             <div class="min-w-0">
                 <h1>Book Inventory</h1>
@@ -173,5 +174,5 @@ const columns = [
         <BookDetailsDialog v-model:open="dialogOpen" :book="selectedBook" />
         <AppPagination itemLabel="books" v-if="!loadError && total > 0" v-model:page="page" :total="total"
             :visibleCount="books.length" :pageSize="pageSize" :pageCount="pageCount" :loading="loading" :disabled="loading || deleting" />
-    </section>
+    </AppPage>
 </template>

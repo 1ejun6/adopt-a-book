@@ -1,4 +1,5 @@
 <script setup>
+import AppPage from '@/components/shared/AppPage.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '@/lib/api';
@@ -108,7 +109,7 @@ onMounted(loadApplications);
 </script>
 
 <template>
-  <main class="mx-auto w-full max-w-7xl space-y-8">
+  <AppPage class="space-y-8">
     <!--@sree-sanjana06 > page heading without the redundant browse books button-->
     <header>
       <div class="space-y-2">
@@ -159,5 +160,5 @@ onMounted(loadApplications);
 
     <!--@sree-sanjana06 > reuse the existing customer book preview popup-->
     <CustomerBookDialogs ref="dialogs" />
-  </main>
+  </AppPage>
 </template>

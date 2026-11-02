@@ -1,4 +1,5 @@
 <script setup>
+import AppPage from '@/components/shared/AppPage.vue';
 import { getPageCount } from '@/lib/utils';
 import { computed, reactive, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
@@ -55,8 +56,8 @@ watch(pagecount, count => { page.value = Math.min(page.value, count); });
 </script>
 
 <template>
-  <section class="mx-auto w-full max-w-3xl space-y-5">
-    <header>
+  <AppPage class="space-y-5">
+    <header class="text-center">
       <h1>adoption drives</h1>
       <p class="text-sm">meet fellow readers & give books a new home</p>
     </header>
@@ -105,5 +106,5 @@ watch(pagecount, count => { page.value = Math.min(page.value, count); });
         :visibleCount="pagedrives.length" :pageSize="pagesize" :loading="loading" :disabled="loading" />
     </template>
 
-  </section>
+  </AppPage>
 </template>

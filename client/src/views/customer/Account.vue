@@ -1,4 +1,5 @@
 <script setup>
+import AppPage from '@/components/shared/AppPage.vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
@@ -39,52 +40,44 @@ onBeforeUnmount(() => controller?.abort());
 </script>
 
 <template>
-  <section class="mx-auto w-full max-w-3xl space-y-6">
-    <header class="space-y-2">
-      <h1 class="sm:text-4xl">My account</h1>
-      <p class="text-muted-foreground text-sm">your details, in one place</p>
-    </header>
-
-    <div v-if="loading" class="space-y-6 rounded-xl border bg-card p-5" role="status" aria-busy="true">
-      <span class="sr-only">Loading your account</span>
-      <div class="flex items-center gap-4">
-        <Skeleton class="size-16 rounded-full" />
-        <Skeleton class="h-7 w-40" />
-      </div>
-      <Skeleton class="h-24 w-full" />
-    </div>
-    <div v-else-if="loadError" class="space-y-4 rounded-xl border bg-card p-5" role="alert">
-      <h2 class="text-xl">We couldn’t load your details</h2>
-      <p class="text-sm">{{ loadError }}</p>
-      <Button variant="outline" @click="loadAccount">Try again</Button>
-    </div>
-    <article v-else-if="account" class="washi-tape rounded-xl border bg-card" data-active>
-      <header class="flex flex-wrap items-center gap-4 border-b p-5">
-        <span class="grid size-16 shrink-0 place-items-center rounded-full border bg-background font-heading text-2xl"
-          aria-hidden="true">{{ initials }}</span>
-        <div class="min-w-0 flex-1">
-          <h2 class="break-words sm:text-3xl">{{ account.name }}</h2>
-          <p class="text-sm text-muted-foreground">reader account</p>
-        </div>
-        <CustomerProfileDialog :account="account" @saved="updateDetails" />
+  <AppPage aria-labelledby="account-title">
+    <div class="space-y-8 text-center">
+      <header class="space-y-2">
+        <h1 id="account-title" class="text-4xl">My account</h1>
+        <p class="text-muted-foreground text-sm">your details, in one place</p>
       </header>
-      <div class="grid gap-6 p-5 sm:grid-cols-2">
-        <section class="space-y-4">
-          <h3>Personal details</h3>
-          <dl class="space-y-1">
-            <dt class="text-sm text-muted-foreground">Full name</dt>
-            <dd class="break-words">{{ account.name }}</dd>
-          </dl>
-        </section>
-        <section class="space-y-4">
-          <h3>Contact details</h3>
-          <dl class="space-y-1">
-            <dt class="text-sm text-muted-foreground">Email address</dt>
-            <dd class="break-all">{{ account.email }}</dd>
-          </dl>
-        </section>
-      </div>
-    </article>
 
-  </section>
+      <div v-if="loading" class="mx-auto w-full max-w-sm space-y-6" role="status" aria-busy="true">
+        <span class="sr-only">Loading your account</span>
+        <div class="flex flex-col items-center gap-3">
+          <Skeleton class="size-16 rounded-full" />
+          <Skeleton class="h-7 w-40" />
+          <Skeleton class="h-4 w-24" />
+        </div>
+        <Skeleton class="mx-auto h-20 w-full max-w-xs" />
+      </div>
+      <div v-else-if="loadError" class="mx-auto w-full max-w-sm space-y-4" role="alert">
+        <h2 class="text-xl">We couldn’t load your details</h2>
+        <p class="text-sm">{{ loadError }}</p>
+        <Button class="min-h-11" @click="loadAccount">Try again</Button>
+      </div>
+      <article v-else-if="account" class="mx-auto w-full max-w-sm space-y-6">
+        <header class="flex flex-col items-center gap-3">
+          <span class="grid size-16 shrink-0 place-items-center rounded-full bg-primary font-heading text-2xl"
+            aria-hidden="true">{{ initials }}</span>
+          <div class="min-w-0 w-full space-y-2">
+            <h2 class="break-words text-2xl">{{ account.name }}</h2>
+            <p class="inline-flex rounded-full bg-primary/40 px-3 py-1 text-xs text-muted-foreground">reader account</p>
+          </div>
+        </header>
+        <dl class="space-y-1">
+          <dt class="text-xs text-muted-foreground">Sign-in email</dt>
+          <dd class="[overflow-wrap:anywhere]">{{ account.email }}</dd>
+        </dl>
+        <div class="mx-auto w-full max-w-xs pt-1">
+          <CustomerProfileDialog :account="account" @saved="updateDetails" />
+        </div>
+      </article>
+    </div>
+  </AppPage>
 </template>

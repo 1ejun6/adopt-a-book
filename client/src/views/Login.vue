@@ -1,4 +1,5 @@
 <script setup>
+import AppPage from '@/components/shared/AppPage.vue';
 import { toast } from 'vue-sonner';
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -28,7 +29,7 @@ async function login() {
         auth.user = response.user;
         auth.ready = true;
 
-        toast.success(response.message);
+        toast.success('logged in');
         form.password = '';
         
         await router.push(homeRoute.value);
@@ -40,10 +41,12 @@ async function login() {
 }
 </script>
 <template>
-    <section class="mx-auto w-full max-w-md content-center">
-        <div class="carddupe">
-            <h1>Login</h1>
-            <p>welcome back!!</p>
+    <AppPage aria-labelledby="login-title">
+        <div class="mx-auto w-full max-w-md space-y-8">
+            <header class="space-y-2 text-center">
+                <h1 id="login-title" class="text-4xl">Login</h1>
+                <p class="text-sm text-muted-foreground">welcome back!!</p>
+            </header>
             <form @submit.prevent="login">
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>
@@ -53,14 +56,14 @@ async function login() {
                 <Field>
                     <FieldLabel for="password">Password</FieldLabel>
                     <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
-                        autocomplete="current-password" placeholder="enter your password" required />
+                        autocomplete="current-password" placeholder="enter your password" class="h-11" required />
                 </Field>
-                <label class="flex items-center gap-2.5">
+                <label class="flex min-h-11 items-center gap-2.5">
                     <Checkbox v-model="showPassword" /> show password
                 </label>
-                <Button type="submit" class="w-full" :disabled="form.loading">{{ form.loading ? 'Logging in…' : 'Login'
+                <Button type="submit" class="min-h-11 w-full" :disabled="form.loading">{{ form.loading ? 'Logging in…' : 'Login'
                     }}</Button>
             </form>
         </div>
-    </section>
+    </AppPage>
 </template>

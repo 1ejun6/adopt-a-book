@@ -1,4 +1,5 @@
 <script setup>
+import AppPage from '@/components/shared/AppPage.vue';
 import { getPageCount } from '@/lib/utils';
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -119,8 +120,8 @@ onBeforeUnmount(cancelbooks);
 </script>
 
 <template>
-  <section class="mx-auto w-full max-w-7xl space-y-8">
-    <header class="space-y-2">
+  <AppPage class="space-y-8">
+    <header class="space-y-2 text-center">
       <h1 class="text-4xl">Find your next read</h1>
       <p class="text-muted-foreground text-sm">a shared collection a new home for every book</p>
     </header>
@@ -143,5 +144,5 @@ onBeforeUnmount(cancelbooks);
     <!--@sree-sanjana06 > existing pagination component-->
     <AppPagination v-if="!loadError && total > 0" v-model:page="page" itemLabel="books" :total="total"
       :visibleCount="books.length" :pageSize="pageSize" :loading="loading" :disabled="loading" />
-  </section>
+  </AppPage>
 </template>

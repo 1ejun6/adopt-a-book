@@ -1,4 +1,5 @@
 <script setup>
+import AppPage from '@/components/shared/AppPage.vue';
 import { h, ref, computed, reactive, onBeforeUnmount, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
@@ -90,10 +91,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="mx-auto w-full max-w-7xl space-y-8">
+  <AppPage class="space-y-8">
     <!--@sree-sanjana06 > watchlist heading and total saved books-->
-    <header class="space-y-2">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+    <header class="space-y-2 text-center">
+      <div class="flex flex-col items-center gap-2">
         <h1 class="text-4xl">My Watchlist</h1>
         <p v-if="!loading && !error" class="text-sm text-muted-foreground" role="status">
           {{ watchlist.length }} saved {{ watchlist.length === 1 ? 'book' : 'books' }}
@@ -147,5 +148,5 @@ onBeforeUnmount(() => {
         </Button>
       </template>
     </CustomerBookDialogs>
-  </main>
+  </AppPage>
 </template>
