@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
+import { formatDate } from '@/lib/date';
 import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue';
@@ -55,8 +56,6 @@ const driveFields = computed(() => [
     { key: 'location', label: 'Location', value: selectedDrive.value?.location },
     { label: 'Registrations', value: selectedDrive.value ? `${selectedDrive.value.userids.length} / ${selectedDrive.value.maxcapacity}` : null }
 ]);
-
-function formatDate(value) { return new Date(`${value}T00:00:00+08:00`).toLocaleDateString('en-SG', { dateStyle: 'medium', timeZone: 'Asia/Singapore' }); }
 
 function actionHint(rows, status) {
     if (rows.some(drive => drive.eventdate < today.value)) { return 'Past drives cannot be closed or cancelled.'; }

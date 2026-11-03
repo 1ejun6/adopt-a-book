@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
+import { formatDate, todayInSingapore } from '@/lib/date';
 import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue';
@@ -28,7 +29,7 @@ const detailsHint = computed(() => selectedAppointment.value ? actionHint([selec
 const detailsOpen = ref(false);
 const saving = ref(false);
 const { confirm } = useConfirmation();
-const today = ref(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()));
+const today = ref(todayInSingapore());
 
 const viewTabs = [
     { value: 'awaiting', label: 'Awaiting confirmation' },
@@ -94,10 +95,6 @@ const selectionHint = computed(() => {
     }
     return selectedAppointments.value.every(appointment => appointment.status === 'pending confirmation') ? confirmHint.value : collectHint.value;
 });
-
-function formatDate(value) {
-    return new Date(`${value}T00:00:00+08:00`).toLocaleDateString('en-SG', { dateStyle: 'medium', timeZone: 'Asia/Singapore' });
-}
 
 function openAppointment(appointment) {
     if (loading.value || saving.value) { return; }

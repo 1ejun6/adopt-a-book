@@ -1,6 +1,8 @@
 <script setup>
-import { computed, nextTick, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
+import { useFormValidation } from '@/composables/useFormValidation';
+import { withCurrentStation } from '@/lib/stations';
 import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
@@ -17,13 +19,10 @@ const props = defineProps({
 const emit = defineEmits(['update:open', 'submit']);
 const draft = reactive({ title: '', location: '', mrtstationid: '', eventdate: '', maxcapacity: 30, description: '' });
 const initialForm = ref('');
-const invalidFields = ref([]);
+const { invalidFields, validate, clearInvalid, focusInvalid, resetValidation } = useFormValidation();
 const dirty = computed(() => JSON.stringify(draft) !== initialForm.value);
 const minimumCapacity = computed(() => Math.max(1, props.drive?.userids?.length || 0));
-const stationOptions = computed(() => {
-    const current = props.drive?.mrtstation;
-    return current?.id && !props.stations.some(station => station.id === current.id) ? [current, ...props.stations] : props.stations;
-});
+const stationOptions = computed(() => withCurrentStation(props.stations, props.drive?.mrtstation));
 
 //@lee-hlmilk > copy props into the draft on opening > typing leaves the saved drive unchanged &&& failed saves keep edits
 watch(() => props.open, isOpen => {
@@ -33,19 +32,14 @@ watch(() => props.open, isOpen => {
         eventdate: props.drive?.eventdate || props.today, maxcapacity: props.drive?.maxcapacity ?? 30, description: props.drive?.description || ''
     });
     initialForm.value = JSON.stringify(draft);
-    invalidFields.value = [];
+    resetValidation();
 }, { immediate: true });
-
-function clearInvalid(event) {
-    if (event.target.validity?.valid) { invalidFields.value = invalidFields.value.filter(id => id !== event.target.id); }
-}
 
 function submitDrive(event) {
     if (props.submitting) { return; }
-    invalidFields.value = Array.from(event.target.elements).filter(field => field.willValidate && !field.validity.valid).map(field => field.id);
-    if (invalidFields.value.length) {
+    if (!validate(event.target)) {
         toast.error('Please check the highlighted fields. Complete all required fields and check the date and capacity.');
-        nextTick(() => event.target.querySelector('[aria-invalid="true"]')?.focus());
+        focusInvalid(event.target);
         return;
     }
     emit('submit', { ...draft, description: draft.description.trim() });

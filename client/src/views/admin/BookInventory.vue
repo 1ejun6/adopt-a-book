@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
+import { formatDateTime } from '@/lib/date';
 import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue'
@@ -26,7 +27,7 @@ const bookFields = computed(() => {
         { label: 'First publication', value: book.publicationyear },
         { label: 'Open Library ID', value: book.openlibraryid },
         { label: 'Source', value: book.source === 'open_library' ? 'Open Library' : book.source },
-        { label: 'Updated at', value: book.updatedat ? new Date(book.updatedat).toLocaleString('en-SG', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Singapore' }) : null }
+        { label: 'Updated at', value: formatDateTime(book.updatedat) }
     ];
 });
 const dialogOpen = ref(false);

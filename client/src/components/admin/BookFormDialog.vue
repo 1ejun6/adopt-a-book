@@ -1,6 +1,8 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
+import { useFormValidation } from '@/composables/useFormValidation';
+import { withCurrentStation } from '@/lib/stations';
 import AdminFormDialog from '@/components/admin/AdminFormDialog.vue';
 import BookImportSelection from '@/components/admin/BookImportSelection.vue';
 import StatusBadge from '@/components/shared/AppStatusBadge.vue';
@@ -23,7 +25,7 @@ const query = defineModel('query', { type: String, default: '' });
 const emit = defineEmits(['submit', 'search', 'select', 'import']);
 const initialForm = ref('');
 const addMode = ref('search');
-const invalidFields = ref([]);
+const { invalidFields, validate, clearInvalid, focusInvalid, resetValidation } = useFormValidation();
 const metadataOpen = ref(false);
 const coverFile = ref(null);
 const coverPreview = ref('');
@@ -37,13 +39,7 @@ const importDraft = reactive({ selectedIds: [], addedIds: [], reviewBooks: [], r
 const bookForm = reactive({title: '', authors: '', condition: '', mrtstationid: '', description: '', isbn: '', publicationyear: '', subject: '', openlibraryid: '', coverurl: ''});
 const isFormDirty = computed(() => checkingCover.value || Boolean(coverFile.value) || importDraft.selectedIds.length > 0 || JSON.stringify(bookForm) !== initialForm.value);
 //@lee-hlmilk > keep current station in list even if no longer selectable for new writes
-const stationOptions = computed(() => {
-    const current = props.book?.mrtstation;
-    if (current?.id && !props.stations.some(station => station.id === current.id)) {
-        return [current, ...props.stations];
-    }
-    return props.stations;
-});
+const stationOptions = computed(() => withCurrentStation(props.stations, props.book?.mrtstation));
 
 //@lee-hlmilk > populate edit form fields from the saved book
 function fillBookForm(book) {
@@ -61,7 +57,7 @@ function fillBookForm(book) {
         coverurl: book.coverurl || ''
     });
     initialForm.value = JSON.stringify(bookForm);
-    invalidFields.value = [];
+    resetValidation();
     metadataOpen.value = false;
 }
 
@@ -126,15 +122,12 @@ function submitBook(event) {
     if (props.submitting || checkingCover.value || (!props.book && addMode.value === 'search')) { return; }
     const form = event.target;
     //@lee-hlmilk > noValidate allows submit event > still use native required &&& pattern &&& number validity
-    invalidFields.value = Array.from(form.elements)
-        .filter(field => field.willValidate && !field.validity.valid).map(field => field.id);
-    if (invalidFields.value.length) {
+    if (!validate(form)) {
         if (invalidFields.value.includes('edit-subject') || invalidFields.value.includes('edit-year')) {
             metadataOpen.value = true;
         }
         toast.error('Please check the highlighted fields. Title and collection area are required; enter only one subject.');
-        //@lee-hlmilk > wait for red borders &&& metadata section to render before focusing first invalid field
-        nextTick(() => form.querySelector('[aria-invalid="true"]')?.focus());
+        focusInvalid(form);
         return;
     }
     const data = {
@@ -152,14 +145,6 @@ function submitBook(event) {
     };
     //@lee-hlmilk > submitter identifies Add and continue > view saves data before resetting ||| closing form
     emit('submit', data, !props.book && event?.submitter?.value === 'continue', coverFile.value);
-}
-
-//@lee-hlmilk > clear only the corrected field > other invalid borders remain visible
-function clearInvalid(event) {
-    const field = event.target;
-    if (field.validity.valid) {
-        invalidFields.value = invalidFields.value.filter(id => id !== field.id);
-    }
 }
 
 //@lee-hlmilk > reopening starts a fresh draft from saved book ||| blank fields > failed saves keep current draft

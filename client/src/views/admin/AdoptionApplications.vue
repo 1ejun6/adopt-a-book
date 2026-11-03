@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
+import { formatDate, formatDateTime } from '@/lib/date';
 import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue';
@@ -16,7 +17,7 @@ const selectedApplication = ref(null);
 const applicationFields = computed(() => [
     { label: 'Applicant', value: selectedApplication.value?.userid?.name },
     { label: 'Email', value: selectedApplication.value?.userid?.email },
-    { label: 'Submitted', value: selectedApplication.value?.createdat ? new Date(selectedApplication.value.createdat).toLocaleString('en-SG', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Singapore' }) : null },
+    { label: 'Submitted', value: formatDateTime(selectedApplication.value?.createdat) },
     { label: 'Collection area', value: selectedApplication.value?.bookid?.collectionarea }
 ]);
 const detailsHint = computed(() => selectedApplication.value ? decisionHint([selectedApplication.value]) : '');
@@ -54,10 +55,6 @@ function decisionHint(rows) {
 }
 const selectionHint = computed(() => decisionHint(selectedApplications.value));
 const approvalConflict = computed(() => new Set(selectedApplications.value.map(application => application.bookid.id)).size !== selectedApplications.value.length);
-
-function formatDate(value) {
-    return value ? new Date(value).toLocaleDateString('en-SG', { dateStyle: 'medium', timeZone: 'Asia/Singapore' }) : 'Not provided';
-}
 
 function openApplication(application) {
     if (loading.value || saving.value) { return; }
