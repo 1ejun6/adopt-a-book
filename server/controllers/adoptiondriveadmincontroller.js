@@ -1,15 +1,11 @@
+const { browse } = require("../models/adminpagination");
 const { requestids } = require("../utils/validation");
 const { errorstatus, errormessage } = require("../utils/errors");
 const adoptiondrivemodel = require("../models/adoptiondrives");
 
 const getadminalldrives = async (req, res) => {
   try {
-    const drives = await adoptiondrivemodel.getalldrives();
-
-    return res.json({
-      drives,
-      error: null
-    });
+    return res.json(await browse("drives", req.query));
   } catch (error) {
     console.log(error);
     return res.status(errorstatus(error)).json({

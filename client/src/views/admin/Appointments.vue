@@ -1,8 +1,9 @@
 <script setup>
-import { computed, nextTick, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
+import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue';
 import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue';
@@ -13,7 +14,6 @@ import { Button } from '@/components/ui/button';
 
 const router = useRouter();
 const navigation = router.options.history.state;
-const appointments = ref([]);
 const selectedIds = ref([]);
 const selectedAppointment = ref(null);
 //@lee-hlmilk > collection fields &&& action availability stay in the view > shared dialog handles presentation
@@ -26,14 +26,9 @@ const appointmentFields = computed(() => [
 ]);
 const detailsHint = computed(() => selectedAppointment.value ? actionHint([selectedAppointment.value], selectedAppointment.value.status === 'pending confirmation' ? 'appointment confirmed' : 'collected') : '');
 const detailsOpen = ref(false);
-const loading = ref(false);
 const saving = ref(false);
 const { confirm } = useConfirmation();
-const loadError = ref('');
-const page = ref(1);
-const pageSize = 15;
-const today = ref('');
-let requestId = 0;
+const today = ref(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()));
 
 const viewTabs = [
     { value: 'awaiting', label: 'Awaiting confirmation' },
@@ -68,19 +63,10 @@ function matchesView(appointment, view) {
     return view === 'upcoming' ? appointment.appointmentdate > today.value :
         appointment.appointmentdate < today.value || (appointment.status === 'pending confirmation' && appointment.appointmentdate === today.value);
 }
-const counts = computed(() => Object.fromEntries(viewTabs.map(tab => [tab.value,
-    appointments.value.filter(appointment => matchesView(appointment, tab.value)).length
-])));
-
-//@lee-hlmilk > combine search &&& date &&& status within each tab > keep earliest pickups first
-const filteredAppointments = computed(() => {
-    const search = filters.search.trim().toLowerCase();
-    return appointments.value.filter(appointment => matchesView(appointment, filters.view) &&
-        (!filters.date || appointment.appointmentdate === filters.date) &&
-        (filters.status === 'all' || appointment.status === filters.status) &&
-        [appointment.customer, appointment.email, appointment.booktitle, appointment.book?.authors?.join(', '), appointment.location]
-            .filter(Boolean).join(' ').toLowerCase().includes(search)
-    ).sort((a, b) => a.appointmentdate.localeCompare(b.appointmentdate) || a.timeslot.localeCompare(b.timeslot));
+//@lee-hlmilk > appointment rows include customer &&& book relations > no full application lookup
+const { rows: appointments, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchAppointments } = useServerPagination({
+    endpoint: '/admin/appointments', filters, selectedIds, read: response => response.appointments,
+    onResponse: response => { today.value = response.today; }
 });
 const hasFilters = computed(() => filters.search.trim() || filters.date || filters.status !== 'all');
 const emptyFilterHint = computed(() => filters.view === 'today'
@@ -88,9 +74,7 @@ const emptyFilterHint = computed(() => filters.view === 'today'
     : filters.view === 'awaiting'
         ? 'Try another search term, date, or view.'
         : 'Try another search term, date, status, or view.');
-const pageCount = computed(() => Math.max(1, Math.ceil(filteredAppointments.value.length / pageSize)));
-const visibleAppointments = computed(() => filteredAppointments.value.slice((page.value - 1) * pageSize, page.value * pageSize));
-const selectedAppointments = computed(() => visibleAppointments.value.filter(appointment => selectedIds.value.includes(appointment.id)));
+const selectedAppointments = computed(() => appointments.value.filter(appointment => selectedIds.value.includes(appointment.id)));
 
 //@lee-hlmilk > mirror action availability for feedback > SQL remains responsible for validating each transition
 function actionHint(rows, status) {
@@ -121,32 +105,6 @@ function openAppointment(appointment) {
     detailsOpen.value = true;
 }
 
-async function fetchAppointments() {
-    const id = ++requestId;
-    loading.value = true;
-    loadError.value = '';
-    selectedIds.value = [];
-    today.value = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-    try {
-        //@lee-hlmilk > appointments contain IDs > reuse application relations for customer name/email &&& book details
-        const [response, applications] = await Promise.all([api('/admin/appointments'), api('/admin/applications')]);
-        if (id !== requestId) { return; }
-        const customers = new Map(applications.adoptionapplications.map(application => [application.userid?.id, application.userid]));
-        const books = new Map(applications.adoptionapplications.map(application => [application.bookid?.id, application.bookid]));
-        appointments.value = response.appointments.map(appointment => ({
-            ...appointment, customer: customers.get(appointment.userid)?.name || 'Unknown customer',
-            email: customers.get(appointment.userid)?.email, book: books.get(appointment.bookid)
-        }));
-        page.value = Math.min(page.value, pageCount.value);
-    } catch (error) {
-        if (id !== requestId) { return; }
-        loadError.value = error.message;
-        toast.error(error.message, { action: { label: 'retry', onClick: fetchAppointments } });
-    } finally {
-        if (id === requestId) { loading.value = false; }
-    }
-}
-
 //@lee-hlmilk > API updates one appointment per request > report partial failures &&& reload authoritative statuses
 async function updateAppointments(status, rows = selectedAppointments.value) {
     if (loading.value || saving.value || !rows.length || actionHint(rows, status)) { return; }
@@ -160,7 +118,8 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
         actionLabel: status === 'collected' ? 'Mark collected' : 'Confirm'
     })) { return; }
     if (loading.value || saving.value) { return; }
-    const current = targets.map(target => appointments.value.find(appointment => appointment.id === target.id));
+    //@lee-hlmilk > a dashboard link can load details outside this page > retain that record for confirmation checks
+    const current = targets.map(target => appointments.value.find(appointment => appointment.id === target.id) || (selectedAppointment.value?.id === target.id ? selectedAppointment.value : null));
     if (current.some(appointment => !appointment) || actionHint(current, status)) { toast.error('These appointments have changed. Select them again.'); return; }
     detailsOpen.value = false;
     saving.value = true;
@@ -179,42 +138,34 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
     } finally { saving.value = false; }
 }
 
-watch(filters, () => { page.value = 1; selectedIds.value = []; });
 watch(() => filters.view, () => {
     filters.status = 'all';
     if (filters.view === 'today') { filters.date = ''; }
 });
-watch(page, () => { selectedIds.value = []; });
-//@lee-hlmilk > pickup links open the exact appointment after loading > consume the target so refreshes do not reopen it
-let appointmentId = navigation.appointment;
-watch(loading, async (isLoading) => {
-    if (typeof appointmentId !== 'string' || isLoading || loadError.value) { return; }
-    const appointment = appointments.value.find(appointment => appointment.id === appointmentId);
-    if (appointment) {
-        filters.view = matchesView(appointment, 'today') ? 'today' : viewTabs.find(tab => matchesView(appointment, tab.value))?.value || 'history';
-        filters.search = '';
-        filters.date = '';
-        filters.status = 'all';
-        await nextTick();
-        page.value = Math.floor(filteredAppointments.value.findIndex(row => row.id === appointment.id) / pageSize) + 1;
-        openAppointment(appointment);
-    } else {
-        toast.error('This appointment is no longer available.');
-    }
-    appointmentId = null;
-    router.replace({ state: { appointment: null } });
-});
-fetchAppointments();
+//@lee-hlmilk > fetch a linked appointment directly > it may be outside the current server page
+async function loadAppointmentLink() {
+    const id = navigation.appointment;
+    if (typeof id !== 'string') { return; }
+    try {
+        const { appointment } = await api(`/admin/appointments/${id}`);
+        filters.view = viewTabs.find(tab => matchesView(appointment, tab.value))?.value || 'history';
+        selectedAppointment.value = appointment;
+        detailsOpen.value = true;
+    } catch (error) { toast.error(error.message); }
+    finally { router.replace({ state: { appointment: null } }); }
+}
+fetchAppointments().then(loadAppointmentLink);
+
 </script>
 
 <template>
     <!--@lee-hlmilk > list models update local filters &&& page > History disables selection while keeping record details available-->
     <AdminList title="Appointments" description="Manage appointments and book collections."
         v-model:search="filters.search" v-model:tab="filters.view" v-model:selectedIds="selectedIds" v-model:page="page"
-        :rows="visibleAppointments" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving"
+        :rows="appointments" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving"
         :selectable="filters.view !== 'history'"
         :error="loadError" searchPlaceholder="Search by Customer, Email, Book, Location..."
-        :pagination="{ itemLabel: 'appointments', total: filteredAppointments.length, pageSize, pageCount }" @openRow="openAppointment">
+        :pagination="{ itemLabel: 'appointments', total, pageSize, pageCount }" @openRow="openAppointment">
         <template #filters>
             <AppDatePicker v-if="filters.view !== 'today'" v-model="filters.date" label="Collection date" />
             <select v-if="!['awaiting', 'today'].includes(filters.view)" v-model="filters.status" aria-label="Appointment status" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">

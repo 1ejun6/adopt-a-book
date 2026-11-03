@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
+import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue'
 import BookFormDialog from '@/components/admin/BookFormDialog.vue'
@@ -10,7 +11,6 @@ import BookIdentity from '@/components/shared/AppBookIdentity.vue'
 import StatusBadge from '@/components/shared/AppStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 
-const books = ref([]);
 const selectedBook = ref(null);
 //@1ejun6 > admin view shows book metadata > missing values stay visible instead of hiding rows
 const bookFields = computed(() => {
@@ -46,21 +46,12 @@ const selectedBooks = computed(() => books.value.filter(book => selectedIds.valu
 const canSelect = computed(() => ['all', 'available'].includes(filters.status));
 const deleteBlocked = computed(() => selectedBooks.value.some(book => book.status !== 'available'));
 const { confirm } = useConfirmation();
-const loading = ref(false);
 const deleting = ref(false);
-let requestId = 0;
-const loadError = ref('');
 let bookRequestId = 0;
 
 const filters = reactive({ search: '', status: 'all', genre: 'all' });
 const availableGenres = ref([]);
-const counts = ref({ all: 0, available: 0, reserved: 0, adopted: 0 });
 const bookDetails = new Map(); //@1ejun6 > hashmap
-
-const page = ref(1);
-const pageSize = 15;
-const total = ref(0);
-const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
 
 //@lee-hlmilk > share cached promise between details &&& edit > repeated opens reuse the same request
 function getBookDetails(bookid) {
@@ -232,43 +223,14 @@ function formatBook(book) {
     };
 }
 
-async function fetchBooks() {
-    const id = ++requestId;
-    //@1ejun6 > refresh details cache when inventory page \ filters change
-    bookDetails.clear();
-    bookRequestId++;
-    loading.value = true;
-    loadError.value = '';
-    selectedIds.value = [];
-
-    try {
-        const response = await api('/admin/books', {
-            query: {
-                page: page.value,
-                limit: pageSize,
-                search: filters.search,
-                status: filters.status === 'all' ? undefined : filters.status,
-                subject: filters.genre === 'all' ? undefined : filters.genre
-            },
-        });
-
-        if (id !== requestId) { return; }
-        total.value = response.total;
-        counts.value = response.counts;
-        availableGenres.value = response.genres;
-
-        //@1ejun6 > a deletion may remove last row on current page
-        if (page.value > pageCount.value) { page.value = pageCount.value; return; }
-        books.value = response.books.map(formatBook);
-    } catch (error) {
-        if (id !== requestId) { return; }
-        loadError.value = error.message;
-        toast.error(error.message, { action: { label: 'retry', onClick: fetchBooks } });
-        books.value = [];
-    } finally {
-        if (id === requestId) { loading.value = false; }
-    }
-}
+//@lee-hlmilk > preserve inventory query &&& detail cache rules while sharing request/page state
+const { rows: books, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchBooks } = useServerPagination({
+    endpoint: '/admin/books', filters, selectedIds,
+    query: () => ({ search: filters.search, status: filters.status === 'all' ? undefined : filters.status, subject: filters.genre === 'all' ? undefined : filters.genre }),
+    read: response => response.books.map(formatBook),
+    beforeLoad: () => { bookDetails.clear(); bookRequestId++; },
+    onResponse: response => { availableGenres.value = response.genres; }
+});
 
 //@lee-hlmilk > snapshot selected copies before deleting > retain available-only checks for single &&& bulk actions
 async function deleteBooks() {
@@ -301,13 +263,7 @@ async function deleteBooks() {
     finally { deleting.value = false; }
 }
 
-watch(filters, () => {
-    selectedIds.value = [];
-    if (page.value === 1) { fetchBooks(); }
-    else { page.value = 1; }
-});
-
-watch(page, fetchBooks, { immediate: true });
+fetchBooks();
 watch(formOpen, isOpen => { if (!isOpen) { cancelLookup(); } });
 
 const statusTabs = [

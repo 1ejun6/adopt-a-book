@@ -58,4 +58,11 @@ async function findappointment(id) {
 
 const bookcollections = (bookid) => many(supabase.from("appointments").select("*").eq("bookid", bookid).order("createdat", { ascending: false }));
 
-module.exports = { appointmentschema, showappointments, createappointment, listallappointments, changecollection, ownercollections, findappointment, bookcollections };
+//@lee-hlmilk > direct admin lookup includes relations > dashboard links do not need the full application list
+async function adminappointment(id) {
+  const { data, error } = await supabase.from("appointments").select("*, customer:users(name,email), book:books(*)").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data && { ...mapappointment(data), customer: data.customer?.name || "Unknown customer", email: data.customer?.email };
+}
+
+module.exports = { adminappointment, appointmentschema, showappointments, createappointment, listallappointments, changecollection, ownercollections, findappointment, bookcollections };

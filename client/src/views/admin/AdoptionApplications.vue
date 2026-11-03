@@ -1,7 +1,8 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
+import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue';
 import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue';
@@ -9,7 +10,6 @@ import BookIdentity from '@/components/shared/AppBookIdentity.vue';
 import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Button } from '@/components/ui/button';
 
-const applications = ref([]);
 const selectedIds = ref([]);
 const selectedApplication = ref(null);
 //@lee-hlmilk > page supplies record-specific details > the shared dialog owns their layout
@@ -21,14 +21,9 @@ const applicationFields = computed(() => [
 ]);
 const detailsHint = computed(() => selectedApplication.value ? decisionHint([selectedApplication.value]) : '');
 const detailsOpen = ref(false);
-const loading = ref(false);
 const saving = ref(false);
 const { confirm } = useConfirmation();
-const loadError = ref('');
 const filters = reactive({ search: '', status: 'pending', sort: 'oldest' });
-const page = ref(1);
-const pageSize = 15;
-let requestId = 0;
 
 const statusTabs = [
     { value: 'all', label: 'All applications' },
@@ -43,22 +38,11 @@ const columns = [
     { key: 'submitted', label: 'Submitted', class: 'w-1/5' },
     { key: 'status', label: 'Status' }
 ];
-const counts = computed(() => Object.fromEntries(statusTabs.map(tab => [tab.value,
-    tab.value === 'all' ? applications.value.length : applications.value.filter(application => application.status === tab.value).length
-])));
-
-//@lee-hlmilk > applications API returns all rows > filter &&& paginate locally instead of sending unsupported queries
-const filteredApplications = computed(() => {
-    const search = filters.search.trim().toLowerCase();
-    return applications.value.filter(application =>
-        (filters.status === 'all' || application.status === filters.status) &&
-        [application.userid?.name, application.bookid?.title, application.bookid?.authors?.join(', ')]
-            .filter(Boolean).join(' ').toLowerCase().includes(search)
-    ).sort((a, b) => filters.sort === 'oldest' ? a.createdat.localeCompare(b.createdat) : b.createdat.localeCompare(a.createdat));
+//@lee-hlmilk > filters &&& totals come from SQL > selection stays scoped to the returned page
+const { rows: applications, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchApplications } = useServerPagination({
+    endpoint: '/admin/applications', filters, selectedIds, read: response => response.adoptionapplications
 });
-const pageCount = computed(() => Math.max(1, Math.ceil(filteredApplications.value.length / pageSize)));
-const visibleApplications = computed(() => filteredApplications.value.slice((page.value - 1) * pageSize, page.value * pageSize));
-const selectedApplications = computed(() => visibleApplications.value.filter(application => selectedIds.value.includes(application.id)));
+const selectedApplications = computed(() => applications.value.filter(application => selectedIds.value.includes(application.id)));
 //@lee-hlmilk > caught-up message is for a loaded pending queue > searches keep their own no-results state
 const pendingEmpty = computed(() => !loading.value && !loadError.value && filters.status === 'pending' && !filters.search.trim() && counts.value.pending === 0);
 
@@ -79,25 +63,6 @@ function openApplication(application) {
     if (loading.value || saving.value) { return; }
     selectedApplication.value = application;
     detailsOpen.value = true;
-}
-
-async function fetchApplications() {
-    const id = ++requestId;
-    loading.value = true;
-    loadError.value = '';
-    selectedIds.value = [];
-    try {
-        const response = await api('/admin/applications');
-        if (id !== requestId) { return; }
-        applications.value = response.adoptionapplications;
-        page.value = Math.min(page.value, pageCount.value);
-    } catch (error) {
-        if (id !== requestId) { return; }
-        loadError.value = error.message;
-        toast.error(error.message, { action: { label: 'retry', onClick: fetchApplications } });
-    } finally {
-        if (id === requestId) { loading.value = false; }
-    }
 }
 
 //@lee-hlmilk > backend decides one request at a time > report partial failures &&& reload auto-rejected competing requests
@@ -130,20 +95,17 @@ async function decideApplications(status, rows = selectedApplications.value) {
     } finally { saving.value = false; }
 }
 
-//@lee-hlmilk > selection belongs to displayed rows > changing filters ||| page clears it
-watch(filters, () => { page.value = 1; selectedIds.value = []; });
-watch(page, () => { selectedIds.value = []; });
 fetchApplications();
 </script>
 
 <template>
-    <!--@lee-hlmilk > AdminList updates view-owned models > visibleApplications already contains the locally filtered page-->
+    <!--@lee-hlmilk > AdminList updates view-owned models > applications contains only the matching server page-->
     <AdminList title="Adoption applications" description="Review requests for organisation copies. Approval reserves the copy for collection."
         v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
-        :rows="visibleApplications" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="saving"
+        :rows="applications" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="saving"
         :selectable="['all', 'pending'].includes(filters.status)"
         :error="loadError" searchPlaceholder="Search by Applicant, Book, Author..."
-        :pagination="{ itemLabel: 'applications', total: filteredApplications.length, pageSize, pageCount }" @openRow="openApplication">
+        :pagination="{ itemLabel: 'applications', total, pageSize, pageCount }" @openRow="openApplication">
         <template #filters>
             <select v-model="filters.sort" aria-label="Application order" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
                 <option value="oldest">Oldest first</option>

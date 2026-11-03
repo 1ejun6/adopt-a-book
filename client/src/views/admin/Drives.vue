@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
+import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
@@ -13,16 +14,13 @@ import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-const drives = ref([]);
 const stations = ref([]);
 const selectedIds = ref([]);
 const selectedDrive = ref(null);
 const editingDrive = ref(null);
 const detailsOpen = ref(false);
 const formOpen = ref(false);
-const loading = ref(false);
 const saving = ref(false);
-const loadError = ref('');
 const stationBooks = reactive({ rows: [], search: '', loading: false, error: '' });
 const filteredStationBooks = computed(() => {
     const search = stationBooks.search.trim().toLowerCase();
@@ -30,10 +28,7 @@ const filteredStationBooks = computed(() => {
 });
 const today = ref('');
 const filters = reactive({ search: '', date: '', view: 'upcoming', status: 'all' });
-const page = ref(1);
-const pageSize = 15;
 const { confirm } = useConfirmation();
-let requestId = 0;
 let formRequestId = 0;
 let booksRequestId = 0;
 
@@ -48,20 +43,12 @@ const bookColumns = [{ key: 'title', label: 'Title / Author' }];
 //@lee-hlmilk > cancelled drives belong in Past regardless of their scheduled date
 function isPastDrive(drive) { return drive.eventdate < today.value || drive.status === 'cancelled'; }
 const statusOptions = computed(() => filters.view === 'past' ? ['closed', 'cancelled'] : ['open', 'closed']);
-const counts = computed(() => ({ upcoming: drives.value.filter(drive => !isPastDrive(drive)).length,
-    past: drives.value.filter(isPastDrive).length }));
-//@lee-hlmilk > drive API returns all records > filter &&& paginate locally like the other admin queues
-const filteredDrives = computed(() => {
-    const search = filters.search.trim().toLowerCase();
-    return drives.value.filter(drive => (filters.view === 'past' ? isPastDrive(drive) : !isPastDrive(drive)) &&
-        (!filters.date || drive.eventdate === filters.date) &&
-        (filters.status === 'all' || drive.status === filters.status) &&
-        [drive.title, drive.location, drive.mrtstation?.name].filter(Boolean).join(' ').toLowerCase().includes(search)
-    ).sort((a, b) => (filters.view === 'past' ? b.eventdate.localeCompare(a.eventdate) : a.eventdate.localeCompare(b.eventdate)) || a.id.localeCompare(b.id));
+//@lee-hlmilk > SQL owns tab/date/search filtering > only this page is loaded
+const { rows: drives, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchDrives } = useServerPagination({
+    endpoint: '/admin/drives', filters, selectedIds, read: response => response.drives,
+    beforeLoad: () => { formRequestId++; }, onResponse: response => { today.value = response.today; }
 });
-const pageCount = computed(() => Math.max(1, Math.ceil(filteredDrives.value.length / pageSize)));
-const visibleDrives = computed(() => filteredDrives.value.slice((page.value - 1) * pageSize, page.value * pageSize));
-const selectedDrives = computed(() => visibleDrives.value.filter(drive => selectedIds.value.includes(drive.id)));
+const selectedDrives = computed(() => drives.value.filter(drive => selectedIds.value.includes(drive.id)));
 const pastDrive = computed(() => selectedDrive.value && isPastDrive(selectedDrive.value));
 const driveFields = computed(() => [
     { label: 'Event date', value: selectedDrive.value ? formatDate(selectedDrive.value.eventdate) : null },
@@ -122,25 +109,6 @@ async function openForm(drive = null) {
     } catch (error) { if (id === formRequestId) { toast.error(error.message); } }
 }
 
-async function fetchDrives() {
-    const id = ++requestId;
-    formRequestId++;
-    loading.value = true;
-    loadError.value = '';
-    selectedIds.value = [];
-    today.value = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-    try {
-        const response = await api('/admin/drives');
-        if (id !== requestId) { return; }
-        drives.value = response.drives;
-        page.value = Math.min(page.value, pageCount.value);
-    } catch (error) {
-        if (id !== requestId) { return; }
-        loadError.value = error.message;
-        toast.error(error.message, { action: { label: 'retry', onClick: fetchDrives } });
-    } finally { if (id === requestId) { loading.value = false; } }
-}
-
 async function saveDrive(data) {
     if (saving.value) { return; }
     saving.value = true;
@@ -190,8 +158,6 @@ async function updateDrives(status, rows = selectedDrives.value) {
 
 watch(() => filters.view, () => { filters.status = 'all'; });
 watch(() => [detailsOpen.value, selectedDrive.value?.mrtstationid, pastDrive.value], fetchStationBooks);
-watch(filters, () => { page.value = 1; selectedIds.value = []; });
-watch(page, () => { selectedIds.value = []; });
 fetchDrives();
 </script>
 
@@ -199,9 +165,9 @@ fetchDrives();
     <!--@lee-hlmilk > list models update this view > Past hides selection &&& actions while retaining the table's column alignment-->
     <AdminList title="Drives" description="Manage adoption drives and registrations."
         v-model:search="filters.search" v-model:tab="filters.view" v-model:selectedIds="selectedIds" v-model:page="page"
-        :rows="visibleDrives" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving" :selectable="filters.view !== 'past'"
+        :rows="drives" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving" :selectable="filters.view !== 'past'"
         :error="loadError" searchPlaceholder="Search by Title, Venue, MRT station..."
-        :pagination="{ itemLabel: 'drives', total: filteredDrives.length, pageSize, pageCount }" @openRow="openDrive">
+        :pagination="{ itemLabel: 'drives', total, pageSize, pageCount }" @openRow="openDrive">
         <template #headerActions><Button :disabled="loading || saving" @click="openForm()">Create drive</Button></template>
         <template #filters>
             <AppDatePicker v-model="filters.date" label="Event date" />

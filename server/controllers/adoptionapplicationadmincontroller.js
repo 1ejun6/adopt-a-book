@@ -1,13 +1,10 @@
 const { errorstatus, errormessage } = require("../utils/errors");
 const adopt = require("../models/adoptionapplication.js");
+const { browse } = require("../models/adminpagination");
 
 const getadminadoptionapplications = async (req, res) => {
   try {
-    const adoptionapplications = (await adopt.findall()).filter((item) => item.bookid && !item.bookid.ownerid);
-    return res.json({
-      adoptionapplications,
-      error: null
-    });
+    return res.json(await browse("applications", req.query));
   } catch (err) {
     console.log(err);
     return res.status(errorstatus(err)).json({
