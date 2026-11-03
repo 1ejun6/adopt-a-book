@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test'
-import { driveCard, openDrivesPage, seededDrives, toast } from '../support/guest.js'
+import { isRsvpable, openDrivesPage, pickDrive, showDrive, toast, upcomingDrives } from '../support/guest.js'
 
 //@ChitanyaBharathi > journey 1.4 > a guest finds a drive they like, tries to rsvp &&& signs up to be able to
 test('guest tries to rsvp, creates an account and is sent to login', async ({ page }) => {
   const email = `e2e-guest-${Date.now()}@example.com`
 
   // 1. opens an open drive &&& clicks rsvp
-  await openDrivesPage(page)
-  await driveCard(page, seededDrives.dhobyGhaut.title).click()
+  const drive = pickDrive(upcomingDrives(await openDrivesPage(page)), 'upcoming open drive with free slots', isRsvpable)
+  await (await showDrive(page, drive)).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByRole('button', { name: 'rsvp' }).click()
   const prompt = toast(page, 'log in to rsvp')
@@ -40,7 +40,7 @@ test('guest tries to rsvp, creates an account and is sent to login', async ({ pa
 
   // 5. goes back to a drive, clicks rsvp, then log in
   await page.getByRole('link', { name: 'Adoption Drives' }).click()
-  await driveCard(page, seededDrives.bugis.title).click()
+  await (await showDrive(page, drive)).click()
   await dialog.getByRole('button', { name: 'rsvp' }).click()
   await toast(page, 'log in to rsvp').getByRole('button', { name: 'log in' }).click()
   await expect(page).toHaveURL('/login')

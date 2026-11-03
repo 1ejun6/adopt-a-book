@@ -1,7 +1,12 @@
 import { test, expect } from '@playwright/test'
 import {
-  bugisLocation, driveCard, driveCards, foundCount, isApi, json, locationBox, openDrivesPage, seededDrives, toast,
+  bugisLocation, driveCards, expectDrivesShown, foundCount, isApi, json, locationBox, nextResponse, openDrivesPage,
+  pickDrive, toast, upcomingDrives,
 } from '../support/guest.js'
+
+const searchButton = page => page.getByRole('button', { name: 'search', exact: true })
+//@ChitanyaBharathi > the drives the page should show for the stations the server called "nearby"
+const nearTo = (drives, stations) => drives.filter(drive => stations.some(station => station.id === drive.mrtstationid))
 
 //@ChitanyaBharathi > journey 1.2 > a guest looks for an upcoming drive close to where they are
 test.describe('guest finds a drive near them', () => {
@@ -10,14 +15,12 @@ test.describe('guest finds a drive near them', () => {
   test('using their current location, a postcode, then clearing it', async ({ page }) => {
     // 1. clicks Adoption Drives in the navbar
     await page.goto('/')
-    const drivesResponse = page.waitForResponse(response => isApi('/drives')(new URL(response.url())))
+    const drivesResponse = nextResponse(page, '/drives')
     await page.getByRole('link', { name: 'Adoption Drives' }).click()
-    const { drives } = await (await drivesResponse).json()
+    const upcoming = upcomingDrives((await (await drivesResponse).json()).drives)
     await expect(page).toHaveURL('/drives')
-    await expect(foundCount(page, 5)).toBeVisible()
-    await expect(driveCards(page)).toHaveCount(5)
-    const firstCard = driveCard(page, seededDrives.dhobyGhaut.title)
-    await expect(firstCard).toContainText(seededDrives.dhobyGhaut.venue)
+    await expectDrivesShown(page, upcoming)
+    const firstCard = driveCards(page).first()
     await expect(firstCard).toContainText(/slots? left/)
     await expect(firstCard).toContainText(/books?/)
 
@@ -26,52 +29,46 @@ test.describe('guest finds a drive near them', () => {
     await expect(toast(page, 'current location ready')).toBeVisible()
     await expect(page.getByText(/Distance: \d+ km/)).toBeVisible()
 
-    // 3. sets the distance (2 km around Bugis) &&& presses search
+    // 3. sets the distance (2 km) &&& presses search
     const slider = page.getByRole('slider')
     await slider.focus()
     await page.keyboard.press('Home')
     await page.keyboard.press('ArrowRight')
     await expect(page.getByText('Distance: 2 km')).toBeVisible()
-    await page.getByRole('button', { name: 'search', exact: true }).click()
+    let nearby = nextResponse(page, '/locations/nearby')
+    await searchButton(page).click()
+    const close = await (await nearby).json()
     await expect(toast(page, 'location filter applied')).toBeVisible()
-    await expect(driveCard(page, seededDrives.bugis.title)).toBeVisible()
-    await expect(driveCard(page, seededDrives.bishan.title)).toBeHidden()
-    await expect(driveCard(page, seededDrives.tampines.title)).toBeHidden()
-    const nearbyCount = await driveCards(page).count()
-    expect(nearbyCount).toBeLessThan(5)
-    await expect(foundCount(page, nearbyCount)).toBeVisible()
+    await expectDrivesShown(page, nearTo(upcoming, close.stations))
 
     // 4. widens the distance &&& searches again
     await slider.focus()
     await page.keyboard.press('End')
     await expect(page.getByText('Distance: 20 km')).toBeVisible()
-    await page.getByRole('button', { name: 'search', exact: true }).click()
-    await expect(driveCards(page)).toHaveCount(5)
+    nearby = nextResponse(page, '/locations/nearby')
+    await searchButton(page).click()
+    const wide = await (await nearby).json()
+    expect(wide.stations.length).toBeGreaterThan(close.stations.length)
+    await expectDrivesShown(page, nearTo(upcoming, wide.stations))
 
     // 5. 🔌 types a postcode instead &&& presses search
-    const bugisDrive = drives.find(drive => drive.title === seededDrives.bugis.title)
-    await page.route(isApi('/locations/nearby'), json({
-      location: { name: 'Bugis Junction', lat: 1.2999, lng: 103.8556 },
-      stations: [{ id: bugisDrive.mrtstationid, name: 'Bugis MRT' }],
-      radiusKm: 2,
-    }))
+    const target = pickDrive(upcoming, 'upcoming drive at an MRT station', drive => drive.mrtstationid)
+    const stations = [{ id: target.mrtstationid, name: target.mrtstation?.name }]
+    await page.route(isApi('/locations/nearby'), json({ location: { name: 'a postcode', lat: 1.3, lng: 103.85 }, stations, radiusKm: 2 }))
     await locationBox(page).fill('188021')
-    await page.getByRole('button', { name: 'search', exact: true }).click()
-    await expect(driveCards(page)).toHaveCount(1)
-    await expect(driveCard(page, seededDrives.bugis.title)).toBeVisible()
+    await searchButton(page).click()
+    await expectDrivesShown(page, nearTo(upcoming, stations))
 
     // 6. 🔌 searches a place with no drives nearby
     await page.unroute(isApi('/locations/nearby'))
-    await page.route(isApi('/locations/nearby'), json({
-      location: { name: 'Jurong Island', lat: 1.266, lng: 103.699 }, stations: [], radiusKm: 2,
-    }))
+    await page.route(isApi('/locations/nearby'), json({ location: { name: 'Jurong Island', lat: 1.266, lng: 103.699 }, stations: [], radiusKm: 2 }))
     await locationBox(page).fill('jurong island')
-    await page.getByRole('button', { name: 'search', exact: true }).click()
+    await searchButton(page).click()
     await expect(page.getByText('no adoption drives near this location > try a wider distance')).toBeVisible()
 
     // 7. clears the location box
     await locationBox(page).fill('')
-    await expect(driveCards(page)).toHaveCount(5)
+    await expect(foundCount(page, upcoming.length)).toBeVisible()
     await expect(page.getByText(/Distance:/)).toBeHidden()
   })
 })

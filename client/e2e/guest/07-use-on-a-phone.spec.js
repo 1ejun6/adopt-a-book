@@ -1,5 +1,7 @@
 import { test, expect, devices } from '@playwright/test'
-import { bookSpines, driveCard, guestNavLinks, openHomepage, seededDrives } from '../support/guest.js'
+import {
+  bookSpines, guestNavLinks, isRsvpable, nextResponse, openHomepage, pickDrive, showDrive, upcomingDrives,
+} from '../support/guest.js'
 
 //@ChitanyaBharathi > journey 1.7 > phone-sized screen with touch > navbar collapses behind ☰
 //@ChitanyaBharathi > drop defaultBrowserType > playwright only allows switching browser in the config
@@ -37,12 +39,15 @@ test('guest uses the site on their phone', async ({ page }) => {
   await expect(mobileMenu.getByRole('link')).toHaveText(guestNavLinks)
 
   // 4. taps Adoption Drives
+  const drivesResponse = nextResponse(page, '/drives')
   await mobileMenu.getByRole('link', { name: 'Adoption Drives' }).tap()
   await expect(page).toHaveURL('/drives')
   await expect(mobileMenu).toBeHidden()
 
   // 5. opens a drive &&& scrolls to rsvp
-  await driveCard(page, seededDrives.dhobyGhaut.title).tap()
+  const { drives } = await (await drivesResponse).json()
+  const drive = pickDrive(upcomingDrives(drives), 'upcoming open drive with free slots', isRsvpable)
+  await (await showDrive(page, drive)).tap()
   const rsvp = dialog.getByRole('button', { name: 'rsvp' })
   await rsvp.scrollIntoViewIfNeeded()
   await expect(rsvp).toBeInViewport()
