@@ -1,0 +1,69 @@
+import { test, expect } from '@playwright/test'
+import { guestNavLinks, isApi, toast } from '../support/guest.js'
+import { customerNavLinks, logInThroughForm, navLinks, registerCustomer, slowly } from '../support/customer.js'
+
+//@ChitanyaBharathi > pickups has no page yet > only its url is checked
+const pages = [
+  { link: 'Browse Books', path: '/customer/books', heading: 'Find your next read' },
+  { link: 'Watchlist', path: '/customer/watchlist', heading: 'My Watchlist' },
+  { link: 'My Adoptions', path: '/customer/adoptions', heading: 'My Adoptions' },
+  { link: 'Pickups', path: '/customer/pickups' },
+  { link: 'Adoption Drives', path: '/customer/drives', heading: 'adoption drives' },
+  { link: 'Account', path: '/customer/account', heading: 'My account' },
+]
+
+//@ChitanyaBharathi > journey 2.1 > a new customer logs in &&& checks what they can &&& can't reach
+test('customer logs in and finds their way around', async ({ page }) => {
+  const customer = await registerCustomer(page.request)
+
+  // 1. logs in with their email &&& password (through the login form)
+  await page.route(isApi('/login'), slowly())
+  await page.goto('/login')
+  await logInThroughForm(page, customer)
+  await expect(page.getByRole('button', { name: 'Logging in…' })).toBeVisible()
+  await expect(toast(page, 'logged in')).toBeVisible()
+  await expect(page).toHaveURL('/customer')
+  await page.unroute(isApi('/login'))
+
+  // 2. looks at the navbar
+  await expect(navLinks(page)).toHaveText(customerNavLinks)
+  await expect(page.getByRole('banner').getByRole('button', { name: 'Logout' })).toBeVisible()
+
+  // 3. clicks each navbar link in turn
+  for (const { link, path, heading } of pages) {
+    const navLink = navLinks(page).filter({ hasText: link })
+    await navLink.click()
+    await expect(page).toHaveURL(path)
+    await expect(navLink).toHaveAttribute('data-active')
+    if (heading) { await expect(page.getByRole('heading', { name: heading, exact: true, level: 1 })).toBeVisible() }
+  }
+
+  // 4. clicks the Adopt a Book logo
+  await page.getByRole('banner').getByRole('link', { name: 'Adopt a Book' }).click()
+  await expect(page).toHaveURL('/customer')
+
+  // 5. reloads the page
+  await page.reload()
+  await expect(navLinks(page)).toHaveText(customerNavLinks)
+
+  // 6. types a guest address
+  for (const path of ['/', '/drives', '/login', '/register']) {
+    await page.goto(path)
+    await expect(page, `${path} should send a customer home`).toHaveURL('/customer')
+  }
+
+  // 7. types an admin address
+  await page.goto('/admin/books')
+  await expect(page).toHaveURL('/customer')
+
+  // 8. clicks Logout
+  await page.getByRole('banner').getByRole('button', { name: 'Logout' }).click()
+  await expect(toast(page, 'logged out')).toBeVisible()
+  await expect(page).toHaveURL('/login')
+  await expect(navLinks(page)).toHaveText(guestNavLinks)
+
+  // 9. presses the browser Back button
+  await page.goBack()
+  await expect(page).toHaveURL('/login')
+  await expect(navLinks(page)).toHaveText(guestNavLinks)
+})
