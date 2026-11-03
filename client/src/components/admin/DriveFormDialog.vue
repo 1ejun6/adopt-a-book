@@ -70,7 +70,8 @@ function submitDrive(event) {
             </Field>
             <Field>
                 <FieldLabel for="drive-station">Nearest MRT station <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
-                <select id="drive-station" v-model="draft.mrtstationid" required :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-station')" class="h-9 w-full rounded-lg border bg-background px-3 text-sm">
+                <!--@lee-hlmilk > select commits its model on change > stop input validation from re-rendering the old selection first-->
+                <select id="drive-station" v-model="draft.mrtstationid" required :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-station')" class="h-9 w-full rounded-lg border bg-background px-3" @input.stop>
                     <option value="" disabled>Select an MRT station</option>
                     <option v-for="station in stationOptions" :key="station.id" :value="station.id">{{ station.name }}</option>
                 </select>

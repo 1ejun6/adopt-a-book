@@ -344,8 +344,7 @@ const columns = [
     </AdminList>
     <!--@lee-hlmilk > summaryClass adds padding only to the book summary > the shared dialog supplies the outer padding-->
     <AdminDetailsDialog v-if="selectedBook" :open="dialogOpen" title="Book details" :book="selectedBook"
-        :status="selectedBook.status" :fields="bookFields" :description="selectedBook.description || 'No description recorded.'"
-        summaryClass="py-5" @update:open="dialogOpen = $event">
+        :status="selectedBook.status" :fields="bookFields" :description="selectedBook.description || 'No description recorded.'" @update:open="dialogOpen = $event">
         <template #actions>
             <!--@lee-hlmilk > reserved &&& adopted copies cannot be edited > availability follows approval &&& collection-->
             <Button type="button" class="w-full" :disabled="['reserved', 'adopted'].includes(selectedBook.status)" @click="openEditBook(selectedBook)">Edit</Button>

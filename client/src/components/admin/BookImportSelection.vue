@@ -118,7 +118,7 @@ watch(() => props.importedIds, ids => {
                         <template #cellMrtstationid="{ row }">
                             <!--@lee-hlmilk > review rows are draft copies > this native v-model stores each copy's station before submission-->
                             <select v-model="row.mrtstationid" required :aria-label="`MRT station for ${row.title}`"
-                                :aria-invalid="invalidIds.includes(row.id)" class="h-9 w-full min-w-44 rounded-lg border bg-background px-3 text-sm"
+                                :aria-invalid="invalidIds.includes(row.id)" class="h-9 w-full min-w-44 rounded-lg border bg-background px-3"
                                 @change="invalidIds = invalidIds.filter(id => id !== row.id)">
                                 <option value="" disabled>Select an MRT station</option>
                                 <option v-for="station in props.stations" :key="station.id" :value="station.id">{{ station.name }}</option>

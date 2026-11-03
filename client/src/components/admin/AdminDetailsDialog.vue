@@ -30,7 +30,7 @@ const emit = defineEmits(['update:open']);
                 <div v-if="props.book || props.status || $slots.summary" class="flex flex-wrap items-center justify-between gap-5" :class="props.summaryClass">
                     <!--@lee-hlmilk > book identity is optional > other records such as drives can supply their own summary-->
                     <slot name="summary">
-                        <BookIdentity v-if="props.book" class="min-w-0 flex-1" :title="props.book.title || 'Untitled'"
+                        <BookIdentity v-if="props.book" class="flex-1" :title="props.book.title || 'Untitled'"
                             :author="props.book.authors?.join(', ') || props.book.author || 'Unknown Author'"
                             :cover="props.book.cover || props.book.thumbnailurl || props.book.coverurl" />
                     </slot>

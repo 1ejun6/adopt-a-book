@@ -160,7 +160,7 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
             <Field>
                 <FieldLabel for="edit-condition">Condition</FieldLabel>
                 <select id="edit-condition" v-model="bookForm.condition"
-                    class="h-9 w-full min-w-0 rounded-lg border bg-background px-3 text-sm">
+                    class="h-9 w-full min-w-0 rounded-lg border bg-background px-3">
                     <option value="">Not specified</option>
                     <option value="like new">Like new</option>
                     <option value="good">Good</option>
@@ -171,7 +171,7 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
                 <FieldLabel for="edit-station">Collection area (MRT station) <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
                 <select id="edit-station" v-model="bookForm.mrtstationid" required
                     :aria-invalid="invalidFields.includes('edit-station')" @change="clearInvalid"
-                    class="h-9 w-full min-w-0 rounded-lg border bg-background px-3 text-sm">
+                    class="h-9 w-full min-w-0 rounded-lg border bg-background px-3">
                     <option value="" disabled>Select an MRT station</option>
                     <option v-for="station in stationOptions" :key="station.id" :value="station.id">
                         {{ station.name }}
@@ -181,13 +181,13 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
             <Field class="sm:col-span-2">
                 <FieldLabel for="edit-description">Description</FieldLabel>
                 <textarea id="edit-description" v-model="bookForm.description" rows="3"
-                    class="w-full min-w-0 rounded-lg border bg-background p-2.5 text-sm" />
+                    class="w-full min-w-0 rounded-lg border bg-background p-2.5" />
             </Field>
         </div>
 
         <!--@lee-hlmilk > collapsible secondary book metadata fields-->
         <details :open="metadataOpen" class="rounded-lg border p-2.5" @toggle="metadataOpen = $event.target.open">
-            <summary class="cursor-pointer text-sm">ISBN and other metadata</summary>
+            <summary class="cursor-pointer">ISBN and other metadata</summary>
             <div class="mt-5 grid gap-5 sm:grid-cols-2">
                 <Field>
                     <FieldLabel for="edit-isbn">ISBN</FieldLabel>
