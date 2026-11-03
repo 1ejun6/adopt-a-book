@@ -2,6 +2,8 @@ const { errorstatus, errormessage } = require("../utils/errors");
 const book = require("../models/books");
 const openlibrary = require("../services/openlibrary");
 const { requestids } = require("../utils/validation");
+const covers = require('../services/bookcoveruploads');
+const supabase = require('../supabase/supabase');
 
 function normalizestringarray(value) {
   if (Array.isArray(value)) {
@@ -102,7 +104,11 @@ const showupdatebook = async (req, res) => {
 const deletebooks = async (req, res) => {
   try {
     const ids = requestids(req);
-    return res.json(await book.deletebooks(ids, req.user.id));
+    const { data, error } = await supabase.from('books').select('id,coverurl').in('id', ids);
+    if (error) throw error;
+    const result = await book.deletebooks(ids, req.user.id);
+    await covers.cleanup(data.filter(row => result.deletedids.includes(row.id)).map(row => row.coverurl));
+    return res.json(result);
   } catch (error) {
     console.error("book deletion failed >", error);
     if (error.code === "PGRST202" || error.code === "42883" || error.code === "42703") {
@@ -129,6 +135,7 @@ const updatebook = async (req, res) => {
     if (Object.keys(req.body).some((key) => !allowed.has(key))) return res.status(422).json({ error: "unsupported book field" });
     const fields = book.bookupdateschema.parse(formdata);
     const updated = await book.editbook(bookid, req.user.id, Object.fromEntries(Object.entries(fields).filter(([key]) => Object.hasOwn(formdata, key))));
+    if (updated.coverurl !== currentbook.coverurl) { await covers.cleanup([currentbook.coverurl]); }
     return res.json({
       book: updated,
       message: `you have updated book ${formdata.title || currentbook.title} successfully!`,

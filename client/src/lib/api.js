@@ -9,6 +9,7 @@ export async function api(endpoint, options = {}) {
       method: options.method,
       data: options.body, //@1ejun6 > data sent to server
       params: options.query, //@1ejun6 > url filters
+      headers: options.headers, //@lee-hlmilk > image uploads send the File with its content type
       withCredentials: true //@1ejun6 > send login cookies
     });
 

@@ -33,6 +33,7 @@ const dialogOpen = ref(false);
 const formOpen = ref(false);
 const editingBook = ref(null);
 const saving = ref(false);
+const uploadingCover = ref(false);
 const stations = ref([]);
 //@lee-hlmilk > template ref gives access to form reset > draft fields stay inside BookFormDialog
 const bookFormDialog = ref(null);
@@ -161,15 +162,24 @@ async function openEditBook(book) {
 }
 
 //@lee-hlmilk > form emits prepared fields > view sends POST for add ||| PATCH for edit
-async function saveBook(data, keepAdding) {
+async function saveBook(data, keepAdding, coverFile) {
     if (saving.value) { return; }
     const editing = Boolean(editingBook.value);
     saving.value = true;
+    let uploadedCover = '';
     try {
+        if (coverFile) {
+            uploadingCover.value = true;
+            const upload = await api('/admin/books/cover', { method: 'POST', body: coverFile, headers: { 'Content-Type': coverFile.type } });
+            uploadingCover.value = false;
+            uploadedCover = upload.coverurl;
+            data = { ...data, coverurl: uploadedCover };
+        }
         const response = await api(editing ? `/admin/books/${editingBook.value.id}` : '/admin/books', {
             method: editing ? 'PATCH' : 'POST',
             body: data
         });
+        uploadedCover = ''; //@lee-hlmilk > once saved, the cover belongs to the book > later refresh errors must not remove it
         const updated = response.book;
         if (selectedBook.value?.id === updated.id) { selectedBook.value = formatBook(updated); }
         if (keepAdding) { bookFormDialog.value.resetForm(); }
@@ -177,8 +187,14 @@ async function saveBook(data, keepAdding) {
         toast.success(response.message || (editing ? 'Book updated' : 'Book added'));
         //@lee-hlmilk > reload so changed titles &&& subjects respect current filters &&& page order
         await fetchBooks();
-    } catch (error) { toast.error(error.message); }
-    finally { saving.value = false; }
+    } catch (error) {
+        if (uploadedCover) {
+            try { await api('/admin/books/cover', { method: 'DELETE', body: { coverurl: uploadedCover } }); }
+            catch { toast.error('The book was not saved and its unused photo could not be removed.'); }
+        }
+        toast.error(error.message);
+    }
+    finally { uploadingCover.value = false; saving.value = false; }
 }
 
 //@lee-hlmilk > backend creates one copy per request > return successful result IDs so retry only includes failed books
@@ -353,6 +369,6 @@ const columns = [
 
     <!--@lee-hlmilk > models sync visibility &&& query text > props carry results &&& save state > events request API work-->
     <BookFormDialog ref="bookFormDialog" v-model:open="formOpen" v-model:query="lookup.query"
-        :book="editingBook" :stations="stations" :lookup="lookup" :submitting="saving" :importedIds="importedIds"
+        :book="editingBook" :stations="stations" :lookup="lookup" :submitting="saving" :uploadingCover="uploadingCover" :importedIds="importedIds"
         @search="searchBooks" @select="cancelLookup" @submit="saveBook" @import="importBooks" />
 </template>
