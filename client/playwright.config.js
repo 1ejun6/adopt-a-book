@@ -4,9 +4,10 @@ import { defineConfig, devices } from '@playwright/test'
 import { loadEnv } from 'vite'
 
 const workspaceRoot = fileURLToPath(new URL('../', import.meta.url))
-const { clienturl } = loadEnv('development', workspaceRoot, '')
+const { clienturl, serverurl } = loadEnv('development', workspaceRoot, '')
 
 if (!clienturl) { throw new Error('clienturl must be set in the root .env file') }
+if (!serverurl) { throw new Error('serverurl must be set in the root .env file') }
 
 const clientUrl = new URL(clienturl)
 const clientPort = Number(clientUrl.port)
@@ -35,6 +36,8 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
+  //@ChitanyaBharathi > seeds the database first only when e2e_seed=true > never touches data otherwise
+  globalSetup: './e2e/support/global-setup.js',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
@@ -49,7 +52,7 @@ export default defineConfig({
     headless: true,
   },
 
-  /* Configure projects for major browsers */
+  //@ChitanyaBharathi > chrome only for now > phone-sized journeys switch device inside their own file
   projects: [
     {
       name: 'chromium',
@@ -57,61 +60,29 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-      },
-    },
-    {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-      },
-    },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: {
-    //     ...devices['Pixel 5'],
-    //   },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: {
-    //     ...devices['iPhone 12'],
-    //   },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: {
-    //     channel: 'msedge',
-    //   },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: {
-    //     channel: 'chrome',
-    //   },
-    // },
   ],
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   // outputDir: 'test-results/',
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    /**
-     * Use the dev server by default for faster feedback loop.
-     * Use the preview server on CI for more realistic testing.
-     * Playwright will re-use the local server if there is already a dev-server running.
-     */
-    command: process.env.CI ? 'pnpm run preview' : 'pnpm run dev',
-    host: clientUrl.hostname,
-    port: clientPort,
-    reuseExistingServer: !process.env.CI,
-  },
+  //@ChitanyaBharathi > journeys need the real backend too > start express before vite
+  webServer: [
+    {
+      command: 'node server.js',
+      cwd: fileURLToPath(new URL('../server', import.meta.url)),
+      url: new URL('/', serverurl).href,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      /**
+       * Use the dev server by default for faster feedback loop.
+       * Use the preview server on CI for more realistic testing.
+       * Playwright will re-use the local server if there is already a dev-server running.
+       */
+      command: process.env.CI ? 'pnpm run preview' : 'pnpm run dev',
+      host: clientUrl.hostname,
+      port: clientPort,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 })
