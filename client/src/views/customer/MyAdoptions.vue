@@ -735,12 +735,11 @@ onBeforeUnmount(() => {
           @update:modelValue="stage = $event"
           class="space-y-3"
         >
-          <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="space-y-3">
             <CustomerAdoptionStageTabs
               v-if="tab === 'active' && !searching"
               :counts="stageCounts"
               :showCounts="!loading && !loadError && !pickupError"
-              class="sm:flex-1"
             />
             <AppSearchInput
               id="adoption-search"
@@ -748,7 +747,7 @@ onBeforeUnmount(() => {
               placeholder="Find a book"
               aria-label="Search all adoptions"
               :disabled="(!loaded && loading) || !!loadError"
-              class="w-full sm:ml-auto sm:w-64"
+              class="w-full"
             />
           </div>
           <div v-if="searching" class="text-xs text-muted-foreground">
