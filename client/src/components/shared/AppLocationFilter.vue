@@ -127,7 +127,7 @@ defineExpose({ clear });
     <Field>
       <FieldLabel :for="inputId" class="sr-only">location</FieldLabel>
       <div class="flex gap-2.5">
-        <Button type="button" variant="outline" size="icon" :disabled="loading" @click="nearMe">
+        <Button type="button" variant="outline" :disabled="loading" @click="nearMe">
           <HugeiconsIcon :icon="Location08Icon" aria-hidden="true" />
           <span class="sr-only">use current location</span>
         </Button>
@@ -142,6 +142,6 @@ defineExpose({ clear });
       <Slider v-model="sliderValue" class="min-w-0 flex-1" :min="1" :max="20" :step="1" :disabled="loading" />
     </Field>
 
-    <FieldDescription v-if="loading" role="status" class="text-sm">loading location..</FieldDescription>
+    <FieldDescription v-if="loading" role="status" >loading location..</FieldDescription>
   </form>
 </template>

@@ -3,14 +3,16 @@ import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 
 const props = defineProps({
-  status: { type: String, required: true },
-  variant: { type: String }
+  status: { type: String, required: true }
 });
+
+//@lee-hlmilk > shorten appointment labels for display > keep API statuses unchanged
+const statusLabel = computed(() => ({ 'pending confirmation': 'pending', 'appointment confirmed': 'confirmed' })[props.status] || props.status);
 
 //@lee-hlmilk > match lowercase statuses to badge colors
 const badgeColour = computed(() => {
   const status = props.status.toLowerCase().trim();
-  if (['available', 'approved', 'pickup confirmed', 'confirmed', 'open'].includes(status)) { return 'green'; }
+  if (['available', 'approved', 'pickup confirmed', 'appointment confirmed', 'confirmed', 'open'].includes(status)) { return 'green'; }
   if (['rejected', 'cancelled'].includes(status)) { return 'rose'; }
   if (['adopted', 'closed', 'collected'].includes(status)) { return 'neutral'; }
 
@@ -21,6 +23,7 @@ const badgeColour = computed(() => {
 <template>
   <!--@lee-hlmilk > automated status styling-->
   <Badge :variant="badgeColour" :data-status="status">
-    <slot>{{ status }}</slot>
+    <!--@lee-hlmilk > supplied slot content replaces the label, eg. tab counts > colour &&& data-status still use the record status-->
+    <slot>{{ statusLabel }}</slot>
   </Badge>
 </template>

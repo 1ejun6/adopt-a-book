@@ -1,35 +1,69 @@
 <script setup>
-import AppPage from '@/components/shared/AppPage.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
-import AppFilters from '@/components/shared/AppFilters.vue'
-import AppPagination from '@/components/shared/AppPagination.vue'
-import AdminTable from '@/components/admin/AdminTable.vue'
-import BookDetailsDialog from '@/components/admin/BookDetailsDialog.vue'
+import { formatDateTime } from '@/lib/date';
+import { useServerPagination } from '@/composables/useServerPagination';
+import { useConfirmation } from '@/lib/confirmation';
+import AdminList from '@/components/admin/AdminList.vue'
+import BookFormDialog from '@/components/admin/BookFormDialog.vue'
+import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue'
 import BookIdentity from '@/components/shared/AppBookIdentity.vue'
 import StatusBadge from '@/components/shared/AppStatusBadge.vue'
 import { Button } from '@/components/ui/button'
 
-const books = ref([]);
 const selectedBook = ref(null);
+//@1ejun6 > admin view shows book metadata > missing values stay visible instead of hiding rows
+const bookFields = computed(() => {
+    const book = selectedBook.value;
+    if (!book) { return []; }
+    return [
+        { label: 'Title', value: book.title },
+        { label: 'Authors', value: book.authors?.join(', ') || book.author },
+        { label: 'Condition', value: book.condition },
+        { label: 'Collection area', value: book.collectionarea || book.mrtstation?.name },
+        { label: 'Subjects', value: book.subjects?.join(', ') },
+        { label: 'ISBN', value: book.isbn },
+        { label: 'First publication', value: book.publicationyear },
+        { label: 'Open Library ID', value: book.openlibraryid },
+        { label: 'Source', value: book.source === 'open_library' ? 'Open Library' : book.source },
+        { label: 'Updated at', value: formatDateTime(book.updatedat) }
+    ];
+});
 const dialogOpen = ref(false);
+const formOpen = ref(false);
+const editingBook = ref(null);
+const saving = ref(false);
+const uploadingCover = ref(false);
+const stations = ref([]);
+//@lee-hlmilk > template ref gives access to form reset > draft fields stay inside BookFormDialog
+const bookFormDialog = ref(null);
+const importedIds = ref([]);
+const lookup = reactive({ query: '', books: [], loading: false, searched: false });
+let lookupRequestId = 0;
 const selectedIds = ref([]);
-const loading = ref(false);
+const selectedRow = computed(() => books.value.find(book => book.id === selectedIds.value[0]));
+const selectedBooks = computed(() => books.value.filter(book => selectedIds.value.includes(book.id)));
+const canSelect = computed(() => ['all', 'available'].includes(filters.status));
+const deleteBlocked = computed(() => selectedBooks.value.some(book => book.status !== 'available'));
+const { confirm } = useConfirmation();
 const deleting = ref(false);
-let requestId = 0;
-const loadError = ref('');
 let bookRequestId = 0;
 
 const filters = reactive({ search: '', status: 'all', genre: 'all' });
 const availableGenres = ref([]);
-const counts = ref({ all: 0, available: 0, reserved: 0, adopted: 0 });
 const bookDetails = new Map(); //@1ejun6 > hashmap
 
-const page = ref(1);
-const pageSize = 15;
-const total = ref(0);
-const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
+//@lee-hlmilk > share cached promise between details &&& edit > repeated opens reuse the same request
+function getBookDetails(bookid) {
+    let request = bookDetails.get(bookid);
+    if (!request) {
+        //@1ejun6 > currentbook is from backend
+        request = api(`/admin/books/${bookid}`).then(response => response.currentbook); //@1ejun6 > extract
+        bookDetails.set(bookid, request); //@1ejun6 > response
+    }
+    return request;
+}
 
 //@1ejun6 > fetch full details on click > cache request for repeat opens & ignore older clicks
 async function openBook(book) {
@@ -38,13 +72,8 @@ async function openBook(book) {
     //@1ejun6 > ~bookrequestid~ > holds latest request number & increases whenever you click a book
     if (loading.value || deleting.value) { return; }
     const id = ++bookRequestId;
-    let request = bookDetails.get(book.id);
+    const request = getBookDetails(book.id);
     try {
-        if (!request) {
-            //@1ejun6 > currentbook is from backend
-            request = api(`/admin/books/${book.id}`).then(response => response.currentbook); //@1ejun6 > extract
-            bookDetails.set(book.id, request); //@1ejun6 > response
-        }
         const details = await request;
         if (id !== bookRequestId) { return; }
         selectedBook.value = { ...book, ...details };
@@ -55,62 +84,179 @@ async function openBook(book) {
     }
 }
 
-async function fetchBooks() {
-    const id = ++requestId;
-    //@1ejun6 > refresh details cache when inventory page \ filters change
-    bookDetails.clear();
-    bookRequestId++;
-    loading.value = true;
-    loadError.value = '';
-    selectedIds.value = [];
+//@lee-hlmilk > reuse station catalogue across add &&& edit > form keeps inactive current station separately
+function loadStations() {
+    if (stations.value.length) { return Promise.resolve(); }
+    return api('/locations/stations').then(response => { stations.value = response.stations; });
+}
 
+//@lee-hlmilk > load station choices before opening > null editingBook selects creation instead of editing
+async function openAddBook() {
+    if (loading.value || deleting.value || saving.value) { return; }
+    const id = ++bookRequestId;
     try {
-        const response = await api('/admin/books', {
-            query: {
-                page: page.value,
-                limit: pageSize,
-                search: filters.search.trim(),
-                status: filters.status === 'all' ? undefined : filters.status,
-                subject: filters.genre === 'all' ? undefined : filters.genre
-            },
-        });
-
-        if (id !== requestId) { return; }
-        total.value = response.total;
-        counts.value = response.counts;
-        availableGenres.value = response.genres;
-
-        //@1ejun6 > a deletion may remove last row on current page
-        if (page.value > pageCount.value) { page.value = pageCount.value; return; }
-        books.value = (Array.isArray(response.books) ? response.books : []).map(book => ({
-            ...book,
-            id: book.id,
-            title: book.title || 'Untitled',
-            author: (Array.isArray(book.authors) ? book.authors.join(', ') : '') || book.author || 'Unknown Author',
-            isbn: book.isbn || '—',
-            status: (book.status || 'available').toLowerCase(),
-            cover: book.thumbnailurl || book.coverurl || ''
-        }));
+        await loadStations();
+        if (id !== bookRequestId) { return; }
+        editingBook.value = null;
+        importedIds.value = [];
+        resetLookup();
+        dialogOpen.value = false;
+        formOpen.value = true;
     } catch (error) {
-        if (id !== requestId) { return; }
-        loadError.value = error.message;
-        toast.error(error.message, { duration: Infinity, action: { label: 'retry', onClick: fetchBooks } });
-        books.value = [];
-    } finally {
-        if (id === requestId) { loading.value = false; }
+        if (id === bookRequestId) { toast.error(error.message); }
     }
 }
 
+//@lee-hlmilk > lookup counter ignores responses after dialog closes ||| user selects a result
+async function searchBooks() {
+    const query = lookup.query.trim();
+    if (!query || lookup.loading || saving.value) { return; }
+    const id = ++lookupRequestId;
+    Object.assign(lookup, { loading: true, searched: false, books: [] });
+    try {
+        const response = await api('/admin/open-library', { query: { q: query } });
+        if (id !== lookupRequestId) { return; }
+        lookup.books = response.books;
+        lookup.searched = true;
+    } catch (error) {
+        if (id === lookupRequestId) {
+            toast.error(error.message);
+        }
+    } finally {
+        if (id === lookupRequestId) { lookup.loading = false; }
+    }
+}
+
+//@lee-hlmilk > invalidate response without clearing search results > Add and continue can reuse them
+function cancelLookup() { lookupRequestId++; lookup.loading = false; }
+
+function resetLookup() {
+    cancelLookup();
+    Object.assign(lookup, { query: '', books: [], searched: false });
+}
+
+//@lee-hlmilk > load full book details &&& mrt stations before opening edit dialog
+async function openEditBook(book) {
+    if (!book || ['reserved', 'adopted'].includes(book.status) || loading.value || deleting.value || saving.value) { return; }
+    const id = ++bookRequestId;
+    const request = getBookDetails(book.id);
+    try {
+        const [details] = await Promise.all([request, loadStations()]);
+        if (id !== bookRequestId) { return; }
+        if (['reserved', 'adopted'].includes(details.status)) { return; }
+        editingBook.value = details;
+        dialogOpen.value = false;
+        formOpen.value = true;
+    } catch (error) {
+        if (bookDetails.get(book.id) === request) { bookDetails.delete(book.id); }
+        if (id === bookRequestId) { toast.error(error.message); }
+    }
+}
+
+//@lee-hlmilk > form emits prepared fields > view sends POST for add ||| PATCH for edit
+async function saveBook(data, keepAdding, coverFile) {
+    if (saving.value) { return; }
+    const editing = Boolean(editingBook.value);
+    saving.value = true;
+    let uploadedCover = '';
+    try {
+        if (coverFile) {
+            uploadingCover.value = true;
+            const upload = await api('/admin/books/cover', { method: 'POST', body: coverFile, headers: { 'Content-Type': coverFile.type } });
+            uploadingCover.value = false;
+            uploadedCover = upload.coverurl;
+            data = { ...data, coverurl: uploadedCover };
+        }
+        const response = await api(editing ? `/admin/books/${editingBook.value.id}` : '/admin/books', {
+            method: editing ? 'PATCH' : 'POST',
+            body: data
+        });
+        uploadedCover = ''; //@lee-hlmilk > once saved, the cover belongs to the book > later refresh errors must not remove it
+        const updated = response.book;
+        if (selectedBook.value?.id === updated.id) { selectedBook.value = formatBook(updated); }
+        if (keepAdding) { bookFormDialog.value.resetForm(); }
+        else { formOpen.value = false; }
+        toast.success(response.message || (editing ? 'Book updated' : 'Book added'));
+        //@lee-hlmilk > reload so changed titles &&& subjects respect current filters &&& page order
+        await fetchBooks();
+    } catch (error) {
+        if (uploadedCover) {
+            try { await api('/admin/books/cover', { method: 'DELETE', body: { coverurl: uploadedCover } }); }
+            catch { toast.error('The book was not saved and its unused photo could not be removed.'); }
+        }
+        toast.error(error.message);
+    }
+    finally { uploadingCover.value = false; saving.value = false; }
+}
+
+//@lee-hlmilk > backend creates one copy per request > return successful result IDs so retry only includes failed books
+async function importBooks(booksToAdd) {
+    if (saving.value || !booksToAdd.length) { return; }
+    saving.value = true;
+    const completed = [];
+    const failures = [];
+    try {
+        for (const book of booksToAdd) {
+            try {
+                await api('/admin/books', { method: 'POST', body: book.data });
+                completed.push(book.id);
+            } catch (error) { failures.push(`${book.data.title}: ${error.message}`); }
+        }
+        importedIds.value = completed;
+        if (completed.length === booksToAdd.length) { formOpen.value = false; }
+        if (completed.length) {
+            toast.success(`${completed.length} ${completed.length === 1 ? 'book added' : 'books added'}`);
+            await fetchBooks();
+        }
+        if (failures.length) { toast.error(`${failures.length} ${failures.length === 1 ? 'book could' : 'books could'} not be added`, { description: failures.join('\n'), style: { whiteSpace: 'pre-line' } }); }
+    } finally { saving.value = false; }
+}
+
+//@lee-hlmilk > same display fields for inventory rows &&& saved details > raw metadata stays available
+function formatBook(book) {
+    return {
+        ...book,
+        title: book.title || 'Untitled',
+        author: book.authors?.join(', ') || book.author || 'Unknown Author',
+        isbn: book.isbn || '—',
+        status: (book.status || 'available').toLowerCase(),
+        cover: book.thumbnailurl || book.coverurl || ''
+    };
+}
+
+//@lee-hlmilk > preserve inventory query &&& detail cache rules while sharing request/page state
+const { rows: books, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchBooks } = useServerPagination({
+    endpoint: '/admin/books', filters, selectedIds,
+    query: () => ({ search: filters.search, status: filters.status === 'all' ? undefined : filters.status, subject: filters.genre === 'all' ? undefined : filters.genre }),
+    read: response => response.books.map(formatBook),
+    beforeLoad: () => { bookDetails.clear(); bookRequestId++; },
+    onResponse: response => { availableGenres.value = response.genres; }
+});
+
+//@lee-hlmilk > snapshot selected copies before deleting > retain available-only checks for single &&& bulk actions
 async function deleteBooks() {
-    if (loading.value || deleting.value || !selectedIds.value.length) { return; }
-    const bookids = [...selectedIds.value];
-    const titles = books.value.filter(book => bookids.includes(book.id)).map(book => book.title);
+    const targets = [...selectedBooks.value];
+    const bookids = targets.map(book => book.id);
+    if (loading.value || deleting.value || !canSelect.value || !bookids.length) { return; }
+    if (deleteBlocked.value) {
+        toast.error('Only available books can be deleted.');
+        return;
+    }
+    const titles = targets.map(book => book.title);
+    if (!await confirm(`Delete ${targets.length === 1 ? 'book' : 'books'}?`, {
+        description: `Selected books and their related applications, appointments, and watchlist entries will be permanently deleted.\n${titles.join('\n')}`,
+        actionLabel: 'Delete', destructive: true
+    })) { return; }
+    if (loading.value || deleting.value || !canSelect.value) { return; }
+    if (targets.some(book => books.value.find(row => row.id === book.id)?.status !== 'available')) {
+        toast.error('Only available books can be deleted. Select the books again.');
+        return;
+    }
     deleting.value = true;
     try {
         const { deletedids = [] } = await api('/admin/books', { method: 'DELETE', body: { ids: bookids } });
-        for (const id of deletedids) { bookDetails.delete(id); }
         await fetchBooks();
-        toast.success(`${deletedids.length} deleted`, {
+        toast.info(`${deletedids.length} deleted`, {
             description: titles.map((title, index) => `${index + 1}. ${title}`).join('\n'),
             style: { whiteSpace: 'pre-line' }
         });
@@ -118,12 +264,8 @@ async function deleteBooks() {
     finally { deleting.value = false; }
 }
 
-watch(filters, () => {
-    if (page.value === 1) { fetchBooks(); }
-    else { page.value = 1; }
-});
-
-watch(page, fetchBooks, { immediate: true });
+fetchBooks();
+watch(formOpen, isOpen => { if (!isOpen) { cancelLookup(); } });
 
 const statusTabs = [
     { value: 'all', label: 'All books' },
@@ -133,46 +275,56 @@ const statusTabs = [
 ];
 
 const columns = [
-    { key: 'book', label: 'Book' },
-    { key: 'isbn', label: 'ISBN' },
+    { key: 'book', label: 'Book', class: 'w-3/5' },
+    { key: 'isbn', label: 'ISBN', class: 'w-1/5' },
     { key: 'status', label: 'Status' }
 ];
 </script>
 <template>
-    <AppPage class="space-y-5">
-        <header class="flex flex-wrap items-center justify-between gap-5">
-            <div class="min-w-0">
-                <h1>Book Inventory</h1>
-                <p class="text-muted-foreground">organisation copies and community listings from intake to handover</p>
-            </div>
-            <Button>Add Book</Button>
-        </header>
+    <!--@lee-hlmilk > list models update this view's filters &&& selection &&& page > watchers fetch the matching server page-->
+    <AdminList title="Book Inventory" description="Manage book records and track their availability."
+        v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
+        :rows="books" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="deleting" :selectable="canSelect"
+        :error="loadError" searchPlaceholder="Search by Title, Author, ISBN..."
+        emptyTitle="No books in this view" emptyDescription="Try another Status Tab, Genre, Search term"
+        :pagination="{ itemLabel: 'books', total, pageSize, pageCount }" @openRow="openBook">
+        <template #headerActions>
+            <Button class="min-h-11" :disabled="loading || deleting || saving" @click="openAddBook">Add Book</Button>
+        </template>
+        <template #filters>
+            <select v-model="filters.genre" class="w-full min-w-0 rounded-lg border px-3 sm:w-auto text-base min-h-11">
+                <option value="all">All genres</option>
+                <option v-for="genre in availableGenres" :key="genre" :value="genre">{{ genre }}</option>
+            </select>
+        </template>
+        <template #selectionActions="{ onlyOne }">
+            <p v-if="deleteBlocked" class="text-sm text-muted-foreground" role="status">Only available books can be deleted.</p>
+            <!--@lee-hlmilk > open edit dialog for selected book-->
+            <Button class="min-h-11" variant="outline" :disabled="!onlyOne || ['reserved', 'adopted'].includes(selectedRow?.status)"
+                @click="openEditBook(selectedRow)">Edit</Button>
+            <Button class="min-h-11" variant="destructive" :disabled="loading || deleting || deleteBlocked" @click="deleteBooks">{{ deleting ?
+                'Deleting…' : 'Delete' }}</Button>
+        </template>
+        <template #cellBook="{ row }">
+            <BookIdentity :title="row.title" :author="row.author" :cover="row.cover" />
+        </template>
+        <template #cellIsbn="{ value }">
+            <span class="text-xs text-muted-foreground">{{ value }}</span>
+        </template>
+        <template #cellStatus="{ value }">
+            <StatusBadge :status="value" />
+        </template>
+    </AdminList>
+    <AdminDetailsDialog v-if="selectedBook" :open="dialogOpen" title="Book details" :book="selectedBook"
+        :status="selectedBook.status" :fields="bookFields" :description="selectedBook.description || 'No description recorded.'" @update:open="dialogOpen = $event">
+        <template #actions>
+            <!--@lee-hlmilk > reserved &&& adopted copies cannot be edited > availability follows approval &&& collection-->
+            <Button type="button" class="w-full min-h-11" :disabled="['reserved', 'adopted'].includes(selectedBook.status)" @click="openEditBook(selectedBook)">Edit</Button>
+        </template>
+    </AdminDetailsDialog>
 
-        <AppFilters v-model:search="filters.search" v-model:status="filters.status" v-model:genre="filters.genre"
-            :tabs="statusTabs" searchPlaceholder="Search by Title, Author, ISBN..." :counts="counts"
-            :genres="availableGenres" :selectedRowCount="selectedIds.length">
-            <template #selectionActions="{ onlyOne }">
-                <Button size="sm" class="bg-card" :disabled="!onlyOne">Edit</Button>
-                <Button variant="destructive" size="sm" :disabled="deleting" @click="deleteBooks">{{ deleting ?
-                    'Deleting…' : 'Delete' }}</Button>
-            </template>
-        </AppFilters>
-
-        <AdminTable v-if="!loadError" :rows="books" :columns="columns" :selectedIds="selectedIds" :isLoading="loading"
-            emptyTitle="No books in this view" emptyDescription="Try another Status Tab, Genre, Search term"
-            @selectedRows="selectedIds = $event" @openRow="openBook">
-            <template #cellBook="{ row }">
-                <BookIdentity :title="row.title" :author="row.author" :cover="row.cover" />
-            </template>
-            <template #cellIsbn="{ value }">
-                <span class="text-xs text-muted-foreground">{{ value }}</span>
-            </template>
-            <template #cellStatus="{ value }">
-                <StatusBadge :status="value" />
-            </template>
-        </AdminTable>
-        <BookDetailsDialog v-model:open="dialogOpen" :book="selectedBook" />
-        <AppPagination itemLabel="books" v-if="!loadError && total > 0" v-model:page="page" :total="total"
-            :visibleCount="books.length" :pageSize="pageSize" :pageCount="pageCount" :loading="loading" :disabled="loading || deleting" />
-    </AppPage>
+    <!--@lee-hlmilk > models sync visibility &&& query text > props carry results &&& save state > events request API work-->
+    <BookFormDialog ref="bookFormDialog" v-model:open="formOpen" v-model:query="lookup.query"
+        :book="editingBook" :stations="stations" :lookup="lookup" :submitting="saving" :uploadingCover="uploadingCover" :importedIds="importedIds"
+        @search="searchBooks" @select="cancelLookup" @submit="saveBook" @import="importBooks" />
 </template>

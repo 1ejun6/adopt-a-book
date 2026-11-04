@@ -1,5 +1,4 @@
 <script setup>
-import AppPage from '@/components/shared/AppPage.vue';
 import { toast } from 'vue-sonner';
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -29,7 +28,7 @@ async function login() {
         auth.user = response.user;
         auth.ready = true;
 
-        toast.success('logged in');
+        toast.success(response.message);
         form.password = '';
         
         await router.push(homeRoute.value);
@@ -41,29 +40,27 @@ async function login() {
 }
 </script>
 <template>
-    <AppPage aria-labelledby="login-title">
-        <div class="mx-auto w-full max-w-md space-y-8">
-            <header class="space-y-2 text-center">
-                <h1 id="login-title" class="text-4xl">Login</h1>
-                <p class="text-sm text-muted-foreground">welcome back!!</p>
-            </header>
+    <section class="mx-auto w-full max-w-md py-5">
+        <div class="space-y-5">
+            <h1>Login</h1>
+            <p>welcome back!!</p>
             <form @submit.prevent="login">
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>
                     <Input id="email" v-model="form.email" type="email" autocomplete="email"
-                        placeholder="enter your email" class="h-11" required />
+                        placeholder="enter your email" class="md:text-base min-h-11" required />
                 </Field>
                 <Field>
                     <FieldLabel for="password">Password</FieldLabel>
-                    <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
-                        autocomplete="current-password" placeholder="enter your password" class="h-11" required />
+                    <Input class="md:text-base min-h-11" id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
+                        autocomplete="current-password" placeholder="enter your password" required />
                 </Field>
                 <label class="flex min-h-11 items-center gap-2.5">
                     <Checkbox v-model="showPassword" /> show password
                 </label>
-                <Button type="submit" class="min-h-11 w-full" :disabled="form.loading">{{ form.loading ? 'Logging in…' : 'Login'
+                <Button type="submit" class="w-full min-h-11" :disabled="form.loading">{{ form.loading ? 'Logging in…' : 'Login'
                     }}</Button>
             </form>
         </div>
-    </AppPage>
+    </section>
 </template>

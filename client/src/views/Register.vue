@@ -1,5 +1,4 @@
 <script setup>
-import AppPage from '@/components/shared/AppPage.vue';
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/lib/api'
@@ -23,8 +22,8 @@ async function register() {
             body: { name: form.name.trim(), email: form.email.trim(), password: form.password }
         };
 
-        await api('/register', data);
-        toast.success('account created > log in to continue');
+        const response = await api('/register', data);
+        toast.success(response.message);
         form.password = '';
 
         await router.push('/login');
@@ -36,30 +35,28 @@ async function register() {
 }
 </script>
 <template>
-    <AppPage aria-labelledby="register-title">
-        <div class="mx-auto w-full max-w-md space-y-8">
-            <header class="space-y-2 text-center">
-                <h1 id="register-title" class="text-4xl">Create Your Account</h1>
-                <p class="text-sm text-muted-foreground">join us!!</p>
-            </header>
+    <section class="mx-auto w-full max-w-md py-5">
+        <div class="space-y-5">
+            <h1>Create Your Account</h1>
+            <p>join us!!</p>
             <form @submit.prevent="register">
                 <Field>
                     <FieldLabel for="name">Name</FieldLabel>
-                    <Input id="name" v-model="form.name" type="text" autocomplete="name" placeholder="enter your name" class="h-11" required />
+                    <Input class="md:text-base min-h-11" id="name" v-model="form.name" type="text" autocomplete="name" placeholder="enter your name" required />
                 </Field>
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>
-                    <Input id="email" v-model="form.email" type="email" autocomplete="email" placeholder="enter your email" class="h-11" required />
+                    <Input class="md:text-base min-h-11" id="email" v-model="form.email" type="email" autocomplete="email" placeholder="enter your email" required />
                 </Field>
                 <Field>
                     <FieldLabel for="password">Password</FieldLabel>
-                    <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="create a password" class="h-11" required />
+                    <Input class="md:text-base min-h-11" id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="create a password" required />
                 </Field>
                 <label class="flex min-h-11 items-center gap-2.5">
                     <Checkbox v-model="showPassword" /> show password
                 </label>
-                <Button type="submit" class="min-h-11 w-full" :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
+                <Button type="submit" class="w-full min-h-11" :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
             </form>
         </div>
-    </AppPage>
+    </section>
 </template>

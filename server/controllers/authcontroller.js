@@ -9,16 +9,34 @@ function session(req, res) {
 }
 
 async function logout(req, res) {
+  let failurestatus;
   try {
     const accesstoken = req.accesstoken || req.cookies?.access_token;
+    const refreshtoken = req.cookies?.refresh_token;
+    const invalidsession = error => [400, 401, 403, 404, 422].includes(error.status);
+    let revoked = false;
     if (accesstoken) {
       const { error } = await supabase.auth.admin.signOut(accesstoken);
-      if (error) console.error("supabase logout failed >", error.code || "auth unavailable");
+      if (error && !invalidsession(error)) throw error;
+      revoked = !error;
+    }
+    if (!revoked && refreshtoken) {
+      const { data, error } = await createauthclient().auth.refreshSession({ refresh_token: refreshtoken });
+      if (error && !invalidsession(error)) throw error;
+      if (!error) {
+        if (!data.session?.access_token) throw new Error("authentication service returned no session");
+        const { error: signouterror } = await supabase.auth.admin.signOut(data.session.access_token);
+        if (signouterror && !invalidsession(signouterror)) throw signouterror;
+      }
     }
   } catch (error) {
     console.error("supabase logout failed >", error.code || "auth unavailable");
+    failurestatus = errorstatus(error) === 429 ? 429 : 503;
   } finally {
     clearauthcookies(res);
+  }
+  if (failurestatus) {
+    return res.status(failurestatus).json({ error: "could not revoke your session; authentication service unavailable" });
   }
   return res.status(204).send();
 }

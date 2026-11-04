@@ -4,8 +4,6 @@ import { ArrowDown01Icon } from '@hugeicons/core-free-icons';
 import { reactiveOmit } from '@vueuse/core';
 import { NavigationMenuTrigger, useForwardProps } from 'reka-ui';
 import { cn } from '@/lib/utils';
-//@1ejun6 > reusable cva() function that returns trigger base tailwind classes
-import { navigationMenuTriggerStyle } from '.';
 
 const props = defineProps({
   //@1ejun6 > optional inputs from parent
@@ -21,7 +19,7 @@ const forwardedProps = useForwardProps(delegatedProps);
 
 <template>
   <NavigationMenuTrigger data-slot="navigation-menu-trigger" v-bind="forwardedProps"
-    :class="cn(navigationMenuTriggerStyle(), props.class)">
+    :class="cn('washi-tape-hover rounded-lg p-2.5 text-sm', props.class)">
     <!--@1ejun6 > trigger label-->
     <slot />
     <HugeiconsIcon :icon="ArrowDown01Icon" class="ml-1 size-3" aria-hidden="true" />

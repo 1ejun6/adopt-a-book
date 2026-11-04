@@ -4,9 +4,9 @@ import AppNavbar from '@/components/shared/AppNavbar.vue';
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col"> <!--@1ejun6 > as tall as browser screen > navbar on top & main below-->
+  <div class="flex min-h-dvh flex-col"> <!--@1ejun6 > as tall as browser screen > navbar on top & main below-->
     <AppNavbar />
-    <main class="flex min-w-0 flex-1 p-5"> <!--@1ejun6 > empty space left after navbar-->
+    <main class="flex min-w-0 flex-1 p-4 sm:p-5"> <!--@1ejun6 > empty space left after navbar-->
       <RouterView />
     </main>
   </div>

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 
 defineOptions({ inheritAttrs: false });
 const props = defineProps({
+  id: { type: String, default: undefined },
   class: { type: null, required: false },
   disabled: { type: Boolean, default: false },
   readonly: { type: Boolean, default: false },
@@ -22,11 +23,11 @@ function clearsearch() {
 
 <template>
   <div class="relative min-w-0" :class="props.class">
-    <label :for="inputid" class="sr-only">search</label>
-    <Input :id="inputid" ref="input" v-model="search" v-bind="$attrs" type="text" role="searchbox" :disabled="props.disabled" :readonly="props.readonly"
-      class="h-auto p-2.5 pr-10 text-sm" />
+    <label :for="props.id || inputid" class="sr-only">search</label>
+    <Input :id="props.id || inputid" ref="input" v-model="search" v-bind="$attrs" type="text" role="searchbox" :disabled="props.disabled" :readonly="props.readonly"
+      class="pr-11" />
     <button type="button" :disabled="!search || props.disabled || props.readonly"
-      class="absolute inset-y-0 right-0 px-2.5" @click="clearsearch">
+      class="absolute inset-y-0 right-0 min-h-11 min-w-11 px-2.5" @click="clearsearch">
       <HugeiconsIcon :icon="Cancel01Icon" class="size-5" aria-hidden="true" />
       <span class="sr-only">clear search</span>
     </button>

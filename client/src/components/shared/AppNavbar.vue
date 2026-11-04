@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { onKeyStroke } from '@vueuse/core'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { logoutSession } from '@/lib/session'
 import { pages } from '@/router';
@@ -12,13 +13,21 @@ import AppNavbarLinks from './AppNavbarLinks.vue'
 const router = useRouter();
 const route = useRoute();
 //@1ejun6 > get routes > wait for session check > keep labelled pages allowed for current role
-//@1ejun6 > computed updates this list when session ||| role changes > page labels &&& roles are defined in ~router/index.js~
+//@1ejun6 > computed updates this list when session \ role changes > page labels & roles are defined in ~router/index.js~
 const links = computed(() => pages.filter(page => auth.ready && page.label && page.roles?.includes(role.value)));
 
 const status = ref(false);
 const logoutLoading = ref(false);
+const menuButton = ref(null);
 
-//@1ejun6 > watch current url > close mobile menu whenever navigation changes it including back ||| forward
+onKeyStroke('Escape', () => {
+  if (status.value) {
+    status.value = false;
+    menuButton.value?.focus();
+  }
+});
+
+//@1ejun6 > watch current url > close mobile menu whenever navigation changes it including back \ forward
 watch(() => route.fullPath, () => { status.value = false; });
 
 async function logout() {
@@ -29,7 +38,6 @@ async function logout() {
     await logoutSession();
     status.value = false;
     await router.push('/login');
-    toast.success('logged out');
   } catch (error) {
     toast.error(error.message);
   } finally {
@@ -39,16 +47,15 @@ async function logout() {
 </script>
 
 <template>
-  <header class="sticky top-0 z-50 border-b bg-background">
-    <div class="flex items-center justify-between p-5">
+  <header class="sticky top-0 z-40 border-b bg-background">
+    <div class="flex items-center justify-between px-4 py-2 xl:p-5">
       <!--@1ejun6 > centers navbar horizontal > fills available width-->
-      <RouterLink :to="homeRoute" class="flex shrink-0 items-center gap-2.5 font-heading text-lg" @click="status = false">
+      <RouterLink :to="role === 'admin' ? { name: 'adminHome' } : homeRoute" class="flex shrink-0 items-center gap-2.5 font-heading text-lg" @click="status = false">
         Adopt a Book
-        <img :src="bow" alt="" width="48" height="48" />
+        <img :src="bow" alt="" width="48" height="48" class="size-8 xl:size-12" />
       </RouterLink>
-      <!--@1ejun6 > keep mobile menu until desktop links fit -->
-      <button type="button" class="washi-tape washi-tape-hover grid size-11 shrink-0 place-items-center rounded-lg lg:hidden" aria-controls="mobile"
-        :aria-expanded="status" @click="status = !status">
+      <button ref="menuButton" type="button" class="grid size-11 shrink-0 place-items-center xl:hidden" aria-controls="mobile"
+        :aria-label="status ? 'Close navigation' : 'Open navigation'" :aria-expanded="status" @click="status = !status">
         <HugeiconsIcon :icon="status ? Cancel01Icon : Menu01Icon" aria-hidden="true" />
       </button>
       <AppNavbarLinks :links="links" :logoutLoading="logoutLoading"

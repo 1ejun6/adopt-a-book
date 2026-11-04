@@ -14,34 +14,30 @@ const route = useRoute();
 </script>
 
 <template>
-  <!--@1ejun6 > * > every direct child element of element with these classes-->
   <nav v-if="mobile" id="mobile"
-    class="grid gap-2.5 p-5 lg:hidden *:rounded-lg *:p-2.5 *:text-right">
+    class="grid max-h-[calc(100dvh-4rem)] gap-2 overflow-y-auto px-4 pb-3 text-sm xl:hidden">
     <!--@1ejun6 > each link sits on its own row-->
-    <RouterLink v-for="link in links" :key="link.name" :to="{ name: link.name }" class="washi-tape washi-tape-hover"
+    <RouterLink v-for="link in links" :key="link.name" :to="{ name: link.name }" class="px-2.5 py-3 text-right data-[active]:bg-primary"
       :data-active="route.name === link.name ? true : undefined" @click="emit('navigate')">
       {{ link.label }}
     </RouterLink>
-    <button v-if="auth.ready && auth.user" type="button" class="washi-tape washi-tape-hover" :disabled="logoutLoading"
+    <button v-if="auth.ready && auth.user" type="button" class="px-2.5 py-3 text-right" :disabled="logoutLoading"
       @click="emit('logout')">
       Logout
     </button>
   </nav>
-  <!-- Desktop links share the same breakpoint as the mobile menu. -->
-  <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden max-w-none lg:flex [&>div]:w-full">
-    <!--@1ejun6 > overrides menu max-w-max > allowing it to grow wider than its links > tailwind selector >  sets width to 100%-->
-    <NavigationMenuList class="w-full">
-      <!--@1ejun6 > margin left > login link-->
+  <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden xl:block">
+    <NavigationMenuList>
       <NavigationMenuItem v-for="link in links" :key="link.name" :class="{ 'ml-auto': link.end }">
         <NavigationMenuLink asChild :active="route.name === link.name" :class="navigationMenuTriggerStyle()">
           <RouterLink :to="{ name: link.name }" @click="emit('navigate')">{{ link.label }}</RouterLink>
         </NavigationMenuLink>
       </NavigationMenuItem>
-
       <NavigationMenuItem v-if="auth.ready && auth.user" :class="{ 'ml-auto': !links.some(link => link.end) }">
-        <button type="button" :class="navigationMenuTriggerStyle()" :disabled="logoutLoading" @click="emit('logout')">Logout</button>
+        <button type="button" :class="navigationMenuTriggerStyle()" :disabled="logoutLoading" @click="emit('logout')">
+          Logout
+        </button>
       </NavigationMenuItem>
-
     </NavigationMenuList>
   </NavigationMenu>
 </template>

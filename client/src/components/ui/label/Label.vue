@@ -16,7 +16,7 @@ const delegatedProps = reactiveOmit(props, 'class');
 
 <template>
   <Label data-slot="label" v-bind="delegatedProps"
-    :class="cn('flex items-center gap-2.5 text-sm font-medium', props.class)">
+    :class="cn('text-sm', props.class)">
     <slot />
   </Label>
 </template>

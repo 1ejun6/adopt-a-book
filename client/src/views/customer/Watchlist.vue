@@ -112,7 +112,7 @@ onBeforeUnmount(() => {
       <Button variant="outline" @click="loadWatchlist">Try Again</Button>
     </div>
     <!--@sree-sanjana06 > show empty state after removing the final saved book-->
-    <div v-else-if="!watchlist.length" class="washi-tape space-y-4 rounded-xl border bg-card p-8 text-center" data-active>
+    <div v-else-if="!watchlist.length" class="space-y-4 rounded-xl border bg-card p-8 text-center" data-active>
       <h2>Your shelf is waiting</h2>
       <p class="text-sm text-muted-foreground">save a book while browsing to find it here later</p>
       <Button asChild><RouterLink :to="{ name: 'customerBooks' }">Browse books</RouterLink></Button>

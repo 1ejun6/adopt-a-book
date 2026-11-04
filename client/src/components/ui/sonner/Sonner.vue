@@ -26,48 +26,34 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
 </template>
 
 <style>
-/*@1ejun6 > shared quiet card > keep messages & actions in one layout */
-.quietToaster [data-sonner-toast][data-styled='true'] {
+.quietToaster {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: min(400px, calc(100% - 24px));
+  display: grid;
+  gap: 10px;
+}
+.quietToaster [data-sonner-toast] { position: relative; }
+.quietToaster [data-visible='false'],
+.quietToaster [data-removed='true'] { display: none; }
+.quietToaster [data-styled='true'] {
   display: grid;
   grid-template-columns: 20px repeat(2, minmax(0, 1fr));
-  gap: .625rem;
-  padding: 1.25rem;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   background: var(--background);
-  color: var(--foreground);
-  border-color: var(--border);
-  font-family: var(--font-body);
-
-  & [data-icon] { grid-column: 1; grid-row: 1; margin: 0; }
-  & [data-content] { grid-column: 2 / -1; min-width: 0; padding-right: 1.5rem; overflow-wrap: anywhere; }
-  & [data-description] { color: var(--muted-foreground); }
-
-  /*@1ejun6 > equal auth buttons share one row > centre labels */
-  & [data-button] {
-    grid-row: 2;
-    justify-content: center;
-    margin: 0;
-    min-height: 36px;
-    background: var(--primary);
-    color: inherit;
-    white-space: normal;
-  }
-  & [data-cancel] { grid-column: 2; background: transparent; }
-  & [data-action] { grid-column: 3; }
-  & [data-close-button] {
-    top: 0;
-    right: 0;
-    left: auto;
-    width: 44px;
-    height: 44px;
-    padding: 12px;
-    transform: none;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    color: inherit;
-
-    &:hover { background: transparent; }
-  }
+  font-size: 14px;
 }
+.quietToaster [data-icon] { grid-column: 1; grid-row: 1; }
+.quietToaster [data-content] { grid-column: 2 / -1; padding-right: 24px; overflow-wrap: anywhere; }
+.quietToaster [data-description] { color: var(--muted-foreground); }
+.quietToaster [data-button] { grid-row: 2; min-height: 44px; padding: 8px; border-radius: 8px; background: var(--primary); }
+.quietToaster [data-cancel] { grid-column: 2; background: transparent; }
+.quietToaster [data-action] { grid-column: 3; }
+.quietToaster [data-close-button] { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 44px; height: 44px; }
 </style>

@@ -71,7 +71,7 @@ async function saveDetails() {
 
 <template>
   <Dialog :open="open" @update:open="value => { if (!saving) open = value; }">
-    <DialogTrigger asChild><Button class="min-h-11 w-full">Edit profile</Button></DialogTrigger>
+    <DialogTrigger asChild><Button class="w-full">Edit profile</Button></DialogTrigger>
     <DialogContent class="max-w-md border" :showCloseButton="!saving"
       @escapeKeyDown="event => { if (saving) event.preventDefault(); }"
       @interactOutside="event => { if (saving) event.preventDefault(); }">
@@ -79,16 +79,16 @@ async function saveDetails() {
         <DialogTitle>Edit profile</DialogTitle>
         <DialogDescription>your name, sign-in email and password</DialogDescription>
       </DialogHeader>
-      <form class="space-y-5 p-5" :aria-busy="saving" @submit.prevent="saveDetails">
+      <form class="p-5" :aria-busy="saving" @submit.prevent="saveDetails">
         <p v-if="error" ref="errorMessage" class="rounded-lg bg-badge-rose p-3 text-destructive" role="alert" tabindex="-1">{{ error }}</p>
         <div class="space-y-4">
           <Field>
             <FieldLabel for="account-name">Full name</FieldLabel>
-            <Input id="account-name" v-model="draft.name" autocomplete="name" maxlength="100" class="h-11" required :disabled="saving" />
+            <Input id="account-name" v-model="draft.name" autocomplete="name" maxlength="100"  required :disabled="saving" />
           </Field>
           <Field>
             <FieldLabel for="account-email">Email address</FieldLabel>
-            <Input id="account-email" v-model="draft.email" type="email" autocomplete="email" maxlength="200" class="h-11"
+            <Input id="account-email" v-model="draft.email" type="email" autocomplete="email" maxlength="200"
               aria-describedby="account-email-help" required :disabled="saving" />
             <p id="account-email-help" class="text-xs text-muted-foreground">Use this email to sign in.</p>
           </Field>
@@ -107,12 +107,12 @@ async function saveDetails() {
             <Field>
               <FieldLabel for="account-new-password">New password</FieldLabel>
               <Input id="account-new-password" v-model="passwords.password" :type="showPassword ? 'text' : 'password'"
-                class="h-11" autocomplete="new-password" :spellcheck="false" autocapitalize="none" :disabled="saving" />
+                 autocomplete="new-password" :spellcheck="false" autocapitalize="none" :disabled="saving" />
             </Field>
             <Field>
               <FieldLabel for="account-confirm-password">Confirm new password</FieldLabel>
               <Input id="account-confirm-password" v-model="passwords.confirmation" :type="showPassword ? 'text' : 'password'"
-                class="h-11" autocomplete="new-password" :spellcheck="false" autocapitalize="none" :disabled="saving"
+                 autocomplete="new-password" :spellcheck="false" autocapitalize="none" :disabled="saving"
                 :aria-invalid="mismatch || undefined" :aria-describedby="mismatch ? 'account-password-mismatch' : undefined"
                 @blur="confirmationTouched = true" />
               <p v-if="mismatch" id="account-password-mismatch" class="text-destructive" role="alert">Passwords do not match.</p>
@@ -121,7 +121,7 @@ async function saveDetails() {
           </div>
         </section>
         <div class="space-y-2 pt-1">
-          <Button type="submit" class="min-h-11 w-full" :disabled="!canSave">
+          <Button type="submit" class="w-full" :disabled="!canSave">
             {{ saving ? 'Saving…' : 'Save changes' }}
           </Button>
           <p class="text-center text-xs text-muted-foreground" role="status">

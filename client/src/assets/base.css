@@ -2,6 +2,11 @@ html, body, #app {
   min-height: 100%;
 }
 
+/*@lee-hlmilk > reserve scrollbar space so short &&& long tab contents keep the same page alignment */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   min-height: 100vh;
   margin: 0;

@@ -14,7 +14,7 @@ const delegatedProps = reactiveOmit(props, "class", "isActive");
 </script>
 
 <template>
-  <PaginationListItem data-slot="pagination-item" v-bind="delegatedProps" class="washi-tape washi-tape-hover rounded-lg p-2.5 disabled:pointer-events-none"
+  <PaginationListItem data-slot="pagination-item" v-bind="delegatedProps" class="washi-tape-hover min-h-11 min-w-11 rounded-lg p-2"
     :class="[{ 'bg-primary': isActive }, props.class]">
     <slot />
   </PaginationListItem>
