@@ -23,6 +23,7 @@ const router = createRouter({
       path: '/',
       component: AppLayout,
       children: [
+        { path: 'sample', name: 'adoptionSample', component: () => import('../views/AdoptionSample.vue'), meta: { preview: true } },
         { path: '', name: 'guestHome', component: GuestHome, label: 'Browse Books', roles: ['guest'] },
         { path: 'drives', name: 'guestDrives', component: GuestAdoptionDrives, label: 'Adoption Drives', roles: ['guest'] },
         { path: 'login', name: 'login', component: Login, label: 'Login', roles: ['guest'], end: true },
@@ -36,8 +37,8 @@ const router = createRouter({
         { path: '', name: 'customerHome', component: CustomerHome, roles: ['customer'] },
         { path: 'books', name: 'customerBooks', component: CustomerBrowseBooks, label: 'Browse Books', roles: ['customer']},
         { path: 'watchlist', name: 'customerWatchlist', component: CustomerWatchlist, label: 'Watchlist', roles: ['customer']},
-        { path: 'adoptions', name: 'customerAdoptions',component: MyAdoptions, label: 'My Adoptions',roles: ['customer']},
-        {path: 'pickups',name: 'customerPickups',label: 'Pickups', roles: ['customer']},
+        { path: 'adoption', name: 'customerAdoptions',component: MyAdoptions, label: 'My Adoptions',roles: ['customer']},
+        { path: 'adoptions', redirect: to => ({ name: 'customerAdoptions', query: to.query, hash: to.hash }) },
         {path: 'drives', name: 'customerDrives', component: CustomerAdoptionDrives, label: 'Adoption Drives', roles: ['customer']},
         {path: 'account',name: 'customerAccount', component: CustomerAccount, label: 'Account', roles: ['customer'], end: true}
       ]
@@ -58,6 +59,7 @@ const pages = router.options.routes.flatMap(group => group.children);
 
 //@1ejun6 > ~to~ is destination route
 router.beforeEach(async to => {
+  if (to.meta.preview) return true;
   const page = pages.find(page => page.name === to.name);
   try {
     await loadSession();

@@ -30,7 +30,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits); //@1ejun6 > forwa
 
 <template>
   <NavigationMenuRoot v-slot="slotProps" data-slot="navigation-menu" :data-viewport="viewport" v-bind="forwarded"
-    :class="cn('group/navigation-menu relative flex flex-1 items-center', props.class)"> <!-- @1ejun6 > element as a group > grow & shrink to share available space inside a flex parent-->
+    :class="cn('relative flex flex-1 items-center', props.class)">
     <slot v-bind="slotProps" /> <!--@1ejun6 > slot is where parent places menu items inside this component-->
     <NavigationMenuViewport v-if="viewport" />
   </NavigationMenuRoot>

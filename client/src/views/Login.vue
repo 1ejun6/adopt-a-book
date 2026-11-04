@@ -1,17 +1,16 @@
 <script setup>
 import AppPage from '@/components/shared/AppPage.vue';
 import { toast } from 'vue-sonner';
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/lib/api'
 import { auth, homeRoute } from '@/lib/auth'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import AppPasswordInput from '@/components/shared/AppPasswordInput.vue';
 
 const router = useRouter();
-const showPassword = ref(false);
 const form = reactive({ email: '', password: '', loading: false });
 
 async function login() {
@@ -31,7 +30,7 @@ async function login() {
 
         toast.success('logged in');
         form.password = '';
-        
+
         await router.push(homeRoute.value);
     } catch (error) {
         toast.error(error.message);
@@ -51,17 +50,14 @@ async function login() {
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>
                     <Input id="email" v-model="form.email" type="email" autocomplete="email"
-                        placeholder="enter your email" class="h-11" required />
+                        placeholder="enter your email"  required />
                 </Field>
                 <Field>
                     <FieldLabel for="password">Password</FieldLabel>
-                    <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
-                        autocomplete="current-password" placeholder="enter your password" class="h-11" required />
+                    <AppPasswordInput id="password" v-model="form.password" autocomplete="current-password"
+                        placeholder="enter your password"  required :disabled="form.loading" />
                 </Field>
-                <label class="flex min-h-11 items-center gap-2.5">
-                    <Checkbox v-model="showPassword" /> show password
-                </label>
-                <Button type="submit" class="min-h-11 w-full" :disabled="form.loading">{{ form.loading ? 'Logging in…' : 'Login'
+                <Button type="submit" class="w-full" :disabled="form.loading">{{ form.loading ? 'Logging in…' : 'Login'
                     }}</Button>
             </form>
         </div>

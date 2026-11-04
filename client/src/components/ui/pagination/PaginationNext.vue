@@ -15,7 +15,7 @@ const forwarded = useForwardProps(delegatedProps);
 
 <template>
   <PaginationNext data-slot="pagination-next"
-    class="washi-tape washi-tape-hover inline-flex shrink-0 items-center justify-center rounded-lg p-2.5 disabled:pointer-events-none" :class="props.class"
+    class="washi-tape-hover grid min-h-11 min-w-11 place-items-center rounded-lg p-2" :class="props.class"
     v-bind="forwarded">
     <slot>
       <HugeiconsIcon :icon="ArrowRight01Icon" class="size-4" aria-hidden="true" />

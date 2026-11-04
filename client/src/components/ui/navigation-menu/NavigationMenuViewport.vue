@@ -20,9 +20,9 @@ const forwardedProps = useForwardProps(delegatedProps);
 <!--@1ejun6 > reka supplies css variables for active dropdown dimensions & position-->
 <template>
   <!--@1ejun6 > displays dropdown below menu without affecting page layout-->
-  <div class="absolute top-full left-0 isolate z-50 flex justify-center">
+  <div class="absolute top-full z-50">
     <NavigationMenuViewport data-slot="navigation-menu-viewport" v-bind="forwardedProps" :class="cn(
-      'relative h-(--reka-navigation-menu-viewport-height) w-(--reka-navigation-menu-viewport-width) rounded-lg border bg-card',
+      'h-(--reka-navigation-menu-viewport-height) w-(--reka-navigation-menu-viewport-width) rounded-lg border bg-card',
       props.class,
     )
       " />

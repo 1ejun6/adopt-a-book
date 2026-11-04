@@ -49,7 +49,7 @@ function handleAction(book) {
   </article>
 
   <!--@sree-sanjana06 > allow cards to size naturally without unnecessary empty space-->
-  <article v-else-if="book" class="washi-tape washi-tape-hover flex h-full min-w-0 flex-col gap-2.5 rounded-xl border p-4" role="button" tabindex="0" aria-haspopup="dialog" @click="emit('preview', book)" @keydown.enter.self.prevent="emit('preview', book)" @keydown.space.self.prevent="emit('preview', book)">
+  <article v-else-if="book" class="washi-tape-hover flex h-full min-w-0 flex-col gap-2.5 rounded-xl border p-4" role="button" tabindex="0" aria-haspopup="dialog" @click="emit('preview', book)" @keydown.enter.self.prevent="emit('preview', book)" @keydown.space.self.prevent="emit('preview', book)">
     <!--@sree-sanjana06 > shared book cover, title and author-->
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2">

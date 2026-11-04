@@ -13,7 +13,7 @@ const forwarded = useForwardProps(delegatedProps);
 </script>
 
 <template>
-  <PaginationLast data-slot="pagination-last" class="washi-tape washi-tape-hover rounded-lg p-2.5 disabled:pointer-events-none" :class="props.class"
+  <PaginationLast data-slot="pagination-last" class="washi-tape-hover min-h-11 min-w-11 rounded-lg p-2" :class="props.class"
     v-bind="forwarded">
     <slot>
       <span>Last</span>

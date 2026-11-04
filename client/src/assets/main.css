@@ -1,20 +1,18 @@
 @import 'tailwindcss' source('../');
 @import './base.css';
+@import './adoptions.css';
 
 @theme inline {
   --font-heading: 'Schoolbell', cursive; /*@1ejun6 > cursive is a fallback font category */
   --font-body: 'Coming Soon', cursive;
   --color-border: var(--border);
-  --color-ring: var(--muted-foreground);
   --color-destructive: var(--destructive);
   --color-muted-foreground: var(--muted-foreground);
   --color-primary: var(--primary);
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
-  --color-success-border: var(--success-border);
   /*@1ejun6 > @lee-hlmilk > for badges*/
   --color-badge-green: var(--badge-green);
   --color-badge-amber: var(--badge-amber);
@@ -35,9 +33,7 @@ h1, h2, h3, h4, h5, h6 {
   --muted-foreground: #75604f;
   --border: #e4d4c4;
   --destructive: #a3333b;
-  --success: #e9f2e7;
   --success-foreground: #30513a;
-  --success-border: #c0d3c0;
   /*@1ejun6 >  lee-hlmilk > for badges */
   --badge-green: #e3eee4;
   --badge-amber: #fff0d5;
@@ -51,10 +47,7 @@ h1, h2, h3, h4, h5, h6 {
   h2 { @apply text-2xl; }
   h3 { @apply text-xl; }
   * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
+    @apply border-border;
   }
 }
 
@@ -72,69 +65,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer components {
-  /*@1ejun6 > makes your reusable class easier to override with tailwind classes while regular css can override them instead */
-  .washi-tape {
-    position: relative; /*@1ejun6 > anchor shared tape shape*/
-  }
-
-  .washi-tape-hover:hover, /*@1ejun6 > purple background on hover for navbar items, tabs, and rows*/
-  .washi-tape-hover[data-active], /*@1ejun6 > selected navbar item*/
-  .washi-tape-hover[data-state='active'], /*@1ejun6 > selected tab*/
-  .washi-row[data-state='selected'] { /*@1ejun6 > checked table row*/
+  .washi-tape-hover:hover,
+  .washi-tape-hover[data-active],
+  .washi-tape-hover[data-state='active'],
+  .washi-row[data-state='selected'] {
     background: var(--primary);
   }
 
-  .washi-tape::before {
-    position: absolute; /*@1ejun6 > place decoration without moving other content*/
-    pointer-events: none; /*@1ejun6 > let clicks pass through to buttons &&& checkboxes &&& rows*/
-    top: 0; /*@1ejun6 > position tape at top edge*/
-    left: 50%; /*@1ejun6 > start at horizontal center*/
-    width: min(60%, 66px); /*@1ejun6 > use 60% of element width > capped at 66px*/
-    height: 15px; /*@1ejun6 > tape thickness*/
-    background: #bcb8ff80; /*@1ejun6 > purple with about 50% opacity*/
-    transform: translate(-50%, -50%) rotate(-7deg); /*@1ejun6 > center tape on that point &&& tilt it slightly*/
-  }
-
-  /*@1ejun6 > center row tape across table left border*/
-  .washi-left::before {
-    z-index: 1;
-    top: 50%; /*@1ejun6 > halfway down first table cell*/
-    left: 0; /*@1ejun6 > half tape sits on each side of border*/
-    width: 14px; /*@1ejun6 > narrow strip for rows*/
-    height: 40px; /*@1ejun6 > taller strip so it looks vertical*/
-  }
-
-  .washi-tape:hover::before, /*@1ejun6 > mouse over element*/
-  .washi-tape:focus-visible::before, /*@1ejun6 > visible keyboard focus*/
-  .washi-tape[data-active]::before, /*@1ejun6 > selected navbar item or checked row first cell*/
-  .washi-tape[data-state='active']::before, /*@1ejun6 > selected tab*/
-  .washi-row:hover .washi-tape::before, /*@1ejun6 > mouse anywhere over row*/
-  .washi-row[data-state='selected'] .washi-tape::before,
-  .washi-row:focus-within .washi-tape::before { /*@1ejun6 > something inside row has focus*/
-    content: ''; /*@1ejun6 > create empty decoration so its purple shape appears*/
-  }
-
-  .washi-tape:disabled::before, /*@1ejun6 > disabled button*/
-  .washi-tape[aria-disabled='true']::before { /*@1ejun6 > element marked disabled for accessibility*/
-    content: none; /*@1ejun6 > do not create tape for disabled controls*/
-  }
-
-  form {
-    @apply space-y-5;
-  }
-
-  .carddupe {
-    @apply rounded-md p-5 space-y-5;
-  }
+  form { @apply space-y-5; }
 }
 
-@media (hover: hover) and (pointer: fine) {
-  /*@1ejun6 > use these styles only in this situation */
-  /*@1ejun6 > https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover &&& https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer */
-  * {
-    cursor: url('./front.svg') 26 15, auto !important; /*@1ejun6 > fallback cursor > overwrite */
-  }
-}
-
-/* Shared dialog bodies retain spacing independently of the shell. */
 .dialog-body { @apply space-y-2.5 p-5; }

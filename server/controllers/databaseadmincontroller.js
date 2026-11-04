@@ -30,7 +30,7 @@ async function base(req, res) {
 async function clear(req, res) {
   try {
     await runsql("clear.sql");
-    return res.json({ message: "database data and auth users cleared" });
+    return res.json({ message: "application data cleared; user accounts preserved" });
   } catch (error) {
     console.error("clear sql failed >", error);
     return res.status(errorstatus(error)).json({ error: errormessage(error, "could not clear database") });

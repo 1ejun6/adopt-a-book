@@ -4,11 +4,11 @@ export { default as Button } from './Button.vue';
 
 export const buttonVariants = ({ variant, size } = {}) =>
   cn(
-    'washi-tape washi-tape-hover inline-flex items-center justify-center rounded-lg text-sm disabled:pointer-events-none',
+    'inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm',
     variant === 'destructive'
-      ? 'bg-badge-rose text-badge-rose-foreground hover:bg-badge-rose'
+      ? 'bg-badge-rose text-badge-rose-foreground'
       : variant === 'outline'
-      ? 'border border-border bg-transparent'
-      : 'bg-primary',
-    size === 'sm' ? 'h-8 px-3' : 'h-9 px-4',
+      ? 'washi-tape-hover border'
+      : 'washi-tape-hover bg-primary',
+    size === 'sm' ? 'px-3' : 'min-h-11',
   );

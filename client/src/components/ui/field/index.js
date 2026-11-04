@@ -1,12 +1,3 @@
-import { cn } from '@/lib/utils';
-
-export const fieldVariants = ({ orientation } = {}) =>
-  cn(
-    'flex w-full gap-2.5',
-    orientation === 'horizontal' ? 'items-center' : 'flex-col',
-    orientation === 'responsive' && 'sm:flex-row sm:items-center',
-  );
-
 export { default as Field } from './Field.vue';
 export { default as FieldContent } from './FieldContent.vue';
 export { default as FieldDescription } from './FieldDescription.vue';

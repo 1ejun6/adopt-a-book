@@ -77,7 +77,7 @@ function toggleAllRows() {
       <TableBody>
         <TableRow v-for="row in rows" :key="row.id" :data-state="rowSelected(row.id) ? 'selected' : undefined"
           class="washi-row washi-tape-hover" @click="emit('openRow', row)">
-          <TableCell class="washi-tape washi-left w-10 text-center"
+          <TableCell class="w-10 text-center"
             :data-active="rowSelected(row.id) ? true : undefined" @click.stop="toggleRowSelection(row.id)">
             <Checkbox class="mx-auto block" :modelValue="rowSelected(row.id)" @click.stop
               @update:modelValue="toggleRowSelection(row.id)" />

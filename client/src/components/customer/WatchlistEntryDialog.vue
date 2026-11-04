@@ -57,7 +57,7 @@ async function submit() {
         <!--@sree-sanjana06 > edit the saved note using existing Dialog UI-->
         <template v-if="editing">
           <p class="text-muted-foreground text-sm">{{ entry?.bookid?.title || entry?.bookname }}</p>
-          <div class="washi-tape space-y-2 rounded-lg border bg-card p-4" data-active>
+          <div class="space-y-2 rounded-lg border bg-card p-4" data-active>
             <label :for="noteId">Your note (optional)</label>
             <textarea :id="noteId" v-model="note" maxlength="300" rows="4" :disabled="busy"
               class="w-full rounded-lg border p-3"></textarea>

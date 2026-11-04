@@ -25,7 +25,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits); //@1ejun6 > vue w
 <!--@1ejun6 > without a shared viewport > content is positioned & styled as its own dropdown panel-->
 <template>
   <NavigationMenuContent data-slot="navigation-menu-content" v-bind="forwarded" :class="cn(
-    'absolute left-0 top-0 rounded-lg border bg-card p-2 group-data-[viewport=false]/navigation-menu:top-full',
+    'absolute top-full rounded-lg border bg-card p-2',
     props.class,
   )
     ">

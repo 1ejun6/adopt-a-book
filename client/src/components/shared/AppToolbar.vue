@@ -3,6 +3,10 @@ import AppSearchInput from '@/components/shared/AppSearchInput.vue';
 
 const props = defineProps({
     searchPlaceholder: { type: String, default: 'search...' },
+    searchLabel: { type: String, default: 'search' },
+    searchId: { type: String, default: undefined },
+    searchDescription: { type: String, default: undefined },
+    searchDisabled: { type: Boolean, default: false },
     selectedRowCount: { type: Number, default: 0 }
 });
 
@@ -13,9 +17,11 @@ const search = defineModel('search', { type: String, default: '' });
     <section class="space-y-5">
         <slot name="tabs" />
 
+        <slot name="search-label" />
+
         <!--@lee-hlmilk > search &&& page filters-->
         <div class="flex flex-col gap-2.5 sm:flex-row">
-            <AppSearchInput v-model="search" class="flex-1" :placeholder="props.searchPlaceholder" />
+            <AppSearchInput v-model="search" :id="props.searchId" :aria-describedby="props.searchDescription" class="flex-1" :placeholder="props.searchPlaceholder" :aria-label="props.searchLabel" :disabled="props.searchDisabled" />
             <div v-if="$slots.filters || $slots.actions" class="flex flex-wrap gap-2.5">
                 <slot name="filters" />
                 <slot name="actions" />

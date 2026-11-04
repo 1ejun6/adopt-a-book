@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink, useRoute } from 'vue-router'
 import { auth } from '@/lib/auth'
-import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu'
+import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from '@/components/ui/navigation-menu'
 
 defineProps({
   links: { type: Array, required: true },
@@ -16,30 +16,30 @@ const route = useRoute();
 <template>
   <!--@1ejun6 > * > every direct child element of element with these classes-->
   <nav v-if="mobile" id="mobile"
-    class="grid gap-2.5 p-5 lg:hidden *:rounded-lg *:p-2.5 *:text-right">
+    class="grid gap-2.5 p-5 lg:hidden">
     <!--@1ejun6 > each link sits on its own row-->
-    <RouterLink v-for="link in links" :key="link.name" :to="{ name: link.name }" class="washi-tape washi-tape-hover"
+    <RouterLink v-for="link in links" :key="link.name" :to="{ name: link.name }" class="washi-tape-hover rounded-lg p-2.5 text-right"
       :data-active="route.name === link.name ? true : undefined" @click="emit('navigate')">
       {{ link.label }}
     </RouterLink>
-    <button v-if="auth.ready && auth.user" type="button" class="washi-tape washi-tape-hover" :disabled="logoutLoading"
+    <button v-if="auth.ready && auth.user" type="button" class="washi-tape-hover rounded-lg p-2.5 text-right" :disabled="logoutLoading"
       @click="emit('logout')">
       Logout
     </button>
   </nav>
   <!-- Desktop links share the same breakpoint as the mobile menu. -->
-  <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden max-w-none lg:flex [&>div]:w-full">
+  <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden lg:flex">
     <!--@1ejun6 > overrides menu max-w-max > allowing it to grow wider than its links > tailwind selector >  sets width to 100%-->
     <NavigationMenuList class="w-full">
       <!--@1ejun6 > margin left > login link-->
       <NavigationMenuItem v-for="link in links" :key="link.name" :class="{ 'ml-auto': link.end }">
-        <NavigationMenuLink asChild :active="route.name === link.name" :class="navigationMenuTriggerStyle()">
+        <NavigationMenuLink asChild :active="route.name === link.name">
           <RouterLink :to="{ name: link.name }" @click="emit('navigate')">{{ link.label }}</RouterLink>
         </NavigationMenuLink>
       </NavigationMenuItem>
 
       <NavigationMenuItem v-if="auth.ready && auth.user" :class="{ 'ml-auto': !links.some(link => link.end) }">
-        <button type="button" :class="navigationMenuTriggerStyle()" :disabled="logoutLoading" @click="emit('logout')">Logout</button>
+        <button type="button" class="washi-tape-hover rounded-lg p-2.5 text-sm" :disabled="logoutLoading" @click="emit('logout')">Logout</button>
       </NavigationMenuItem>
 
     </NavigationMenuList>

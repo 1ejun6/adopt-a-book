@@ -1,16 +1,15 @@
 <script setup>
 import AppPage from '@/components/shared/AppPage.vue';
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/lib/api'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import AppPasswordInput from '@/components/shared/AppPasswordInput.vue';
 import { toast } from 'vue-sonner'
 
 const router = useRouter();
-const showPassword = ref(false);
 const form = reactive({ name: '', email: '', password: '', loading: false });
 
 async function register() {
@@ -45,20 +44,18 @@ async function register() {
             <form @submit.prevent="register">
                 <Field>
                     <FieldLabel for="name">Name</FieldLabel>
-                    <Input id="name" v-model="form.name" type="text" autocomplete="name" placeholder="enter your name" class="h-11" required />
+                    <Input id="name" v-model="form.name" type="text" autocomplete="name" placeholder="enter your name"  required />
                 </Field>
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>
-                    <Input id="email" v-model="form.email" type="email" autocomplete="email" placeholder="enter your email" class="h-11" required />
+                    <Input id="email" v-model="form.email" type="email" autocomplete="email" placeholder="enter your email"  required />
                 </Field>
                 <Field>
                     <FieldLabel for="password">Password</FieldLabel>
-                    <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="create a password" class="h-11" required />
+                    <AppPasswordInput id="password" v-model="form.password" autocomplete="new-password"
+                        placeholder="create a password"  required :disabled="form.loading" />
                 </Field>
-                <label class="flex min-h-11 items-center gap-2.5">
-                    <Checkbox v-model="showPassword" /> show password
-                </label>
-                <Button type="submit" class="min-h-11 w-full" :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
+                <Button type="submit" class="w-full" :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
             </form>
         </div>
     </AppPage>

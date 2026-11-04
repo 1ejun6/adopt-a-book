@@ -48,7 +48,7 @@ const booklabel = computed(() => `${bookcount.value ?? '—'} ${bookcount.value 
     </div>
   </div>
   <button v-else-if="drive" type="button"
-    class="washi-tape washi-tape-hover flex w-full items-center gap-2.5 rounded-lg border p-5 sm:gap-5 text-left text-sm"
+    class="washi-tape-hover flex w-full items-center gap-2.5 rounded-lg border p-5 sm:gap-5 text-left text-sm"
     @click="emit('open')">
     <time :datetime="drive.eventdate"
       class="grid size-14 shrink-0 self-start place-content-center rounded-lg border text-center"
