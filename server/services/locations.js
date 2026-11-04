@@ -54,7 +54,9 @@ async function gettoken() {
   if (process.env.onemaptoken) {
     return process.env.onemaptoken;
   }
-  if (!process.env.ONEMAP_EMAIL || !process.env.ONEMAP_PASSWORD) {
+  const email = process.env.onemapemail || process.env.ONEMAP_EMAIL;
+  const password = process.env.onemappassword || process.env.ONEMAP_PASSWORD;
+  if (!email || !password) {
     throw failure("location search is not configured; set OneMap credentials on the server");
   }
   if (!tokenrequest) {
@@ -62,7 +64,7 @@ async function gettoken() {
       const data = await request(`${onemapurl}/api/auth/post/getToken`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: process.env.ONEMAP_EMAIL, password: process.env.ONEMAP_PASSWORD })
+        body: JSON.stringify({ email, password })
       });
       const expires = Number(data.expiry_timestamp) * 1000;
       if (!data.access_token || !Number.isFinite(expires) || expires <= Date.now() + 60000) {

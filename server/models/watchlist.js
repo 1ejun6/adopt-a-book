@@ -1,9 +1,16 @@
 const { readall } = require("./query");
 const { z } = require("zod");
 const supabase = require("../supabase/supabase");
+const { thumbnailurl } = require("../utils/bookcovers");
 
 const watchlistschema = z.object({ userid: z.string().uuid(), bookid: z.string().uuid(), bookname: z.string().trim().min(1), comments: z.string().default(""), lastupdated: z.coerce.date().default(() => new Date()) });
-const mapentry = (row) => (row ? { ...row, _id: row.id } : null);
+const mapentry = (row) => (row ? {
+  ...row,
+  _id: row.id,
+  bookid: row.bookid && typeof row.bookid === "object"
+    ? { ...row.bookid, thumbnailurl: thumbnailurl(row.bookid.coverurl) }
+    : row.bookid,
+} : null);
 
 async function one(query) {
   const { data, error } = await query.maybeSingle();
@@ -12,7 +19,7 @@ async function one(query) {
 }
 
 async function findbyuser(userid) {
-  const data = await readall(supabase.from("watchlist").select("*, bookid:books(id,title,authors,status,coverurl,mrtstationid,mrtstation:mrtstations(id,name,codes,lat,lng,selectable))").eq("userid", userid).order("lastupdated", { ascending: false }));
+  const data = await readall(supabase.from("watchlist").select("*, bookid:books(id,title,authors,subjects,status,coverurl,mrtstationid,mrtstation:mrtstations(id,name,codes,lat,lng,selectable))").eq("userid", userid).order("lastupdated", { ascending: false }));
   return data.map(mapentry);
 }
 
@@ -34,6 +41,6 @@ async function updatecomment(id, userid, comments) {
 
 
 
-const findentry = (id, userid) => one(supabase.from("watchlist").select("*, bookid:books(id,title,authors,status,coverurl,mrtstationid,mrtstation:mrtstations(id,name,codes,lat,lng,selectable))").eq("id", id).eq("userid", userid));
+const findentry = (id, userid) => one(supabase.from("watchlist").select("*, bookid:books(id,title,authors,subjects,status,coverurl,mrtstationid,mrtstation:mrtstations(id,name,codes,lat,lng,selectable))").eq("id", id).eq("userid", userid));
 
 module.exports = { watchlistschema, findbyuser, findbybookanduser, createentry, updatecomment, findentry };

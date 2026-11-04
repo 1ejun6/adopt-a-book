@@ -20,7 +20,12 @@ const adoptiondriveupdateschema = adoptiondriveschema.omit({ createdby: true, us
   status: adoptiondriveschema.shape.status.removeDefault().optional()
 }).strict().refine((fields) => Object.values(fields).some((value) => value !== undefined), "provide at least one field");
 
-const mapdrive = (row) => (row ? { ...row, _id: row.id } : null);
+function mapdrive(row) {
+  if (!row) return null;
+  const drive = { ...row, _id: row.id };
+  delete drive.closedbycapacity;
+  return drive;
+}
 
 async function many(query) {
   return (await readall(query)).map(mapdrive);
@@ -45,7 +50,10 @@ async function updatedrive(id, drive) {
     const current = await getdrivebyid(id);
     await stations.validatewrite(validateddrive.mrtstationid, current?.mrtstationid);
   }
-  const { data, error } = await supabase.from("adoptiondrives").update(Object.fromEntries(Object.entries(validateddrive).filter(([key]) => Object.hasOwn(drive, key) && drive[key] !== undefined))).eq("id", id).select(`*,${stations.relation}`).maybeSingle();
+  const changes = Object.fromEntries(Object.entries(validateddrive).filter(([key]) => Object.hasOwn(drive, key) && drive[key] !== undefined));
+  // Even setting an already closed drive to closed is an explicit admin choice.
+  if (changes.status !== undefined) changes.closedbycapacity = false;
+  const { data, error } = await supabase.from("adoptiondrives").update(changes).eq("id", id).select(`*,${stations.relation}`).maybeSingle();
   if (error) throw error;
   return mapdrive(data);
 }
@@ -58,10 +66,13 @@ async function rsvpdrive(id, userid) {
 const publicfields = `id,title,location,eventdate,description,maxcapacity,status,mrtstationid,${stations.relation}`;
 async function publicdrives(id) {
   if (!id) return discovery();
-  const query = supabase.from("adoptiondrives").select(publicfields);
+  // Registration IDs stay on the server; only the remaining count is public.
+  const query = supabase.from("adoptiondrives").select(`${publicfields},userids`);
   const { data, error } = await query.eq("id", id).maybeSingle();
   if (error) throw error;
-  return mapdrive(data);
+  if (!data) return null;
+  const { userids, ...drive } = data;
+  return mapdrive({ ...drive, spotsleft: Math.max(drive.maxcapacity - userids.length, 0) });
 }
 async function removedrives(ids, userid) {
   const { data, error } = await supabase.rpc("remove_drives", { record_ids: ids, actor_id: userid });

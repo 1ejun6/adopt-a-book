@@ -13,7 +13,7 @@ const forwarded = useForwardProps(delegatedProps);
 </script>
 
 <template>
-  <PaginationFirst data-slot="pagination-first" class="washi-tape washi-tape-hover rounded-lg p-2.5 disabled:pointer-events-none" :class="props.class"
+  <PaginationFirst data-slot="pagination-first" class="washi-tape-hover min-h-11 min-w-11 rounded-lg p-2" :class="props.class"
     v-bind="forwarded">
     <slot>
       <span>First</span>

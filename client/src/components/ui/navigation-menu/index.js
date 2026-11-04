@@ -9,5 +9,3 @@ export { default as NavigationMenuViewport } from './NavigationMenuViewport.vue'
 
 export const navigationMenuTriggerStyle = () =>
   'washi-tape washi-tape-hover inline-flex h-9 items-center rounded-lg px-4 text-sm';
-//@1ejun6 > keeps it inline while arranging its contents with flex
-//@1ejun6 > 36px

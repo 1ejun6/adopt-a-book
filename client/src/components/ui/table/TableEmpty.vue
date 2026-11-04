@@ -14,10 +14,8 @@ const delegatedProps = reactiveOmit(props, 'class');
 
 <template>
   <TableRow>
-    <TableCell :class="cn('p-4 text-center', props.class)" v-bind="delegatedProps">
-      <div class="py-10">
-        <slot />
-      </div>
+    <TableCell :class="cn('py-10 text-center', props.class)" v-bind="delegatedProps">
+      <slot />
     </TableCell>
   </TableRow>
 </template>

@@ -130,6 +130,9 @@ grant select, insert, update, delete on
   public.watchlist
 to service_role;
 
+-- Existing closed drives retain their status; only future automatic closures are tracked.
+alter table public.adoptiondrives add column if not exists closedbycapacity boolean not null default false;
+
 create or replace function public.rsvp_adoption_drive(drive_id uuid, customer_id uuid)
 returns jsonb
 language plpgsql
@@ -158,7 +161,6 @@ begin
   end if;
   update public.adoptiondrives
   set userids = array_append(userids, customer_id),
-      status = case when cardinality(userids) + 1 >= maxcapacity then 'closed' else 'open' end,
       updatedat = now()
   where id = drive_id;
   return jsonb_build_object('result', 'success', 'title', drive.title);
@@ -235,11 +237,22 @@ begin
   elsif new.eventdate is distinct from old.eventdate and new.eventdate < (now() at time zone 'Asia/Singapore')::date then
     raise exception 'eventdate must be today or later' using errcode='PT422';
   end if;
+  if tg_op = 'UPDATE' then
+    if new.status is distinct from old.status then new.closedbycapacity := false; end if;
+  end if;
   if cardinality(new.userids) > new.maxcapacity then
     raise exception 'capacity cannot be lower than the number of registrations';
   end if;
   if new.status = 'open' and cardinality(new.userids) = new.maxcapacity then
     new.status := 'closed';
+    new.closedbycapacity := true;
+  elsif new.status = 'closed' and new.closedbycapacity
+      and cardinality(new.userids) < new.maxcapacity
+      and new.eventdate >= (now() at time zone 'Asia/Singapore')::date then
+    new.status := 'open';
+    new.closedbycapacity := false;
+  elsif new.status <> 'closed' then
+    new.closedbycapacity := false;
   end if;
   return new;
 end;
@@ -660,10 +673,11 @@ $$;
 revoke all on function public.browse_books(text,text,text,text,bigint,integer,uuid[]) from public, anon, authenticated;
 grant execute on function public.browse_books(text,text,text,text,bigint,integer,uuid[]) to service_role;
 
+drop function if exists public.browse_admin_books(text,text,text,text,text,bigint,integer);
 create or replace function public.browse_admin_books(
   search_term text default '', book_status text default null, book_subject text default null,
   book_author text default null, book_isbn text default null,
-  page_number bigint default 1, page_size integer default 24
+  page_number bigint default 1, page_size integer default 24, sort_by text default 'title'
 ) returns jsonb language plpgsql stable set search_path = '' as $$
 declare result jsonb;
 begin
@@ -672,8 +686,11 @@ begin
      or (book_status is not null and book_status not in ('available','reserved','adopted')) then
     raise exception 'invalid inventory filters' using errcode = 'PT422';
   end if;
+  if sort_by is null or sort_by not in ('title','author','newest') then
+    raise exception 'invalid inventory sort' using errcode = 'PT422';
+  end if;
   with filtered as not materialized (
-    select b.id, b.title, b.authors, b.isbn, b.subjects, b.status, b.coverurl, b.mrtstationid,
+    select b.id, b.title, b.authors, b.isbn, b.subjects, b.status, b.coverurl, b.mrtstationid, b.createdat,
       (b.mrtstationid is null) as "needsLocationUpdate",
       (select jsonb_build_object('id',s.id,'name',s.name,'codes',s.codes,'lat',s.lat,'lng',s.lng,'selectable',s.selectable) from public.mrtstations s where s.id = b.mrtstationid) as mrtstation
     from public.books b
@@ -687,11 +704,19 @@ begin
         or exists (select 1 from unnest(b.authors) author
           where strpos(lower(author),lower(trim(search_term))) > 0))
   ), paged as (
-    select * from filtered order by lower(title), id
+    select * from filtered order by
+      case when sort_by = 'title' then lower(title) end,
+      case when sort_by = 'author' then nullif(lower(btrim(authors[1])), '') end nulls last,
+      case when sort_by = 'newest' then createdat end desc,
+      id
     limit page_size offset ((page_number - 1) * page_size)
   )
   select jsonb_build_object(
-    'books', coalesce((select jsonb_agg(to_jsonb(p) order by lower(p.title), p.id) from paged p),'[]'::jsonb),
+    'books', coalesce((select jsonb_agg(to_jsonb(p) - 'createdat' order by
+      case when sort_by = 'title' then lower(p.title) end,
+      case when sort_by = 'author' then nullif(lower(btrim(p.authors[1])), '') end nulls last,
+      case when sort_by = 'newest' then p.createdat end desc,
+      p.id) from paged p),'[]'::jsonb),
     'total', (select count(*) from filtered),
     'counts', (select jsonb_build_object(
       'all', count(*),
@@ -706,8 +731,8 @@ begin
   return result;
 end;
 $$;
-revoke all on function public.browse_admin_books(text,text,text,text,text,bigint,integer) from public, anon, authenticated;
-grant execute on function public.browse_admin_books(text,text,text,text,text,bigint,integer) to service_role;
+revoke all on function public.browse_admin_books(text,text,text,text,text,bigint,integer,text) from public, anon, authenticated;
+grant execute on function public.browse_admin_books(text,text,text,text,text,bigint,integer,text) to service_role;
 
 alter table public.adoptionapplications drop constraint if exists adoptionapplications_bookid_fkey;
 alter table public.adoptionapplications add constraint adoptionapplications_bookid_fkey
@@ -768,6 +793,7 @@ begin
   select coalesce(jsonb_agg(
     jsonb_build_object('id',d.id,'title',d.title,'location',d.location,'eventdate',d.eventdate,
       'description',d.description,'maxcapacity',d.maxcapacity,'status',d.status,'mrtstationid',d.mrtstationid,
+      'spotsleft',greatest(d.maxcapacity-cardinality(d.userids),0),
       'mrtstation',case when s.id is null then null else jsonb_build_object('id',s.id,'name',s.name,'codes',s.codes,'lat',s.lat,'lng',s.lng,'selectable',s.selectable) end)
     || case when customer_id is null then '{}'::jsonb else jsonb_build_object(
       'registered',customer_id=any(d.userids),'attendees',cardinality(d.userids),'createdat',d.createdat,'updatedat',d.updatedat) end

@@ -44,14 +44,14 @@ function handleInteractOutside(event) {
   <DialogPortal>
     <DialogOverlay />
     <DialogContent @interactOutside="handleInteractOutside" data-slot="dialog-content" v-bind="{ ...$attrs, ...forwarded }" :class="cn(
-      'fixed inset-5 z-50 m-auto h-fit max-w-xl max-h-[calc(100dvh-2.5rem)] space-y-2.5 overflow-y-auto [overflow-wrap:anywhere] bg-background p-5 text-sm rounded-lg',
+      'fixed inset-5 z-50 m-auto h-fit max-w-3xl max-h-[calc(100dvh-2.5rem)] overflow-y-auto [overflow-wrap:anywhere] bg-background text-sm rounded-lg',
       props.class,
     )
       ">
       <slot />
 
-      <DialogClose v-if="showCloseButton" data-slot="dialog-close" class="absolute top-5 right-5">
-        <HugeiconsIcon :icon="Cancel01Icon" class="size-[1.875rem]" aria-hidden="true" />
+      <DialogClose v-if="showCloseButton" data-slot="dialog-close" class="absolute top-3 right-3 flex min-h-11 min-w-11 items-center justify-center">
+        <HugeiconsIcon :icon="Cancel01Icon" class="size-6" aria-hidden="true" />
         <span class="sr-only">Close</span>
       </DialogClose>
     </DialogContent>

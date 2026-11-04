@@ -130,6 +130,7 @@ async function inventory(query) {
     book_subject: filters.subject || null,
     book_author: filters.author || null,
     book_isbn: filters.isbn || null,
+    sort_by: filters.sort,
     page_number: filters.page,
     page_size: filters.limit
   });

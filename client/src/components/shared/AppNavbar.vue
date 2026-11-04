@@ -48,11 +48,11 @@ async function logout() {
 
 <template>
   <header class="sticky top-0 z-40 border-b bg-background">
-    <div class="flex items-center justify-between px-4 py-3 sm:p-5">
+    <div class="flex items-center justify-between px-4 py-2 xl:p-5">
       <!--@1ejun6 > centers navbar horizontal > fills available width-->
       <RouterLink :to="role === 'admin' ? { name: 'adminHome' } : homeRoute" class="flex shrink-0 items-center gap-2.5 font-heading text-lg" @click="status = false">
         Adopt a Book
-        <img :src="bow" alt="" width="48" height="48" />
+        <img :src="bow" alt="" width="48" height="48" class="size-8 xl:size-12" />
       </RouterLink>
       <button ref="menuButton" type="button" class="grid size-11 shrink-0 place-items-center xl:hidden" aria-controls="mobile"
         :aria-label="status ? 'Close navigation' : 'Open navigation'" :aria-expanded="status" @click="status = !status">

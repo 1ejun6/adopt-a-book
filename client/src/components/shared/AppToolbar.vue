@@ -1,8 +1,12 @@
 <script setup>
-import { Input } from '@/components/ui/input';
+import AppSearchInput from '@/components/shared/AppSearchInput.vue';
 
 const props = defineProps({
     searchPlaceholder: { type: String, default: 'search...' },
+    searchLabel: { type: String, default: undefined },
+    searchId: { type: String, default: undefined },
+    searchDescription: { type: String, default: undefined },
+    searchDisabled: { type: Boolean, default: false },
     selectedRowCount: { type: Number, default: 0 }
 });
 
@@ -13,11 +17,12 @@ const search = defineModel('search', { type: String, default: '' });
 <template>
     <section class="space-y-5">
         <slot name="tabs" />
+        <slot name="search-label" />
 
         <!--@lee-hlmilk > search & page filters-->
         <!--@lee-hlmilk > stack controls on mobile > sm puts search &&& filters in one row > matching padding/leading aligns their heights-->
         <div class="flex flex-col gap-2.5 lg:flex-row">
-            <Input type="search" v-model="search" class="min-h-11 lg:flex-1 md:text-base" :aria-label="props.searchPlaceholder" :placeholder="props.searchPlaceholder" />
+            <AppSearchInput v-model="search" class="lg:flex-1" :id="props.searchId" :aria-describedby="props.searchDescription" :aria-label="props.searchLabel || props.searchPlaceholder" :placeholder="props.searchPlaceholder" :disabled="props.searchDisabled" />
             <div v-if="$slots.filters || $slots.actions" class="flex min-w-0 flex-col gap-2.5 sm:flex-row sm:flex-wrap">
                 <slot name="filters" />
                 <slot name="actions" />

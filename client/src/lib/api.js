@@ -10,6 +10,7 @@ export async function api(endpoint, options = {}) {
       data: options.body, //@1ejun6 > data sent to server
       params: options.query, //@1ejun6 > url filters
       headers: options.headers, //@lee-hlmilk > image uploads send the File with its content type
+      signal: options.signal,
       withCredentials: true //@1ejun6 > send login cookies
     });
 
@@ -17,6 +18,7 @@ export async function api(endpoint, options = {}) {
 
     return response.data;
   } catch (error) {
+    if (axios.isCancel(error)) throw error;
     if (error.response) {
       const data = error.response.data;
       error.message = (data && data.error) || 'request failed > please try again';

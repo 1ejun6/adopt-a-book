@@ -1,17 +1,20 @@
 <script setup>
+import { computed } from 'vue';
+import { getPageCount } from '@/lib/utils';
 import { Pagination, PaginationPrevious, PaginationNext } from '@/components/ui/pagination';
 
-defineProps({
+const props = defineProps({
     itemLabel: { type: String, default: 'items' },
     total: { type: Number, required: true },
     visibleCount: { type: Number, default: undefined },
     pageSize: { type: Number, required: true },
-    pageCount: { type: Number, required: true },
+    pageCount: { type: Number, default: undefined },
     loading: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false }
 });
 
 const page = defineModel('page', { type: Number, required: true });
+const resolvedPageCount = computed(() => props.pageCount ?? getPageCount(props.total, props.pageSize));
 </script>
 
 <template>
@@ -22,7 +25,7 @@ const page = defineModel('page', { type: Number, required: true });
         <Pagination v-model:page="page" :total="total" :itemsPerPage="pageSize"
             :disabled="disabled" class="flex items-center sm:gap-2.5">
             <PaginationPrevious aria-label="Previous page" class="min-h-11 min-w-11" />
-            <span aria-live="polite">Page {{ page }} of {{ pageCount }}</span>
+            <span aria-live="polite">Page {{ page }} of {{ resolvedPageCount }}</span>
             <PaginationNext aria-label="Next page" class="min-h-11 min-w-11" />
         </Pagination>
     </div>
