@@ -40,14 +40,15 @@ async function logout() {
 
 <template>
   <header class="sticky top-0 z-50 border-b bg-background">
-    <div class="flex items-center justify-between p-5">
+    <div class="flex items-center justify-between px-4 py-2 lg:p-5">
       <!--@1ejun6 > centers navbar horizontal > fills available width-->
       <RouterLink :to="homeRoute" class="flex shrink-0 items-center gap-2.5 font-heading text-lg" @click="status = false">
         Adopt a Book
-        <img :src="bow" alt="" width="48" height="48" />
+        <img :src="bow" alt="" width="48" height="48" class="size-8 lg:size-12" />
       </RouterLink>
       <!--@1ejun6 > keep mobile menu until desktop links fit -->
-      <button type="button" class="washi-tape-hover grid size-11 shrink-0 place-items-center rounded-lg lg:hidden" aria-controls="mobile"
+      <button type="button" class="washi-tape washi-tape-hover grid size-11 shrink-0 place-items-center rounded-lg lg:hidden" aria-controls="mobile"
+        :aria-label="status ? 'Close navigation menu' : 'Open navigation menu'"
         :aria-expanded="status" @click="status = !status">
         <HugeiconsIcon :icon="status ? Cancel01Icon : Menu01Icon" aria-hidden="true" />
       </button>
@@ -58,3 +59,25 @@ async function logout() {
       @navigate="status = false" @logout="logout" />
   </header>
 </template>
+
+<style scoped>
+:deep(.washi-tape) {
+  position: relative;
+}
+:deep(.washi-tape::before) {
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 50%;
+  width: min(60%, 66px);
+  height: 15px;
+  background: #bcb8ff80;
+  transform: translate(-50%, -50%) rotate(-7deg);
+}
+:deep(.washi-tape:is(:hover, :focus-visible, [data-active])::before) {
+  content: '';
+}
+:deep(.washi-tape:disabled::before) {
+  content: none;
+}
+</style>
