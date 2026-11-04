@@ -36,7 +36,7 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
 <template>
   <!--@lee-hlmilk > AppLayout owns page padding > this shell only centres &&& limits width &&& spaces sections-->
   <main class="mx-auto min-w-0 w-full max-w-7xl space-y-5">
-    <header class="flex flex-wrap items-center justify-between gap-5">
+    <header class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
       <div class="min-w-0">
         <h1>{{ props.title }}</h1>
         <p v-if="props.description" class="text-muted-foreground">{{ props.description }}</p>

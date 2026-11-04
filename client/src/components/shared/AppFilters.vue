@@ -24,13 +24,13 @@ const genre = defineModel('genre', { type: String, default: 'all' });
             <slot name="tabs" :counts="counts" :status="status">
                 <Tabs v-model="status">
                     <TabsList>
-                        <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value" class="gap-2.5">
+                        <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value" class="h-auto min-h-11 max-w-full gap-2.5 py-2 text-left">
                             <slot name="tab" :tab="tab" :count="counts[tab.value]">
                                 {{ tab.label }}
-                                <Badge v-if="!tab.status && counts[tab.value] != null" class="bg-primary tabular-nums">
+                                <Badge v-if="!tab.status && counts[tab.value] != null" class="bg-primary">
                                     {{ counts[tab.value] }}
                                 </Badge>
-                                <StatusBadge v-else-if="counts[tab.value] != null" :status="tab.status" class="tabular-nums">
+                                <StatusBadge v-else-if="counts[tab.value] != null" :status="tab.status">
                                     {{ counts[tab.value] }}
                                 </StatusBadge>
                             </slot>
@@ -43,7 +43,7 @@ const genre = defineModel('genre', { type: String, default: 'all' });
         <template #filters>
             <!--@lee-hlmilk > an explicitly empty filter slot means search only > keep genres as the default only when no slot is supplied-->
             <slot v-if="$slots.filters" name="filters" />
-            <select v-else v-model="genre" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
+            <select v-else v-model="genre" class="w-full min-w-0 rounded-lg border px-3 sm:w-auto text-base min-h-11">
                 <option value="all">All genres</option>
                 <option v-for="item in genres" :key="item" :value="item">{{ item }}</option>
             </select>

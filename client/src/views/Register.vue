@@ -35,27 +35,27 @@ async function register() {
 }
 </script>
 <template>
-    <section class="mx-auto w-full max-w-md content-center">
-        <div class="carddupe">
+    <section class="mx-auto w-full max-w-md py-5">
+        <div class="space-y-5">
             <h1>Create Your Account</h1>
             <p>join us!!</p>
             <form @submit.prevent="register">
                 <Field>
                     <FieldLabel for="name">Name</FieldLabel>
-                    <Input id="name" v-model="form.name" type="text" autocomplete="name" placeholder="enter your name" required />
+                    <Input class="md:text-base min-h-11" id="name" v-model="form.name" type="text" autocomplete="name" placeholder="enter your name" required />
                 </Field>
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>
-                    <Input id="email" v-model="form.email" type="email" autocomplete="email" placeholder="enter your email" required />
+                    <Input class="md:text-base min-h-11" id="email" v-model="form.email" type="email" autocomplete="email" placeholder="enter your email" required />
                 </Field>
                 <Field>
                     <FieldLabel for="password">Password</FieldLabel>
-                    <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="create a password" required />
+                    <Input class="md:text-base min-h-11" id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="create a password" required />
                 </Field>
-                <label class="flex items-center gap-2.5">
+                <label class="flex min-h-11 items-center gap-2.5">
                     <Checkbox v-model="showPassword" /> show password
                 </label>
-                <Button type="submit" class="w-full" :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
+                <Button type="submit" class="w-full min-h-11" :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
             </form>
         </div>
     </section>

@@ -167,25 +167,25 @@ fetchDrives();
         :rows="drives" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving" :selectable="filters.view !== 'past'"
         :error="loadError" searchPlaceholder="Search by Title, Venue, MRT station..."
         :pagination="{ itemLabel: 'drives', total, pageSize, pageCount }" @openRow="openDrive">
-        <template #headerActions><Button :disabled="loading || saving" @click="openForm()">Create drive</Button></template>
+        <template #headerActions><Button class="min-h-11" :disabled="loading || saving" @click="openForm()">Create drive</Button></template>
         <template #filters>
             <AppDatePicker v-model="filters.date" label="Event date" />
-            <select v-model="filters.status" aria-label="Drive status" class="w-full rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
+            <select v-model="filters.status" aria-label="Drive status" class="w-full rounded-lg border px-3 sm:w-auto text-base min-h-11">
                 <option value="all">All statuses</option>
                 <option v-for="status in statusOptions" :key="status" :value="status">{{ status.charAt(0).toUpperCase() + status.slice(1) }}</option>
             </select>
         </template>
         <template #selectionActions="{ onlyOne }">
-            <Button v-if="onlyOne" size="sm" variant="outline" :disabled="loading || saving" @click="openForm(selectedDrives[0])">Edit</Button>
+            <Button class="min-h-11" v-if="onlyOne" variant="outline" :disabled="loading || saving" @click="openForm(selectedDrives[0])">Edit</Button>
             <p v-if="closeHint && cancelHint && filters.view !== 'past'" class="text-sm text-muted-foreground" role="status">{{ cancelHint }}</p>
-            <Button v-if="filters.view !== 'past'" size="sm" :disabled="loading || saving || !!closeHint" @click="updateDrives('closed')">Close registration</Button>
-            <Button v-if="filters.view !== 'past'" size="sm" variant="outline" :disabled="loading || saving || !!cancelHint" @click="updateDrives('cancelled')">Cancel drives</Button>
-            <Button size="sm" variant="destructive" :disabled="loading || saving" @click="updateDrives('delete')">Delete</Button>
+            <Button class="min-h-11" v-if="filters.view !== 'past'" :disabled="loading || saving || !!closeHint" @click="updateDrives('closed')">Close registration</Button>
+            <Button class="min-h-11" v-if="filters.view !== 'past'" variant="outline" :disabled="loading || saving || !!cancelHint" @click="updateDrives('cancelled')">Cancel drives</Button>
+            <Button class="min-h-11" variant="destructive" :disabled="loading || saving" @click="updateDrives('delete')">Delete</Button>
         </template>
-        <template #cellTitle="{ value }"><strong class="block truncate font-heading font-normal text-lg">{{ value }}</strong></template>
+        <template #cellTitle="{ value }"><strong class="block break-words lg:truncate font-heading font-normal text-lg">{{ value }}</strong></template>
         <template #cellEventdate="{ row }">
             <p>{{ formatDate(row.eventdate) }}</p>
-            <small class="block truncate text-sm text-muted-foreground">{{ row.location }}</small>
+            <small class="block break-words lg:truncate text-sm text-muted-foreground">{{ row.location }}</small>
         </template>
         <template #cellRegistrations="{ row }">{{ row.userids.length }} / {{ row.maxcapacity }}</template>
         <template #cellStatus="{ value }"><StatusBadge :status="value" /></template>
@@ -195,7 +195,7 @@ fetchDrives();
         </template>
     </AdminList>
 
-    <AdminDetailsDialog v-if="selectedDrive" :open="detailsOpen" title="Drive details" :status="selectedDrive.status" :fixedLayout="!pastDrive"
+    <AdminDetailsDialog v-if="selectedDrive" :open="detailsOpen" title="Drive details" :status="selectedDrive.status"
         :description="selectedDrive.description || 'No description recorded.'" :fields="driveFields" @update:open="detailsOpen = $event">
         <template #summary><h2 class="min-w-0 flex-1">{{ selectedDrive.title }}</h2></template>
         <template #field-location="{ field }">
@@ -203,14 +203,13 @@ fetchDrives();
             <p>{{ field.value }}</p>
             <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(field.value)}`" target="_blank" rel="noopener noreferrer" class="underline">Open in Google Maps ↗</a>
         </template>
-        <!--@lee-hlmilk > min-h-0 lets this section shrink inside fixedLayout > only the capped book region scrolls-->
-        <section v-if="!pastDrive" class="flex min-h-0 flex-col gap-2.5" aria-labelledby="drive-books-title">
-            <h2 id="drive-books-title" class="shrink-0">Available books</h2>
+        <section v-if="!pastDrive" class="space-y-2.5" aria-labelledby="drive-books-title">
+            <h2 id="drive-books-title">Available books</h2>
             <Input v-if="selectedDrive.mrtstationid" v-model="stationBooks.search" type="search" aria-label="Search available books by title or author"
-                class="shrink-0" placeholder="Search by Title or Author..." :disabled="stationBooks.loading" />
+                class="md:text-base min-h-11" placeholder="Search by Title or Author..." :disabled="stationBooks.loading" />
             <p v-if="!selectedDrive.mrtstationid" class="text-muted-foreground">No MRT station assigned to this drive.</p>
             <!--@lee-hlmilk > contain long book lists within their own scroll area > no selection or record actions-->
-            <div v-else-if="!stationBooks.error" class="min-h-0 max-h-80 overflow-x-hidden overflow-y-auto" tabindex="0" role="region" aria-label="Available books at this MRT station">
+            <div v-else-if="!stationBooks.error" class="max-h-80 overflow-auto" tabindex="0" role="region" aria-label="Available books at this MRT station">
                 <AdminTable compact :rows="filteredStationBooks" :columns="bookColumns" :isLoading="stationBooks.loading"
                     :selectable="false" :selectionColumn="false" rowAction="none"
                     :emptyTitle="stationBooks.search.trim() ? 'No matching books' : 'No available books'"
@@ -220,12 +219,11 @@ fetchDrives();
             </div>
         </section>
         <template v-if="!pastDrive" #actions>
-            <!--@lee-hlmilk > two equal columns on mobile > sm gives each visible action an equal column across the footer-->
-            <div class="grid w-full grid-cols-2 gap-2.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
-                <Button type="button" variant="outline" :disabled="loading || saving" @click="openForm(selectedDrive)">Edit</Button>
-                <Button v-if="selectedDrive.eventdate >= today && selectedDrive.status === 'open'" type="button" :disabled="loading || saving" @click="updateDrives('closed', [selectedDrive])">Close registration</Button>
-                <Button v-if="selectedDrive.eventdate >= today && selectedDrive.status !== 'cancelled'" type="button" variant="outline" :disabled="loading || saving" @click="updateDrives('cancelled', [selectedDrive])">Cancel drive</Button>
-                <Button type="button" variant="destructive" :disabled="loading || saving" @click="updateDrives('delete', [selectedDrive])">Delete</Button>
+            <div class="grid w-full gap-2.5 sm:grid-cols-2">
+                <Button class="min-h-11" type="button" variant="outline" :disabled="loading || saving" @click="openForm(selectedDrive)">Edit</Button>
+                <Button class="min-h-11" v-if="selectedDrive.eventdate >= today && selectedDrive.status === 'open'" type="button" :disabled="loading || saving" @click="updateDrives('closed', [selectedDrive])">Close registration</Button>
+                <Button class="min-h-11" v-if="selectedDrive.eventdate >= today && selectedDrive.status !== 'cancelled'" type="button" variant="outline" :disabled="loading || saving" @click="updateDrives('cancelled', [selectedDrive])">Cancel drive</Button>
+                <Button class="min-h-11" type="button" variant="destructive" :disabled="loading || saving" @click="updateDrives('delete', [selectedDrive])">Delete</Button>
             </div>
         </template>
     </AdminDetailsDialog>

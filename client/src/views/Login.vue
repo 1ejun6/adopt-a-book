@@ -40,25 +40,25 @@ async function login() {
 }
 </script>
 <template>
-    <section class="mx-auto w-full max-w-md content-center">
-        <div class="carddupe">
+    <section class="mx-auto w-full max-w-md py-5">
+        <div class="space-y-5">
             <h1>Login</h1>
             <p>welcome back!!</p>
             <form @submit.prevent="login">
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>
                     <Input id="email" v-model="form.email" type="email" autocomplete="email"
-                        placeholder="enter your email" class="h-11" required />
+                        placeholder="enter your email" class="md:text-base min-h-11" required />
                 </Field>
                 <Field>
                     <FieldLabel for="password">Password</FieldLabel>
-                    <Input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
+                    <Input class="md:text-base min-h-11" id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
                         autocomplete="current-password" placeholder="enter your password" required />
                 </Field>
-                <label class="flex items-center gap-2.5">
+                <label class="flex min-h-11 items-center gap-2.5">
                     <Checkbox v-model="showPassword" /> show password
                 </label>
-                <Button type="submit" class="w-full" :disabled="form.loading">{{ form.loading ? 'Logging in…' : 'Login'
+                <Button type="submit" class="w-full min-h-11" :disabled="form.loading">{{ form.loading ? 'Logging in…' : 'Login'
                     }}</Button>
             </form>
         </div>

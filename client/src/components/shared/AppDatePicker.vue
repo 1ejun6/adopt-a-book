@@ -22,12 +22,11 @@ function selectDate(date) {
 </script>
 
 <template>
-    <div class="relative flex w-full sm:w-44">
+    <div class="flex w-full gap-2.5 sm:w-56">
         <Popover :open="open" @update:open="open = $event">
             <PopoverTrigger asChild>
-                <!--@lee-hlmilk > h-auto &&& padding/leading match the toolbar > label padding reserves room for Clear-->
-                <Button type="button" variant="outline" :aria-label="props.label" class="h-auto w-full gap-2.5 p-2.5 text-left leading-4">
-                    <span class="min-w-0 flex-1 truncate pr-7" :class="!props.modelValue && 'text-muted-foreground'">{{ props.modelValue ? props.modelValue.split('-').reverse().join('/') : 'dd/mm/yyyy' }}</span>
+                <Button type="button" variant="outline" :aria-label="props.label" class="min-w-0 flex-1 gap-2.5 text-left min-h-11">
+                    <span class="min-w-0 flex-1 truncate" :class="!props.modelValue && 'text-muted-foreground'">{{ props.modelValue ? props.modelValue.split('-').reverse().join('/') : 'dd/mm/yyyy' }}</span>
                     <HugeiconsIcon :icon="Calendar03Icon" class="size-4 shrink-0" aria-hidden="true" />
                 </Button>
             </PopoverTrigger>
@@ -36,7 +35,7 @@ function selectDate(date) {
                 <Calendar :modelValue="selectedDate" :defaultPlaceholder="defaultDate" @update:modelValue="selectDate" />
             </PopoverContent>
         </Popover>
-        <button v-if="props.modelValue" type="button" class="absolute inset-y-0 right-8 flex w-7 items-center justify-center"
+        <button v-if="props.modelValue" type="button" class="grid size-11 shrink-0 place-items-center"
             :aria-label="`Clear ${props.label.toLowerCase()}`" @click="emit('update:modelValue', '')">
             <HugeiconsIcon :icon="Cancel01Icon" class="size-4" aria-hidden="true" />
         </button>

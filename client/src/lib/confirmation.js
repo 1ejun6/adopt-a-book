@@ -23,10 +23,10 @@ export function useConfirmation() {
       //@lee-hlmilk > focus scope &&& pointer events keep both buttons accessible above an open modal form
       const content = () => h(FocusScope, { loop: true, trapped: true, asChild: true }, () => h('div', { class: 'pointer-events-auto space-y-2.5' }, [
         h('p', title),
-        description && h('p', { class: 'max-h-48 overflow-y-auto whitespace-pre-line text-muted-foreground font-normal' }, description),
-        h('div', { class: 'flex gap-2.5' }, [
-          h(Button, { type: 'button', size: 'sm', variant: 'outline', class: 'flex-1', onClick: () => settle(false) }, () => cancelLabel),
-          h(Button, { type: 'button', size: 'sm', variant: destructive ? 'destructive' : 'default', class: 'flex-1', onClick: () => settle(true) }, () => actionLabel)
+        description && h('p', { class: 'max-h-48 overflow-y-auto whitespace-pre-line text-muted-foreground' }, description),
+        h('div', { class: 'flex flex-wrap gap-2.5' }, [
+          h(Button, { type: 'button', variant: 'outline', class: 'min-h-11 flex-1', onClick: () => settle(false) }, () => cancelLabel),
+          h(Button, { type: 'button', variant: destructive ? 'destructive' : 'default', class: 'min-h-11 flex-1', onClick: () => settle(true) }, () => actionLabel)
         ])
       ]));
       const id = toast.message(content, { duration: Infinity, dismissible: false, closeButton: false });

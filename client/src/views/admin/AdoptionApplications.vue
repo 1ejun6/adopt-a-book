@@ -104,7 +104,7 @@ fetchApplications();
         :error="loadError" searchPlaceholder="Search by Applicant, Book, Author..."
         :pagination="{ itemLabel: 'applications', total, pageSize, pageCount }" @openRow="openApplication">
         <template #filters>
-            <select v-model="filters.sort" aria-label="Application order" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
+            <select v-model="filters.sort" aria-label="Application order" class="w-full min-w-0 rounded-lg border px-3 sm:w-auto text-base min-h-11">
                 <option value="oldest">Oldest first</option>
                 <option value="newest">Newest first</option>
             </select>
@@ -113,12 +113,12 @@ fetchApplications();
             <p v-if="selectionHint || approvalConflict" class="text-sm text-muted-foreground" role="status">
                 {{ selectionHint || 'Choose one reader per copy to approve requests.' }}
             </p>
-            <Button size="sm" :disabled="loading || saving || !!selectionHint || approvalConflict" @click="decideApplications('approved')">Approve</Button>
-            <Button size="sm" variant="destructive" :disabled="loading || saving || !!selectionHint" @click="decideApplications('rejected')">Reject</Button>
+            <Button class="min-h-11" :disabled="loading || saving || !!selectionHint || approvalConflict" @click="decideApplications('approved')">Approve</Button>
+            <Button class="min-h-11" variant="destructive" :disabled="loading || saving || !!selectionHint" @click="decideApplications('rejected')">Reject</Button>
         </template>
         <template #cellApplicant="{ row }">
-            <p class="truncate">{{ row.userid?.name || 'Unknown applicant' }}</p>
-            <small class="block truncate text-sm text-muted-foreground">{{ row.userid?.email || 'Email not provided' }}</small>
+            <p class="break-words lg:truncate">{{ row.userid?.name || 'Unknown applicant' }}</p>
+            <small class="block break-words lg:truncate text-sm text-muted-foreground">{{ row.userid?.email || 'Email not provided' }}</small>
         </template>
         <template #cellBook="{ row }">
             <BookIdentity :title="row.bookid?.title || 'Untitled'" :author="row.bookid?.authors?.join(', ') || 'Unknown Author'" :cover="row.bookid?.coverurl" />
@@ -128,7 +128,7 @@ fetchApplications();
         <template #empty>
             <h2>{{ pendingEmpty ? 'No pending applications' : filters.search.trim() ? 'No matching applications' : 'No applications in this view' }}</h2>
             <p class="text-sm text-muted-foreground">{{ pendingEmpty ? 'You’re all caught up.' : filters.search.trim() ? 'Try another search term or status.' : 'New requests will appear here. Try another status or search term.' }}</p>
-            <Button v-if="pendingEmpty" variant="outline" class="mt-2.5" @click="filters.status = 'all'">View all applications</Button>
+            <Button v-if="pendingEmpty" variant="outline" class="mt-2.5 min-h-11" @click="filters.status = 'all'">View all applications</Button>
         </template>
     </AdminList>
 
@@ -143,8 +143,8 @@ fetchApplications();
         <!--@lee-hlmilk > reviewed applications are read-only > decision actions remain available only for pending requests-->
         <template v-if="selectedApplication.status === 'pending'" #actions>
             <!--@lee-hlmilk > both flex-1 buttons share the footer width > pass one record to the same bulk-capable action-->
-            <Button type="button" variant="destructive" class="flex-1" :disabled="!!detailsHint" @click="decideApplications('rejected', [selectedApplication])">Reject</Button>
-            <Button type="button" class="flex-1" :disabled="!!detailsHint" @click="decideApplications('approved', [selectedApplication])">Approve</Button>
+            <Button type="button" variant="destructive" class="flex-1 min-h-11" :disabled="!!detailsHint" @click="decideApplications('rejected', [selectedApplication])">Reject</Button>
+            <Button type="button" class="flex-1 min-h-11" :disabled="!!detailsHint" @click="decideApplications('approved', [selectedApplication])">Approve</Button>
         </template>
     </AdminDetailsDialog>
 </template>

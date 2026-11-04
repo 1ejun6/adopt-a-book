@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { onKeyStroke } from '@vueuse/core'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { logoutSession } from '@/lib/session'
 import { pages } from '@/router';
@@ -17,6 +18,14 @@ const links = computed(() => pages.filter(page => auth.ready && page.label && pa
 
 const status = ref(false);
 const logoutLoading = ref(false);
+const menuButton = ref(null);
+
+onKeyStroke('Escape', () => {
+  if (status.value) {
+    status.value = false;
+    menuButton.value?.focus();
+  }
+});
 
 //@1ejun6 > watch current url > close mobile menu whenever navigation changes it including back \ forward
 watch(() => route.fullPath, () => { status.value = false; });
@@ -38,16 +47,15 @@ async function logout() {
 </script>
 
 <template>
-  <header class="sticky top-0 z-50 border-b bg-background">
-    <div class="flex items-center justify-between p-5">
+  <header class="sticky top-0 z-40 border-b bg-background">
+    <div class="flex items-center justify-between px-4 py-3 sm:p-5">
       <!--@1ejun6 > centers navbar horizontal > fills available width-->
       <RouterLink :to="role === 'admin' ? { name: 'adminHome' } : homeRoute" class="flex shrink-0 items-center gap-2.5 font-heading text-lg" @click="status = false">
         Adopt a Book
         <img :src="bow" alt="" width="48" height="48" />
       </RouterLink>
-      <!--@1ejun6 > hides element when screen is 768px wide \ wider-->
-      <button type="button" class="washi-tape washi-tape-hover grid size-11 shrink-0 place-items-center rounded-lg md:hidden" aria-controls="mobile"
-        :aria-expanded="status" @click="status = !status">
+      <button ref="menuButton" type="button" class="grid size-11 shrink-0 place-items-center xl:hidden" aria-controls="mobile"
+        :aria-label="status ? 'Close navigation' : 'Open navigation'" :aria-expanded="status" @click="status = !status">
         <HugeiconsIcon :icon="status ? Cancel01Icon : Menu01Icon" aria-hidden="true" />
       </button>
       <AppNavbarLinks :links="links" :logoutLoading="logoutLoading"

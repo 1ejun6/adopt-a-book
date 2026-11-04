@@ -82,60 +82,56 @@ watch(() => props.importedIds, ids => {
 </script>
 
 <template>
-    <form class="flex min-h-0 min-w-0 flex-col gap-5" novalidate @submit.prevent="reviewing ? submitBooks($event) : emit('search')">
-        <!--@lee-hlmilk > contents removes the fieldset layout box > disabled still applies to controls while the table can shrink-->
-        <fieldset :disabled="props.submitting" class="contents">
-            <div class="flex flex-wrap items-center justify-between gap-2.5">
+    <form novalidate @submit.prevent="reviewing ? submitBooks($event) : emit('search')">
+        <fieldset :disabled="props.submitting" class="min-w-0 space-y-5">
+            <div class="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <h2>{{ reviewing ? 'Choose collection locations' : 'Find on Open Library' }}</h2>
-                <Button v-if="!reviewing" type="button" variant="outline" @click="emit('manual')">Enter manually</Button>
+                <Button class="min-h-11" v-if="!reviewing" type="button" variant="outline" @click="emit('manual')">Enter manually</Button>
             </div>
             <p v-if="reviewing" class="text-muted-foreground">Check the selected books against the physical copies. Choose an MRT station for each book before adding them.</p>
             <Field v-else>
                 <FieldLabel for="book-search">Search by title, author or ISBN</FieldLabel>
-                <div class="flex items-center gap-2.5">
-                    <Input id="book-search" :modelValue="props.query" type="search" class="flex-1"
+                <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                    <Input id="book-search" :modelValue="props.query" type="search" class="flex-1 md:text-base min-h-11"
                         @update:modelValue="emit('update:query', $event)" />
-                    <Button type="submit" class="shrink-0" :disabled="props.lookup.loading || !props.query.trim()">{{ props.lookup.loading ? 'Searching…' : 'Search' }}</Button>
+                    <Button type="submit" class="shrink-0 min-h-11" :disabled="props.lookup.loading || !props.query.trim()">{{ props.lookup.loading ? 'Searching…' : 'Search' }}</Button>
                 </div>
             </Field>
             <p v-if="props.lookup.loading" role="status">Searching Open Library…</p>
             <template v-else-if="props.lookup.searched">
                 <div class="flex items-center justify-between gap-2.5">
                     <p role="status">{{ reviewing ? `${reviewBooks.length} books to add` : `${results.length} results · ${selectedIds.length} selected` }}</p>
-                    <Button v-if="!reviewing" type="button" :disabled="props.lookup.loading || !selectedIds.length" @click="reviewSelection">Next</Button>
+                    <Button class="min-h-11" v-if="!reviewing" type="button" :disabled="props.lookup.loading || !selectedIds.length" @click="reviewSelection">Next</Button>
                 </div>
-                <!--@lee-hlmilk > only the table scrolls > search &&& navigation stay visible within the dialog-->
-                <div class="-m-2.5 min-h-0 overflow-auto p-2.5">
-                    <!--@lee-hlmilk > share table markup &&& checkbox logic with admin lists > import-specific controls use slots-->
-                    <AdminTable :rows="rows" :columns="columns" :selectedIds="reviewing ? [] : selectedIds"
-                        :selectable="!reviewing && !props.submitting" :selectionColumn="!reviewing" :rowAction="reviewing ? 'none' : 'select'"
-                        @selectedRows="selectedIds = $event">
-                        <template #cellBook="{ row }"><BookIdentity :title="row.title" :author="row.authors.join(', ')" :cover="row.coverurl" /></template>
-                        <template #cellIsbn="{ value }">{{ value || 'Not provided' }}</template>
-                        <template #cellPublicationyear="{ value }">{{ value || 'Not provided' }}</template>
-                        <template #headerMrtstationid="{ column }">{{ column.label }} <span class="text-destructive" aria-hidden="true">*</span></template>
-                        <template #headerActions><span class="sr-only">Actions</span></template>
-                        <template #cellMrtstationid="{ row }">
-                            <!--@lee-hlmilk > review rows are draft copies > this native v-model stores each copy's station before submission-->
-                            <select v-model="row.mrtstationid" required :aria-label="`MRT station for ${row.title}`"
-                                :aria-invalid="invalidIds.includes(row.id)" class="h-9 w-full min-w-44 rounded-lg border bg-background px-3"
-                                @change="invalidIds = invalidIds.filter(id => id !== row.id)">
-                                <option value="" disabled>Select an MRT station</option>
-                                <option v-for="station in props.stations" :key="station.id" :value="station.id">{{ station.name }}</option>
-                            </select>
-                        </template>
-                        <template #cellActions="{ row }">
-                            <Button type="button" variant="outline" size="sm" :aria-label="`Remove ${row.title}`" @click.stop="removeBook(row.id)">Remove</Button>
-                        </template>
-                        <template #empty>
-                            <p class="text-muted-foreground">{{ reviewing ? 'No books selected. Go back to results to choose books to add.' : 'Try another title, author or ISBN, or enter the book manually.' }}</p>
-                        </template>
-                    </AdminTable>
-                </div>
+                <!--@lee-hlmilk > share table markup &&& checkbox logic with admin lists > import-specific controls use slots-->
+                <AdminTable :rows="rows" :columns="columns" :selectedIds="reviewing ? [] : selectedIds"
+                    :selectable="!reviewing && !props.submitting" :selectionColumn="!reviewing" :rowAction="reviewing ? 'none' : 'select'"
+                    @selectedRows="selectedIds = $event">
+                    <template #cellBook="{ row }"><BookIdentity :title="row.title" :author="row.authors.join(', ')" :cover="row.coverurl" /></template>
+                    <template #cellIsbn="{ value }">{{ value || 'Not provided' }}</template>
+                    <template #cellPublicationyear="{ value }">{{ value || 'Not provided' }}</template>
+                    <template #headerMrtstationid="{ column }">{{ column.label }} <span class="text-destructive" aria-hidden="true">*</span></template>
+                    <template #headerActions><span class="sr-only">Actions</span></template>
+                    <template #cellMrtstationid="{ row }">
+                        <!--@lee-hlmilk > review rows are draft copies > this native v-model stores each copy's station before submission-->
+                        <select v-model="row.mrtstationid" required :aria-label="`MRT station for ${row.title}`"
+                            :aria-invalid="invalidIds.includes(row.id)" class="w-full min-w-0 rounded-lg border px-3 text-base min-h-11"
+                            @change="invalidIds = invalidIds.filter(id => id !== row.id)">
+                            <option value="" disabled>Select an MRT station</option>
+                            <option v-for="station in props.stations" :key="station.id" :value="station.id">{{ station.name }}</option>
+                        </select>
+                    </template>
+                    <template #cellActions="{ row }">
+                        <Button class="min-h-11" type="button" variant="outline" :aria-label="`Remove ${row.title}`" @click.stop="removeBook(row.id)">Remove</Button>
+                    </template>
+                    <template #empty>
+                        <p class="text-muted-foreground">{{ reviewing ? 'No books selected. Go back to results to choose books to add.' : 'Try another title, author or ISBN, or enter the book manually.' }}</p>
+                    </template>
+                </AdminTable>
             </template>
-            <div v-if="reviewing" class="flex items-center justify-between gap-2.5">
-                <Button type="button" variant="outline" @click="reviewing = false">Back to results</Button>
-                <Button type="submit" :disabled="!canImport">{{ props.submitting ? 'Adding…' : `Add ${reviewBooks.length} ${reviewBooks.length === 1 ? 'book' : 'books'}` }}</Button>
+            <div v-if="reviewing" class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <Button class="min-h-11" type="button" variant="outline" @click="reviewing = false">Back to results</Button>
+                <Button class="min-h-11" type="submit" :disabled="!canImport">{{ props.submitting ? 'Adding…' : `Add ${reviewBooks.length} ${reviewBooks.length === 1 ? 'book' : 'books'}` }}</Button>
             </div>
         </fieldset>
     </form>

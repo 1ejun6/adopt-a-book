@@ -165,7 +165,7 @@ fetchAppointments().then(loadAppointmentLink);
         :pagination="{ itemLabel: 'appointments', total, pageSize, pageCount }" @openRow="openAppointment">
         <template #filters>
             <AppDatePicker v-if="filters.view !== 'today'" v-model="filters.date" label="Collection date" />
-            <select v-if="!['awaiting', 'today'].includes(filters.view)" v-model="filters.status" aria-label="Appointment status" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
+            <select v-if="!['awaiting', 'today'].includes(filters.view)" v-model="filters.status" aria-label="Appointment status" class="w-full min-w-0 rounded-lg border px-3 sm:w-auto text-base min-h-11">
                 <option value="all">All statuses</option>
                 <template v-if="filters.view === 'history'">
                     <option value="collected">Collected</option>
@@ -182,12 +182,12 @@ fetchAppointments().then(loadAppointmentLink);
             <p v-if="confirmHint && collectHint" class="text-sm text-muted-foreground" role="status">
                 {{ selectionHint }}
             </p>
-            <Button size="sm" :disabled="loading || saving || !!confirmHint" @click="updateAppointments('appointment confirmed')">Confirm appointments</Button>
-            <Button size="sm" variant="outline" :disabled="loading || saving || !!collectHint" @click="updateAppointments('collected')">Mark collected</Button>
+            <Button class="min-h-11" :disabled="loading || saving || !!confirmHint" @click="updateAppointments('appointment confirmed')">Confirm appointments</Button>
+            <Button class="min-h-11" variant="outline" :disabled="loading || saving || !!collectHint" @click="updateAppointments('collected')">Mark collected</Button>
         </template>
         <template #cellCustomer="{ row }">
-            <p class="truncate">{{ row.customer }}</p>
-            <small class="block truncate text-sm text-muted-foreground">{{ row.email || 'Email not provided' }}</small>
+            <p class="break-words lg:truncate">{{ row.customer }}</p>
+            <small class="block break-words lg:truncate text-sm text-muted-foreground">{{ row.email || 'Email not provided' }}</small>
         </template>
         <template #cellBook="{ row }">
             <BookIdentity :title="row.booktitle" :author="row.book?.authors?.join(', ') || 'Unknown Author'" :cover="row.book?.coverurl" />
@@ -211,8 +211,8 @@ fetchAppointments().then(loadAppointmentLink);
             {{ detailsHint || (selectedAppointment.status === 'pending confirmation' ? 'Confirm after checking the requested date, time, and location.' : 'Mark collected only after the customer has physically received the book.') }}
         </p>
         <template v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" #actions>
-            <Button v-if="selectedAppointment.status === 'pending confirmation'" type="button" class="w-full" :disabled="!!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])">Confirm appointment</Button>
-            <Button v-else type="button" class="w-full" :disabled="!!detailsHint" @click="updateAppointments('collected', [selectedAppointment])">Mark collected</Button>
+            <Button v-if="selectedAppointment.status === 'pending confirmation'" type="button" class="w-full min-h-11" :disabled="!!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])">Confirm appointment</Button>
+            <Button v-else type="button" class="w-full min-h-11" :disabled="!!detailsHint" @click="updateAppointments('collected', [selectedAppointment])">Mark collected</Button>
         </template>
     </AdminDetailsDialog>
 </template>

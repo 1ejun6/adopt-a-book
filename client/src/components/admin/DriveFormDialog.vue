@@ -56,16 +56,16 @@ function submitDrive(event) {
             <p class="text-muted-foreground"><span class="text-destructive" aria-hidden="true">*</span> Required</p>
             <Field>
                 <FieldLabel for="drive-title">Drive title <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
-                <Input id="drive-title" v-model="draft.title" required pattern=".*\S.*" :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-title')" />
+                <Input class="md:text-base min-h-11" id="drive-title" v-model="draft.title" required pattern=".*\S.*" :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-title')" />
             </Field>
             <Field>
                 <FieldLabel for="drive-location">Venue and address <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
-                <Input id="drive-location" v-model="draft.location" required pattern=".*\S.*" :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-location')" />
+                <Input class="md:text-base min-h-11" id="drive-location" v-model="draft.location" required pattern=".*\S.*" :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-location')" />
             </Field>
             <Field>
                 <FieldLabel for="drive-station">Nearest MRT station <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
                 <!--@lee-hlmilk > select commits its model on change > stop input validation from re-rendering the old selection first-->
-                <select id="drive-station" v-model="draft.mrtstationid" required :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-station')" class="h-9 w-full rounded-lg border bg-background px-3" @input.stop>
+                <select id="drive-station" v-model="draft.mrtstationid" required :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-station')" class="w-full rounded-lg border px-3 text-base min-h-11" @input.stop>
                     <option value="" disabled>Select an MRT station</option>
                     <option v-for="station in stationOptions" :key="station.id" :value="station.id">{{ station.name }}</option>
                 </select>
@@ -74,23 +74,23 @@ function submitDrive(event) {
                 <Field>
                     <FieldLabel for="drive-date">Event date <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
                     <!--@lee-hlmilk > existing past dates may stay unchanged > new ||| changed dates must be today or later-->
-                    <Input id="drive-date" v-model="draft.eventdate" type="date" required :min="props.drive && draft.eventdate === props.drive.eventdate ? undefined : props.today"
+                    <Input class="md:text-base min-h-11" id="drive-date" v-model="draft.eventdate" type="date" required :min="props.drive && draft.eventdate === props.drive.eventdate ? undefined : props.today"
                         :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-date')" />
                 </Field>
                 <Field>
                     <FieldLabel for="drive-capacity">Maximum capacity <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
-                    <Input id="drive-capacity" v-model="draft.maxcapacity" type="number" required :min="minimumCapacity" max="2147483647" step="1"
+                    <Input class="md:text-base min-h-11" id="drive-capacity" v-model="draft.maxcapacity" type="number" required :min="minimumCapacity" max="2147483647" step="1"
                         :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-capacity')" />
                 </Field>
             </div>
             <p v-if="props.drive" class="text-muted-foreground">{{ props.drive.userids?.length || 0 }} registered. Capacity cannot be lower than this count.</p>
             <Field>
                 <FieldLabel for="drive-description">Description</FieldLabel>
-                <textarea id="drive-description" v-model="draft.description" rows="3" :disabled="props.submitting" class="rounded-lg border p-2.5" />
+                <textarea id="drive-description" v-model="draft.description" rows="3" :disabled="props.submitting" class="rounded-lg border p-2.5 text-base" />
             </Field>
         </div>
         <template #footer>
-            <Button type="submit" class="w-full" :disabled="props.submitting">{{ props.submitting ? 'Saving…' : props.drive ? 'Save changes' : 'Create drive' }}</Button>
+            <Button type="submit" class="w-full min-h-11" :disabled="props.submitting">{{ props.submitting ? 'Saving…' : props.drive ? 'Save changes' : 'Create drive' }}</Button>
         </template>
     </AdminFormDialog>
 </template>

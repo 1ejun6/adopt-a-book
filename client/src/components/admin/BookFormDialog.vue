@@ -160,11 +160,9 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
 </script>
 <template>
     <!--@lee-hlmilk > edit book dialog form-->
-    <!--@lee-hlmilk > import mode constrains height with flex &&& min-h-0 > its table scrolls instead of the whole dialog-->
     <AdminFormDialog v-model:open="open" :title="props.book ? 'Edit book' : 'Add book'"
         submitLabel="Add book" :submittingLabel="submittingLabel"
-        :contentClass="!props.book && addMode === 'search' ? 'max-w-5xl flex flex-col overflow-hidden' : null"
-        :bodyClass="!props.book && addMode === 'search' ? 'flex min-h-0 flex-col' : null"
+        :contentClass="!props.book && addMode === 'search' ? 'max-w-5xl' : null"
         :hideForm="!props.book && addMode === 'search'"
         :showFooterSeparator="!props.book"
         :submitting="props.submitting || checkingCover" :dirty="isFormDirty" noValidate @submit="submitBook">
@@ -175,10 +173,10 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
                 @search="emit('search')" @select="emit('select')" @manual="enterManually" @submit="emit('import', $event)" />
         </template>
         <template v-if="!props.book" #extraActions>
-            <Button type="submit" value="continue" variant="outline" :disabled="props.submitting || checkingCover">Add and continue</Button>
+            <Button class="min-h-11" type="submit" value="continue" variant="outline" :disabled="props.submitting || checkingCover">Add and continue</Button>
         </template>
         <template v-if="props.book" #footer>
-            <Button type="submit" class="w-full" :disabled="props.submitting || checkingCover">{{ props.submitting || checkingCover ? submittingLabel : 'Save changes' }}</Button>
+            <Button type="submit" class="w-full min-h-11" :disabled="props.submitting || checkingCover">{{ props.submitting || checkingCover ? submittingLabel : 'Save changes' }}</Button>
         </template>
         <div class="flex items-center justify-between gap-2.5 text-xs">
             <p class="text-muted-foreground"><span class="text-destructive" aria-hidden="true">*</span> Required</p>
@@ -188,12 +186,12 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
         <div class="grid gap-5 sm:grid-cols-2">
             <Field class="sm:col-span-2">
                 <FieldLabel for="edit-title">Title <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
-                <Input id="edit-title" v-model="bookForm.title" required pattern=".*\S.*"
+                <Input class="md:text-base min-h-11" id="edit-title" v-model="bookForm.title" required pattern=".*\S.*"
                     :aria-invalid="invalidFields.includes('edit-title')" @input="clearInvalid" />
             </Field>
             <Field class="sm:col-span-2">
                 <FieldLabel for="edit-authors">Authors (comma separated)</FieldLabel>
-                <Input id="edit-authors" v-model="bookForm.authors" />
+                <Input class="md:text-base min-h-11" id="edit-authors" v-model="bookForm.authors" />
             </Field>
             <Field class="min-w-0 sm:col-span-2">
                 <FieldLabel for="edit-cover-file">Cover photo</FieldLabel>
@@ -202,13 +200,13 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
                 <!--@lee-hlmilk > group photo actions with the uncropped preview > keep native chooser text out of the layout-->
                 <div class="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
                     <img v-if="coverPreview || bookForm.coverurl" :src="coverPreview || bookForm.coverurl" alt="Preview of the book’s front cover"
-                        class="h-36 w-24 shrink-0 self-start rounded-lg object-contain" />
+                        class="h-36 w-24 shrink-0 self-start object-contain" />
                     <div class="min-w-0 flex-1 space-y-2.5">
                         <div class="flex flex-wrap gap-2.5">
-                            <Button type="button" variant="outline" :disabled="props.submitting"
+                            <Button class="min-h-11" type="button" variant="outline" :disabled="props.submitting"
                                 :aria-describedby="coverError ? 'cover-photo-help cover-file-help cover-photo-error' : 'cover-photo-help cover-file-help'"
                                 :aria-invalid="Boolean(coverError)" @click="coverInput?.click()">{{ coverPreview || bookForm.coverurl ? 'Change photo' : 'Choose photo' }}</Button>
-                            <Button v-if="coverPreview || bookForm.coverurl" type="button" variant="outline" :disabled="props.submitting" @click="removeCover">Remove photo</Button>
+                            <Button class="min-h-11" v-if="coverPreview || bookForm.coverurl" type="button" variant="outline" :disabled="props.submitting" @click="removeCover">Remove photo</Button>
                         </div>
                         <p v-if="coverFile" :title="coverFile.name" class="truncate text-sm text-muted-foreground">{{ coverFile.name }}</p>
                         <p v-if="checkingCover" role="status" class="text-sm text-muted-foreground">Checking photo…</p>
@@ -222,7 +220,7 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
             <Field>
                 <FieldLabel for="edit-condition">Condition</FieldLabel>
                 <select id="edit-condition" v-model="bookForm.condition"
-                    class="h-9 w-full min-w-0 rounded-lg border bg-background px-3">
+                    class="w-full min-w-0 rounded-lg border px-3 text-base min-h-11">
                     <option value="">Not specified</option>
                     <option value="like new">Like new</option>
                     <option value="good">Good</option>
@@ -233,7 +231,7 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
                 <FieldLabel for="edit-station">Collection area (MRT station) <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
                 <select id="edit-station" v-model="bookForm.mrtstationid" required
                     :aria-invalid="invalidFields.includes('edit-station')" @change="clearInvalid"
-                    class="h-9 w-full min-w-0 rounded-lg border bg-background px-3">
+                    class="w-full min-w-0 rounded-lg border px-3 text-base min-h-11">
                     <option value="" disabled>Select an MRT station</option>
                     <option v-for="station in stationOptions" :key="station.id" :value="station.id">
                         {{ station.name }}
@@ -243,35 +241,35 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
             <Field class="sm:col-span-2">
                 <FieldLabel for="edit-description">Description</FieldLabel>
                 <textarea id="edit-description" v-model="bookForm.description" rows="3"
-                    class="w-full min-w-0 rounded-lg border bg-background p-2.5" />
+                    class="w-full min-w-0 rounded-lg border p-2.5 text-base" />
             </Field>
         </div>
 
         <!--@lee-hlmilk > collapsible secondary book metadata fields-->
-        <details :open="metadataOpen" class="rounded-lg border p-2.5" @toggle="metadataOpen = $event.target.open">
+        <details :open="metadataOpen" class="border p-2.5" @toggle="metadataOpen = $event.target.open">
             <summary class="cursor-pointer">ISBN and other metadata</summary>
             <div class="mt-5 grid gap-5 sm:grid-cols-2">
                 <Field>
                     <FieldLabel for="edit-isbn">ISBN</FieldLabel>
-                    <Input id="edit-isbn" v-model="bookForm.isbn" />
+                    <Input class="md:text-base min-h-11" id="edit-isbn" v-model="bookForm.isbn" />
                 </Field>
                 <Field>
                     <FieldLabel for="edit-year">First publication year</FieldLabel>
-                    <Input id="edit-year" v-model="bookForm.publicationyear" type="number" step="1"
+                    <Input class="md:text-base min-h-11" id="edit-year" v-model="bookForm.publicationyear" type="number" step="1"
                         :aria-invalid="invalidFields.includes('edit-year')" @input="clearInvalid" />
                 </Field>
                 <Field class="sm:col-span-2">
                     <FieldLabel for="edit-subject">Subject</FieldLabel>
-                    <Input id="edit-subject" v-model="bookForm.subject" pattern="[^,]+" title="Enter one subject without commas."
+                    <Input class="md:text-base min-h-11" id="edit-subject" v-model="bookForm.subject" pattern="[^,]+" title="Enter one subject without commas."
                         :aria-invalid="invalidFields.includes('edit-subject')" @input="clearInvalid" />
                 </Field>
                 <Field>
                     <FieldLabel for="edit-olid">Open Library ID</FieldLabel>
-                    <Input id="edit-olid" v-model="bookForm.openlibraryid" />
+                    <Input class="md:text-base min-h-11" id="edit-olid" v-model="bookForm.openlibraryid" />
                 </Field>
                 <Field>
                     <FieldLabel for="edit-cover">Cover URL</FieldLabel>
-                    <Input id="edit-cover" v-model="bookForm.coverurl" :disabled="Boolean(coverFile) || props.submitting" />
+                    <Input class="md:text-base min-h-11" id="edit-cover" v-model="bookForm.coverurl" :disabled="Boolean(coverFile) || props.submitting" />
                 </Field>
             </div>
         </details>

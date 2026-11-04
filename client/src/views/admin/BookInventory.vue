@@ -289,10 +289,10 @@ const columns = [
         emptyTitle="No books in this view" emptyDescription="Try another Status Tab, Genre, Search term"
         :pagination="{ itemLabel: 'books', total, pageSize, pageCount }" @openRow="openBook">
         <template #headerActions>
-            <Button :disabled="loading || deleting || saving" @click="openAddBook">Add Book</Button>
+            <Button class="min-h-11" :disabled="loading || deleting || saving" @click="openAddBook">Add Book</Button>
         </template>
         <template #filters>
-            <select v-model="filters.genre" class="w-full min-w-0 rounded-lg border p-2.5 text-sm leading-4 sm:w-auto">
+            <select v-model="filters.genre" class="w-full min-w-0 rounded-lg border px-3 sm:w-auto text-base min-h-11">
                 <option value="all">All genres</option>
                 <option v-for="genre in availableGenres" :key="genre" :value="genre">{{ genre }}</option>
             </select>
@@ -300,9 +300,9 @@ const columns = [
         <template #selectionActions="{ onlyOne }">
             <p v-if="deleteBlocked" class="text-sm text-muted-foreground" role="status">Only available books can be deleted.</p>
             <!--@lee-hlmilk > open edit dialog for selected book-->
-            <Button size="sm" class="bg-card" :disabled="!onlyOne || ['reserved', 'adopted'].includes(selectedRow?.status)"
+            <Button class="min-h-11" variant="outline" :disabled="!onlyOne || ['reserved', 'adopted'].includes(selectedRow?.status)"
                 @click="openEditBook(selectedRow)">Edit</Button>
-            <Button variant="destructive" size="sm" :disabled="loading || deleting || deleteBlocked" @click="deleteBooks">{{ deleting ?
+            <Button class="min-h-11" variant="destructive" :disabled="loading || deleting || deleteBlocked" @click="deleteBooks">{{ deleting ?
                 'Deleting…' : 'Delete' }}</Button>
         </template>
         <template #cellBook="{ row }">
@@ -315,12 +315,11 @@ const columns = [
             <StatusBadge :status="value" />
         </template>
     </AdminList>
-    <!--@lee-hlmilk > summaryClass adds padding only to the book summary > the shared dialog supplies the outer padding-->
     <AdminDetailsDialog v-if="selectedBook" :open="dialogOpen" title="Book details" :book="selectedBook"
         :status="selectedBook.status" :fields="bookFields" :description="selectedBook.description || 'No description recorded.'" @update:open="dialogOpen = $event">
         <template #actions>
             <!--@lee-hlmilk > reserved &&& adopted copies cannot be edited > availability follows approval &&& collection-->
-            <Button type="button" class="w-full" :disabled="['reserved', 'adopted'].includes(selectedBook.status)" @click="openEditBook(selectedBook)">Edit</Button>
+            <Button type="button" class="w-full min-h-11" :disabled="['reserved', 'adopted'].includes(selectedBook.status)" @click="openEditBook(selectedBook)">Edit</Button>
         </template>
     </AdminDetailsDialog>
 
