@@ -6,7 +6,7 @@ export const buttonVariants = ({ variant, size } = {}) =>
   cn(
     'washi-tape washi-tape-hover inline-flex items-center justify-center rounded-lg text-sm disabled:pointer-events-none',
     variant === 'destructive'
-      ? 'bg-badge-rose text-badge-rose-foreground hover:bg-badge-rose'
+      ? 'bg-badge-rose text-badge-rose-foreground'
       : variant === 'outline'
       ? 'border bg-transparent'
       : 'bg-primary',

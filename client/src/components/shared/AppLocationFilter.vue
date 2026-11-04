@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, useId, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, useId, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { Location08Icon } from '@hugeicons/core-free-icons';
 import { api } from '@/lib/api';
@@ -28,22 +28,36 @@ const sliderValue = computed({
 //@ChitanyaBharathi > keep device coordinates ready until search applies selected distance
 const location = ref(null);
 const loading = ref(false);
+let requestId = 0;
+let controller;
+let clearing = false;
+
+function cancelLookup() {
+  requestId++;
+  controller?.abort();
+  loading.value = false;
+}
+
+onBeforeUnmount(cancelLookup);
 
 async function lookup(body) {
+  cancelLookup();
+  const id = requestId;
+  controller = new AbortController();
   loading.value = true;
   try {
     //@ChitanyaBharathi - ...body = make a copy but not exactly a copy becauuse if not itll be an object in an object
-    const result = await api('/locations/nearby', { method: 'POST', body: { ...body, radiusKm: radius.value } });
+    const result = await api('/locations/nearby', { method: 'POST', signal: controller.signal, body: { ...body, radiusKm: radius.value } });
+    if (id !== requestId) return;
     location.value = result.location;
     stationIds.value = result.stations.map(station => station.id).join(',');
     emit('change', result);
-    toast.success('location filter applied', {
-      description: `within ${result.radiusKm} km of ${result.location.name}`,
-    });
+    toast.success('location filter applied');
   } catch (lookupError) {
+    if (id !== requestId) return;
     toast.error(lookupError.message || 'could not search this location > please try again');
   } finally {
-    loading.value = false;
+    if (id === requestId) loading.value = false;
   }
 }
 
@@ -59,16 +73,20 @@ function nearMe() {
     toast.error('your browser cannot share its location > try a postcode instead');
     return;
   }
+  cancelLookup();
+  const id = requestId;
   loading.value = true;
   navigator.geolocation.getCurrentPosition(
     position => {
       //@ChitanyaBharathi > near me button if clicked, empties the input search box
-      query.value = '';
+      if (id !== requestId) return;
+      clear();
       location.value = { name: 'your current location', lat: position.coords.latitude, lng: position.coords.longitude };
       loading.value = false;
       toast.info('current location ready', { description: 'adjust distance & click search' });
     },
     error => {
+      if (id !== requestId) return;
       loading.value = false;
       const messages = {
         1: String.raw`location permission denied > allow location access \ enter a postcode`,
@@ -76,18 +94,24 @@ function nearMe() {
         3: String.raw`getting your location timed out > try again \ enter a postcode`,
       };
       toast.error(messages[error.code] || 'could not get your location > try a postcode instead');
-    }
+    },
+    { timeout: 10000, maximumAge: 60000 }
   );
 }
 
 //@ChitanyaBharathi > X in the search box (or deleting the text) empties query > drop the location filter too
 watch(query, value => {
+  if (clearing) return;
+  cancelLookup();
   if (!value.trim()) clear();
   else location.value = null;
 }, { flush: 'sync' });
 
 function clear() {
+  cancelLookup();
+  clearing = true;
   query.value = '';
+  clearing = false;
   radius.value = props.defaultRadius;
   location.value = null;
   stationIds.value = '';
@@ -99,7 +123,7 @@ defineExpose({ clear });
 
 <template>
   <!--@ChitanyaBharathi > the form is the card itself > no extra wrapper-->
-  <form @submit.prevent="searchPlace">
+  <form class="space-y-3 rounded-lg border p-4" :aria-busy="loading" @submit.prevent="searchPlace">
     <Field>
       <FieldLabel :for="inputId" class="sr-only">location</FieldLabel>
       <div class="flex gap-2.5">
@@ -113,11 +137,11 @@ defineExpose({ clear });
     </Field>
 
     <!-- Choose a distance first; only Search applies it. -->
-    <Field v-if="query.trim() || location">
-      <FieldLabel>Distance: {{ radius }} km</FieldLabel>
-      <Slider v-model="sliderValue" :min="1" :max="20" :step="1" :disabled="loading" />
+    <Field v-if="query.trim() || location" class="flex-row items-center">
+      <FieldLabel class="shrink-0 whitespace-nowrap">Distance: {{ radius }} km</FieldLabel>
+      <Slider v-model="sliderValue" class="min-w-0 flex-1" :min="1" :max="20" :step="1" :disabled="loading" />
     </Field>
 
-    <FieldDescription v-if="loading">loading location...</FieldDescription>
+    <FieldDescription v-if="loading" role="status" class="text-sm">loading location..</FieldDescription>
   </form>
 </template>

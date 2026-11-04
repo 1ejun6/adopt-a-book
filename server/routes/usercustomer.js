@@ -6,4 +6,5 @@ router.use(authenticated, customer);
 router.get("/", controller.home);
 router.get("/profile", controller.readaccount);
 router.patch("/profile", controller.updateaccount);
+router.patch("/password", controller.updatepassword);
 module.exports = { router };

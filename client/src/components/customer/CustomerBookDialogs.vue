@@ -1,14 +1,11 @@
 <script setup>
-import { ref, computed, h, nextTick, watch, onBeforeUnmount } from 'vue';
+import { ref, computed, nextTick, watch, onBeforeUnmount } from 'vue';
 import { api } from '@/lib/api';
+import { getApplicationStatus } from '@/lib/adoptions';
 import { auth } from '@/lib/auth';
 import { toast } from 'vue-sonner';
-import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { FocusScope } from 'reka-ui';
-import BookPreviewDialog from '@/components/guest/BookPreviewDialog.vue';
+import AppBookPreviewDialog from '@/components/shared/AppBookPreviewDialog.vue';
 import RequestCopyDialog from '@/components/customer/RequestCopyDialog.vue';
 
 const props = defineProps({
@@ -31,62 +28,6 @@ const applicationsError = ref('');
 const activeStatuses = ['pending', 'pending review', 'approved', 'pickup requested', 'pickup confirmed', 'collected', 'completed'];
 let loadid = 0;
 let controller;
-const commentToasts = new Set();
-
-//@1ejun6 > book is already saved > empty comment closes toast without another request
-function showSavedToast(entry, trigger) {
-  const id = `watchlist-comment-${entry.bookid.id}`;
-  const comment = ref('');
-  const busy = ref(false);
-  const error = ref('');
-  const options = { id, duration: Infinity, style: { pointerEvents: 'auto' } };
-  //@1ejun6 > bookmark is disabled while saving > restore its focus when toast closes
-  const content = () => h(FocusScope, { asChild: true, trapped: true, loop: true, onUnmountAutoFocus: event => {
-    event.preventDefault();
-    if (trigger?.isConnected) trigger.focus();
-  } }, () => h('div', { class: 'w-full space-y-2.5 rounded-lg border bg-background p-5 font-body text-sm', onKeydown: event => {
-    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); toast.dismiss(id); }
-  } }, [
-    h('div', { class: 'flex items-start gap-2.5' }, [
-      h(HugeiconsIcon, { icon: error.value ? CancelCircleIcon : CheckmarkCircle02Icon, class: `size-5 shrink-0 ${error.value ? 'text-destructive' : 'text-success-foreground'}`, 'aria-hidden': true }),
-      h('div', { class: 'min-w-0 flex-1' }, [
-        h('p', { role: error.value ? 'alert' : undefined }, error.value || 'saved to watchlist'),
-        h('p', { class: 'truncate text-xs text-muted-foreground', title: entry.bookid.title }, entry.bookid.title),
-      ]),
-      h('button', { type: 'button', title: 'dismiss', onClick: () => toast.dismiss(id) }, [h(HugeiconsIcon, { icon: Cancel01Icon, class: 'size-5', 'aria-hidden': true })]),
-    ]),
-    h('form', { class: 'flex gap-2.5', onSubmit: saveComment }, [
-      h(Input, { modelValue: comment.value, 'onUpdate:modelValue': value => { comment.value = value; }, maxlength: 300, disabled: busy.value, placeholder: 'optional comment', class: 'text-sm' }),
-      h(Button, { type: 'submit', class: 'shrink-0', disabled: busy.value }, () => busy.value ? 'saving…' : 'save'),
-    ]),
-  ]));
-  async function saveComment(event) {
-    event.preventDefault();
-    if (busy.value) return;
-    if (!comment.value.trim()) { toast.dismiss(id); return; }
-    busy.value = true;
-    error.value = '';
-    try {
-      await api(`/watchlist/${entry.id}`, { method: 'PATCH', body: { comments: comment.value.trim() } });
-      toast.dismiss(id);
-      toast.success('comment saved', { duration: 1000, style: { pointerEvents: 'auto' } });
-    } catch (failure) {
-      error.value = failure.message;
-    } finally {
-      busy.value = false;
-    }
-  }
-  commentToasts.add(id);
-  toast.custom(content, options);
-}
-
-//@sree-sanjana06 > standardise application status values
-function getApplicationStatus(application) {
-  return String(application.status || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[_-]+/g, ' ');
-}
 
 async function getapplications(signal) {
   const response = await api('/applications', { method: 'GET', signal });
@@ -96,7 +37,7 @@ async function getapplications(signal) {
 
 const existingApplication = computed(() => applications.value.find(application => {
   const id = typeof application.bookid === 'object' ? application.bookid?.id : application.bookid;
-  return id === dialogBook.value?.id && activeStatuses.includes(getApplicationStatus(application));
+  return id === dialogBook.value?.id && activeStatuses.includes(getApplicationStatus(application, ''));
 }));
 
 const canRequestBook = computed(() => !viewOnly.value && !detailsLoading.value && !detailsError.value && !applicationsLoading.value && !applicationsError.value && !actionLoading.value && !requestSubmitted.value && !existingApplication.value && dialogBook.value?.status === 'available');
@@ -106,7 +47,7 @@ const requestButtonLabel = computed(() => {
   if (applicationsLoading.value) return 'Checking Requests';
   if (applicationsError.value) return 'Request Unavailable';
   if (existingApplication.value) {
-    const status = getApplicationStatus(existingApplication.value);
+    const status = getApplicationStatus(existingApplication.value, '');
     if (['pending', 'pending review'].includes(status)) return 'Request Pending';
     return status === 'approved' ? 'Already Approved' : 'Already Requested';
   }
@@ -209,19 +150,29 @@ async function requestCopy() {
 
 watch(dialogOpen, value => { if (!value) cancelload(); }, { flush: 'sync' });
 watch(requestDialogOpen, value => { if (!value && !dialogOpen.value) cancelload(); }, { flush: 'sync' });
-onBeforeUnmount(() => {
-  cancelload();
-  commentToasts.forEach(id => toast.dismiss(id));
-});
-defineExpose({ openBookDetails, showSavedToast });
+onBeforeUnmount(cancelload);
+function closeBookDetails(book) {
+  if (!book || dialogBook.value?.id === book.id) dialogOpen.value = false;
+}
+defineExpose({ openBookDetails, closeBookDetails });
 </script>
 
 <template>
-  <BookPreviewDialog v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError" :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)" @save="emit('save', $event)">
+  <AppBookPreviewDialog v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError"
+    :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)"
+    @save="emit('save', $event)">
+    <template v-if="$slots['book-action']" #book-action>
+      <slot name="book-action" :book="dialogBook" />
+    </template>
+    <template v-if="$slots.details" #details>
+      <slot name="details" :book="dialogBook" />
+    </template>
     <template v-if="!viewOnly" #actions>
+      <slot name="extra-actions" :book="dialogBook" />
       <Button class="w-full" :disabled="!canRequestBook" @click="openRequestDialog">{{ requestButtonLabel }}</Button>
     </template>
-  </BookPreviewDialog>
+  </AppBookPreviewDialog>
 
-  <RequestCopyDialog v-model:open="requestDialogOpen" :book="dialogBook" :reader="auth.user" :loading="actionLoading" :submitted="requestSubmitted" :disabled="!!existingApplication || !!applicationsError" @submit="requestCopy" />
+  <RequestCopyDialog v-model:open="requestDialogOpen" :book="dialogBook" :reader="auth.user" :loading="actionLoading"
+    :submitted="requestSubmitted" :disabled="!!existingApplication || !!applicationsError" @submit="requestCopy" />
 </template>

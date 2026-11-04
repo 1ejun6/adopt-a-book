@@ -1,4 +1,5 @@
 <script setup>
+import { getPageCount } from '@/lib/utils';
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
@@ -23,7 +24,7 @@ const page = ref(1);
 const pageSize = 15;
 const total = ref(0);
 const loadError = ref('');
-const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
+const pageCount = computed(() => getPageCount(total.value, pageSize));
 let requestId = 0;
 
 const bookDetails = new Map();
@@ -136,7 +137,7 @@ const columns = [
         <header class="flex flex-wrap items-center justify-between gap-5">
             <div class="min-w-0">
                 <h1>Book Inventory</h1>
-                <p class="text-muted-foreground">organisation copies and community listings from intake to handover</p>
+                <p class="text-muted-foreground text-sm">organisation copies and community listings from intake to handover</p>
             </div>
             <Button>Add Book</Button>
         </header>
@@ -152,7 +153,7 @@ const columns = [
         </AppFilters>
 
         <AdminTable v-if="!loadError" :rows="books" :columns="columns" :selectedIds="selectedIds" :isLoading="loading"
-            emptyTitle="No books in this view" emptyDescription="Try another Status Tab, Genre, Search term"
+            emptyTitle="No books in this view" emptyDescription="try another status tab, genre, search term"
             @selectedRows="selectedIds = $event" @openRow="openBook">
             <template #cellBook="{ row }">
                 <BookIdentity :title="row.title" :author="row.author" :cover="row.cover" />
@@ -166,6 +167,6 @@ const columns = [
         </AdminTable>
         <BookDetailsDialog v-model:open="dialogOpen" :book="selectedBook" />
         <AppPagination itemLabel="books" v-if="!loadError && total > 0" v-model:page="page" :total="total"
-            :visibleCount="books.length" :pageSize="pageSize" :pageCount="pageCount" :loading="loading" :disabled="loading || deleting" />
+            :visibleCount="books.length" :pageSize="pageSize" :loading="loading" :disabled="loading || deleting" />
     </section>
 </template>

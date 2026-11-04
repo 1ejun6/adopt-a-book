@@ -49,7 +49,7 @@ const fields = computed(() => {
                         class="flex-1" />
                     <AppStatusBadge :status="currentBook.status" />
                 </div>
-                <p class="whitespace-pre-line">{{ currentBook.description || 'No description recorded.' }}</p>
+                <p class="whitespace-pre-line text-sm">{{ currentBook.description || 'no description recorded' }}</p>
                 <dl class="grid gap-2.5 sm:grid-cols-[auto_minmax(0,1fr)]">
                     <template v-for="field in fields" :key="field.label">
                         <dt class="text-muted-foreground">{{ field.label }}</dt>

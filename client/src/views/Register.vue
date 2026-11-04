@@ -38,11 +38,11 @@ async function register() {
     <section class="mx-auto w-full max-w-md content-center">
         <div class="carddupe">
             <h1>Create Your Account</h1>
-            <p>join us!!</p>
+            <p class="text-sm">join us!!</p>
             <form @submit.prevent="register">
                 <Field>
-                    <FieldLabel for="name">Name</FieldLabel>
-                    <Input id="name" v-model="form.name" type="text" autocomplete="name" placeholder="enter your name" required />
+                    <FieldLabel for="name">Full name</FieldLabel>
+                    <Input id="name" v-model="form.name" type="text" autocomplete="name" placeholder="enter your full name" required />
                 </Field>
                 <Field>
                     <FieldLabel for="email">Email</FieldLabel>

@@ -58,9 +58,9 @@ onMounted(loadbooks);
         <!--@1ejun6 > text gaps stay compact > give bookshelf a clearer separation -->
         <div class="space-y-5 text-center">
             <div class="grid gap-2.5">
-                <p>From our shelves to yours</p>
+                <p class="text-sm">from our shelves to yours</p>
                 <h1 class="text-6xl">Different shelves<br>Shared stories</h1>
-                <p>Which one feels like your next chapter?</p>
+                <p class="text-sm">which one feels like your next chapter?</p>
             </div>
             <div v-if="!loaderror || books.length">
                 <BookShelf :books="books" :isLoading="loading" />
