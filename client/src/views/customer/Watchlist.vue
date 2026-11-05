@@ -103,24 +103,24 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
     <!--@sree-sanjana06 > existing book details and adoption request popups-->
     <CustomerBookDialogs ref="dialogs" :savedIds="savedIds">
       <template #book-action="{ book }">
-        <button type="button" class="min-h-11 min-w-11 rounded-lg p-2 text-destructive" title="Remove from watchlist"
+        <button type="button" class="washi-tape-hover min-h-11 min-w-11 shrink-0 rounded-lg p-2 text-destructive" title="Remove from watchlist"
           :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="removePreviewBook(book)">
           <HugeiconsIcon :icon="Delete02Icon" class="size-6" aria-hidden="true" />
           <span class="sr-only">Remove from watchlist</span>
         </button>
       </template>
       <template #details="{ book }">
-        <section class="space-y-2">
-          <h3>Your private note</h3>
-          <p class="text-muted-foreground">{{ notes.get(book?.id) || 'no note added yet' }}</p>
+        <section class="space-y-2 rounded-lg border p-3.5">
+          <div class="flex items-center justify-between gap-2.5">
+            <h3>Your private note</h3>
+            <Button type="button" variant="outline" size="sm"
+              :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="editPreviewNote(book)">
+              <HugeiconsIcon :icon="PencilEdit02Icon" class="size-4 shrink-0" aria-hidden="true" />
+              <span>Edit note</span>
+            </Button>
+          </div>
+          <p class="text-sm text-muted-foreground [overflow-wrap:anywhere]">{{ notes.get(book?.id) || 'no note added yet' }}</p>
         </section>
-      </template>
-      <template #extra-actions="{ book }">
-        <Button variant="outline" class="w-full" title="Edit note"
-          :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="editPreviewNote(book)">
-          <HugeiconsIcon :icon="PencilEdit02Icon" class="size-4" aria-hidden="true" />
-          <span class="sr-only">Edit note</span>
-        </Button>
       </template>
     </CustomerBookDialogs>
   </AppPage>

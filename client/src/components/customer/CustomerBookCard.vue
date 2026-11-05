@@ -67,17 +67,17 @@ function handleAction(book) {
         </button>
       </div>
       <!--@lee-hlmilk > details and save are independent keyboard controls > no button contains another button -->
-      <button type="button" class="min-h-11 w-full rounded-lg text-left" aria-haspopup="dialog" :aria-label="`View details for ${book.title}`" @click="emit('preview', book)">
+      <button type="button" class="flex min-h-11 w-full flex-col items-stretch rounded-lg text-left" aria-haspopup="dialog" :aria-label="`View details for ${book.title}`" @click="emit('preview', book)">
         <AppBookIdentity :title="book.title" :author="getAuthors(book)" :cover="book.thumbnailurl || book.coverurl" coverClass="h-32 w-full" wrap vertical />
       </button>
     </div>
 
     <!--@1ejun6 > shared metadata styles > missing fields do not reserve empty rows -->
-      <div class="mt-auto min-h-5 text-sm text-muted-foreground">
-        <p v-if="variant === 'watchlist'" class="text-foreground">{{ book.status === 'available' ? 'Available to request' : 'Unavailable for new requests' }}</p>
-        <p>Collection: {{ book.collectionarea || book.mrtstation?.name || 'Not provided' }}</p>
-        <RouterLink v-if="props.requestId" class="inline-flex min-h-11 items-center underline underline-offset-4" :to="{ name: 'customerAdoptions', query: { request: props.requestId } }">View my request<span class="sr-only"> for {{ book.title }}</span></RouterLink>
-      </div>
+    <div class="space-y-1 pt-1 text-sm text-muted-foreground" :class="{ 'mt-auto': variant !== 'watchlist' }">
+      <p v-if="variant === 'watchlist'" class="text-foreground">{{ book.status === 'available' ? 'Available to request' : 'Unavailable for new requests' }}</p>
+      <p>Collection: {{ book.collectionarea || book.mrtstation?.name || 'Not provided' }}</p>
+    </div>
+    <RouterLink v-if="props.requestId" class="mt-auto inline-flex min-h-11 items-center text-sm underline underline-offset-4" :to="{ name: 'customerAdoptions', query: { request: props.requestId } }">View my request<span class="sr-only"> for {{ book.title }}</span></RouterLink>
 
     <!--@sree-sanjana06 > personal notes are managed only in watchlist-->
   </article>

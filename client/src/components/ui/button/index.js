@@ -9,6 +9,8 @@ export const buttonVariants = ({ variant, size } = {}) =>
       ? 'bg-badge-rose text-badge-rose-foreground'
       : variant === 'outline'
       ? 'washi-tape-hover border'
+      : variant === 'ghost'
+      ? 'washi-tape-hover'
       : 'washi-tape-hover bg-primary',
     size === 'sm' && 'px-3',
   );

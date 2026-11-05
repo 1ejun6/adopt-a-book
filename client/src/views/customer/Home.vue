@@ -220,7 +220,9 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
 .discovery {
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 1rem;
+  padding: 1.25rem;
+  display: grid;
+  gap: 1rem;
 }
 .shelf-note {
   margin-top: 0.375rem;
