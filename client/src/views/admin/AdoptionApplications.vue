@@ -134,11 +134,6 @@ fetchApplications();
 
     <AdminDetailsDialog v-if="selectedApplication" :open="detailsOpen" title="Application details"
         :book="selectedApplication.bookid" :status="selectedApplication.status" :fields="applicationFields" @update:open="detailsOpen = $event">
-        <!--@lee-hlmilk > customer reasons are not supplied by the API yet > show the agreed empty placeholder-->
-        <div class="space-y-2.5">
-            <p class="text-muted-foreground">Reason</p>
-            <p>No reason stated.</p>
-        </div>
         <p v-if="selectedApplication.status === 'pending' && detailsHint" class="text-muted-foreground">{{ detailsHint }}</p>
         <!--@lee-hlmilk > reviewed applications are read-only > decision actions remain available only for pending requests-->
         <template v-if="selectedApplication.status === 'pending'" #actions>
