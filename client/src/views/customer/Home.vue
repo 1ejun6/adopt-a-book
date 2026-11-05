@@ -1,6 +1,9 @@
 <script setup>
 import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
+import { RouterLink } from 'vue-router';
+import { useSavedBookActions } from '@/composables/useSavedBookActions';
+import { useAdoptionsStore } from '@/stores/adoptions';
 import { storeToRefs } from 'pinia';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
@@ -15,8 +18,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import dice from '@/assets/dice.svg';
 const auth = useAuthStore(),
   watchlist = useWatchlistStore();
+const adoptions = useAdoptionsStore();
 const { entries, savedIds, loading: savedLoading, loadError: savedError } = storeToRefs(watchlist);
-const busyIds = computed(() => new Set(watchlist.pendingOperations.keys()));
+const { busyIds, toggleBook } = useSavedBookActions();
 const preferredgenres = ref([]);
 const pool = ref([]),
   selection = ref([]),
@@ -83,7 +87,8 @@ async function loadSaved() {
 }
 async function toggle(book) {
   try {
-    const result = await watchlist.toggleBook(book);
+    const result = await toggleBook(book);
+    if (!result) return;
     toast.success(result.removed ? 'Removed from saved books' : 'Book saved');
   } catch (failure) {
     toast.error(failure.message);
@@ -99,6 +104,7 @@ watch(
     dialogs.value?.closeBookDetails();
     void loadShelf();
     void loadSaved();
+    void adoptions.fetchApplications().catch(() => { /* Details retains its retryable request check. */ });
   },
   { immediate: true },
 );
@@ -143,7 +149,13 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
         :saved-ids="savedIds"
         @select="dialogs?.openBookDetails($event)"
       />
-      <p v-else class="state">No available books match your favourite genres right now.</p>
+      <div v-else class="state">
+        <p>No available books match your favourite genres right now.</p>
+        <div class="flex flex-wrap gap-2.5">
+          <Button asChild><RouterLink :to="{ name: 'customerBooks' }">Browse all books</RouterLink></Button>
+          <Button asChild variant="outline"><RouterLink :to="{ name: 'customerAccount' }">Change favourite genres</RouterLink></Button>
+        </div>
+      </div>
       <p class="sr-only" role="status" aria-live="polite">{{ announcement }}</p>
     </section>
     <section aria-labelledby="saved-heading" class="saved-section">
@@ -166,6 +178,7 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
         v-else-if="entries.length"
         :entries="entries"
         :busy-ids="busyIds"
+        :request-ids="adoptions.existingRequestIds"
         @select="dialogs?.openBookDetails($event)"
         @remove="toggle"
       />

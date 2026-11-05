@@ -2,10 +2,12 @@
 import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { ArrowLeft01Icon, ArrowRight01Icon, Delete02Icon } from '@hugeicons/core-free-icons';
 import { Button } from '@/components/ui/button';
+import { RouterLink } from 'vue-router';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 const props = defineProps({
   entries: { type: Array, default: () => [] },
   busyIds: { type: Set, default: () => new Set() },
+  requestIds: { type: Map, default: () => new Map() },
 });
 defineEmits(['select', 'remove']);
 const track = ref(null),
@@ -86,7 +88,9 @@ onBeforeUnmount(() => observer?.disconnect());
               ? 'Available to request'
               : 'Unavailable for new requests'
           }}</span>
+          <span class="availability">Collection: {{ entry.bookid.collectionarea || entry.bookid.mrtstation?.name || 'Not provided' }}</span>
         </button>
+        <RouterLink v-if="props.requestIds.get(entry.bookid.id)" class="inline-flex min-h-11 items-center text-sm underline underline-offset-4" :to="{ name: 'customerAdoptions', query: { request: props.requestIds.get(entry.bookid.id) } }">View my request<span class="sr-only"> for {{ entry.bookid.title }}</span></RouterLink>
         <Button
           variant="ghost"
           :disabled="busyIds.has(entry.bookid.id)"

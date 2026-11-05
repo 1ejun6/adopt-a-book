@@ -10,10 +10,13 @@ import AppLocationFilter from '@/components/shared/AppLocationFilter.vue';
 import AppPagination from '@/components/shared/AppPagination.vue';
 import CustomerBookList from '@/components/customer/CustomerBookList.vue';
 import BrowseBookFilters from '@/components/customer/BrowseBookFilters.vue';
+import { Button } from '@/components/ui/button';
 
 // Catalogue state.
 const books = ref([]);
 const locationFilter = ref(null);
+const filterReset = ref(0);
+const locationReset = ref(0);
 
 //@sree-sanjana06 > loading and error states
 const loading = ref(false);
@@ -51,6 +54,16 @@ function applylocation(result) {
   if (result) query.mrtstationids = result.stations.map(station => station.id).join(',');
   else delete query.mrtstationids;
   router.push({ query });
+}
+
+//@lee-hlmilk > reset URL filters in one navigation > remount controls to cancel pending search/location lookups
+async function resetFilters(searchOnly = false) {
+  const query = { ...route.query };
+  for (const key of searchOnly ? ['search', 'page'] : ['search', 'subject', 'sort', 'mrtstationids', 'page']) delete query[key];
+  filterReset.value++;
+  if (!searchOnly) locationReset.value++;
+  await router.push({ query });
+  document.getElementById('browse-search')?.focus();
 }
 
 function cancelbooks() {
@@ -94,7 +107,6 @@ async function fetchBooks() {
     }
 
     books.value = Array.isArray(response.books) ? response.books : [];
-    if (!books.value.length) toast.info('no books found > adjust search & filters', { id: 'browse-empty' });
   } catch (error) {
     if (id !== requestId || request.signal.aborted) return;
     loadError.value = error.message;
@@ -129,10 +141,10 @@ useVisibleRefresh(fetchBooks, { busy: () => loading.value });
     </header>
 
     <!--@sree-sanjana06 > reusable customer filters built with AppToolbar-->
-    <BrowseBookFilters @pending="cancelbooks(); loading = true" @refresh="fetchBooks" />
+    <BrowseBookFilters :key="filterReset" @pending="cancelbooks(); loading = true" @refresh="fetchBooks" />
 
     <div class="space-y-2.5">
-      <AppLocationFilter ref="locationFilter" @change="applylocation" />
+      <AppLocationFilter :key="locationReset" ref="locationFilter" @change="applylocation" />
       <button v-if="Object.hasOwn(route.query, 'mrtstationids')" type="button" class="text-sm underline"
         @click="locationFilter?.clear()">
         clear location filter
@@ -142,6 +154,14 @@ useVisibleRefresh(fetchBooks, { busy: () => loading.value });
     <p v-if="!loadError && !loading" class="text-sm text-muted-foreground" role="status">{{ total }} books found</p>
 
     <p v-if="loadError" role="alert">{{ loadError }} <button class="underline min-h-11" :disabled="loading" @click="fetchBooks">Retry books</button></p>
+    <section v-else-if="!loading && !books.length" class="space-y-5 rounded-xl border p-5" aria-labelledby="browse-empty-heading">
+      <h2 id="browse-empty-heading">No matching books</h2>
+      <p>No books match your current search and filters. Try a broader search or remove a filter.</p>
+      <div class="flex flex-wrap gap-2.5">
+        <Button v-if="filters.search" variant="outline" @click="resetFilters(true)">Clear search</Button>
+        <Button variant="outline" @click="resetFilters()">Reset all filters</Button>
+      </div>
+    </section>
     <CustomerBookList :books="books" :loading="loading && !loadError" />
 
     <!--@sree-sanjana06 > existing pagination component-->

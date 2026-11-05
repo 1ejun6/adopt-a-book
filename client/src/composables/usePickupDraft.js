@@ -1,7 +1,8 @@
 import { nextTick, watch } from 'vue';
 import { collectionLocation, validPickupDate } from '@/lib/adoptions';
 import { appointmentTimes, availablePickupSlot, copyPickupDraft } from '@/lib/pickupTimes';
-import { todayInSingapore } from '@/lib/utils';
+import { todayInSingapore } from '@/lib/date';
+import { currentTime } from '@/lib/clock';
 
 export function usePickupDraft(props, open, emit, state, resetNavigation) {
   const {
@@ -21,6 +22,7 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
     draft,
     saved,
     today,
+    pickupDateError,
     eligible,
     changed,
     errorEntries,
@@ -73,6 +75,12 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
       emit('focus-heading');
     }
   });
+  //@lee-hlmilk > date viability updates while the dialog is open and when the shared clock resumes after a hidden tab
+  watch([() => draft.appointmentdate, currentTime], () => {
+    if (!open.value || saving.value || !['details', 'review'].includes(step.value)) return;
+    errors.appointmentdate = pickupDateError.value;
+    if (pickupDateError.value && step.value === 'review') step.value = 'details';
+  });
   function edit() {
     clearErrors();
     confirming.value = false;
@@ -92,14 +100,15 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
       return;
     }
     clearErrors();
+    currentTime.value = Date.now();
     today.value = todayInSingapore();
     if (!draft.location.trim()) {
       errors.location = 'Enter a preferred pickup location.';
     }
     if (!validPickupDate(draft.appointmentdate)) {
       errors.appointmentdate = 'Choose a valid pickup date.';
-    } else if (draft.appointmentdate < today.value) {
-      errors.appointmentdate = 'Choose today or a later date in Singapore time.';
+    } else if (pickupDateError.value) {
+      errors.appointmentdate = pickupDateError.value;
     }
     if (
       new Set(draft.timeslots).size !== 3 ||

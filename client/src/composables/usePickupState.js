@@ -6,9 +6,10 @@ import {
   pickupComplete,
   recordId,
   pickupStatus,
+  validPickupDate,
 } from '@/lib/adoptions';
-import { appointmentTimes } from '@/lib/pickupTimes';
-import { todayInSingapore } from '@/lib/utils';
+import { appointmentTimes, availablePickupTimes } from '@/lib/pickupTimes';
+import { todayInSingapore } from '@/lib/date';
 
 export function usePickupState(props) {
   const step = ref('view');
@@ -29,6 +30,12 @@ export function usePickupState(props) {
   const saved = ref(null);
   const today = ref(todayInSingapore());
   watch(currentTime, value => { today.value = todayInSingapore(new Date(value)); });
+  const pickupDateError = computed(() => {
+    if (!validPickupDate(draft.appointmentdate)) return '';
+    if (draft.appointmentdate < today.value) return 'Choose today or a later date in Singapore time.';
+    return availablePickupTimes(draft.appointmentdate).length < 3
+      ? "There aren't three available times left on this date. Choose another date." : '';
+  });
   const manageable = computed(
     () => props.ready && canManagePickup(props.record, props.appointment),
   );
@@ -121,6 +128,7 @@ export function usePickupState(props) {
     draft,
     saved,
     today,
+    pickupDateError,
     manageable,
     eligible,
     confirmed,

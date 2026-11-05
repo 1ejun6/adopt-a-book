@@ -10,6 +10,10 @@ export function availablePickupSlot(slot) {
   return pickupStart(slot) > currentTime.value;
 }
 
+export function availablePickupTimes(appointmentdate) {
+  return pickupTimes.filter(timeslot => availablePickupSlot({ appointmentdate, timeslot }));
+}
+
 export function appointmentTimes(appointment) {
   if (appointment?.optionsby === 'customer' && appointment.pickupoptions?.length === 3)
     return appointment.pickupoptions.map((option) => option.timeslot);

@@ -16,7 +16,7 @@ const props = defineProps({
   busy: { type: Boolean, default: false },
 });
 const open = defineModel('open', { type: Boolean, default: false });
-const emit = defineEmits(['save', 'retry']);
+const emit = defineEmits(['save', 'retry', 'close-auto-focus']);
 
 function cleanDescription(description) {
   if (typeof description !== 'string') return '';
@@ -41,7 +41,7 @@ const fields = computed(() => [
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent v-if="props.book || props.error || props.loading">
+    <DialogContent v-if="props.book || props.error || props.loading" @close-auto-focus="emit('close-auto-focus', $event)">
       <DialogHeader>
         <DialogTitle>Book details</DialogTitle>
         <DialogDescription>details for the selected book</DialogDescription>
@@ -67,7 +67,7 @@ const fields = computed(() => [
             <AppBookIdentity :title="props.book.title" :author="props.book.authors?.join(', ') || 'author not listed'"
               :cover="props.book.coverurl" coverClass="w-16" class="flex-1" />
             <slot name="book-action" :book="props.book">
-            <button v-if="props.canSave || props.saved" type="button" class="rounded-lg p-2"
+            <button v-if="props.canSave || props.saved" type="button" class="min-h-11 min-w-11 rounded-lg p-2"
               :disabled="!props.canSave || props.busy"
               :title="props.saved ? 'remove from watchlist' : 'save to watchlist'" :aria-pressed="props.saved"
               @click="emit('save', props.book)">

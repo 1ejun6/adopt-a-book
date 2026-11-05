@@ -8,7 +8,8 @@ import {
   validPickupDate,
 } from '@/lib/adoptions';
 import { availablePickupSlot, copyPickupDraft } from '@/lib/pickupTimes';
-import { todayInSingapore } from '@/lib/utils';
+import { todayInSingapore } from '@/lib/date';
+import { currentTime } from '@/lib/clock';
 
 export function usePickupMutations(props, state, review) {
   const adoptions = useAdoptionsStore();
@@ -131,6 +132,7 @@ export function usePickupMutations(props, state, review) {
       step.value !== 'review'
     )
       return;
+    currentTime.value = Date.now();
     today.value = todayInSingapore();
     if (
       !validPickupDate(draft.appointmentdate) ||

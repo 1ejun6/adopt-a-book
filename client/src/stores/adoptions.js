@@ -39,6 +39,9 @@ export const useAdoptionsStore = defineStore('adoptions', () => {
   const applicationsForBook = computed(
     () => (id) => applications.value.filter((item) => bookId(item) === id),
   );
+  const existingRequestIds = computed(() => new Map(
+    applications.value.filter(hasExistingAdoption).map(item => [bookId(item), recordId(item)]),
+  ));
   const resources = {
     applications: {
       data: applications,
@@ -269,6 +272,7 @@ export const useAdoptionsStore = defineStore('adoptions', () => {
     ready,
     journeys,
     applicationsForBook,
+    existingRequestIds,
     pendingWrites,
     uncertainBooks,
     reconcileApplication,
