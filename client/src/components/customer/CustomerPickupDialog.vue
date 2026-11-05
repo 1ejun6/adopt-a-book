@@ -9,7 +9,8 @@ import { usePickupDraft } from '@/composables/usePickupDraft';
 import { usePickupState } from '@/composables/usePickupState';
 import { computed, watchEffect } from 'vue';
 
-import { pickupCalendar, downloadPickupCalendar } from '@/lib/adoptions';
+import { pickupEvent } from '@/lib/calendar';
+import { currentTime } from '@/lib/clock';
 
 import { Button } from '@/components/ui/button';
 
@@ -62,21 +63,14 @@ const { edit, changeField, focusField, review } = draftFlow;
 const { checkStatus, submit, cancelPickup } = usePickupMutations(props, state, review);
 const calendar = computed(() => {
   if (!props.ready || !props.record?.reliable || props.record.warning) {
-    return '';
+    return null;
   }
-  return pickupCalendar(
+  return pickupEvent(
     props.appointment,
     props.record.book?.title || props.appointment?.booktitle,
+    currentTime.value,
   );
 });
-function saveCalendar() {
-  if (calendar.value) {
-    downloadPickupCalendar(
-      props.appointment,
-      props.record.book?.title || props.appointment?.booktitle,
-    );
-  }
-}
 defineExpose({ canNavigate, updateOpen });
 watchEffect(() =>
   emit('state', {
@@ -95,7 +89,7 @@ watchEffect(() =>
       v-if="error"
       ref="errorNode"
       tabindex="-1"
-      class="rounded-lg bg-badge-rose/40 p-3 text-sm text-destructive"
+      class="rounded-lg bg-badge-purple/40 p-3 text-sm text-destructive"
       role="alert"
     >
       {{ error }}
@@ -179,7 +173,6 @@ watchEffect(() =>
       @cancel="cancelPickup"
       @edit="edit"
       @back="back"
-      @calendar="saveCalendar"
     />
   </div>
 </template>

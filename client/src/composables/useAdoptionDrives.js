@@ -1,13 +1,18 @@
 import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
-import { ref, onScopeDispose } from 'vue';
+import { ref, watch, onScopeDispose } from 'vue';
+import { currentTime } from '@/lib/clock';
 import { api } from '@/lib/api';
-import { todayInSingapore } from '@/lib/date';
+import { driveHasEnded } from '../../../shared/drives.mjs';
 import { validPickupDate } from '@/lib/adoptions';
 
 export function useAdoptionDrives({ endpoint, cacheKey }) {
   // Only public drive data may be persisted in browser storage.
   if (endpoint !== '/drives') cacheKey = undefined;
   const drives = ref([]);
+  watch(currentTime, now => {
+    if (drives.value.some(drive => drive.past !== driveHasEnded(drive, now)))
+      drives.value = drives.value.map(drive => ({ ...drive, past: driveHasEnded(drive, now) }));
+  });
   const loading = ref(true);
   const error = ref('');
   let controller;
@@ -47,7 +52,7 @@ export function useAdoptionDrives({ endpoint, cacheKey }) {
           //@1ejun6 > cached drives can cross midnight > update past dates using Singapore time
           drives.value = cached.map((drive) => ({
             ...drive,
-            past: drive.eventdate < todayInSingapore() || drive.status === 'cancelled',
+            past: driveHasEnded(drive),
           }));
 
         }
@@ -85,7 +90,7 @@ export function useAdoptionDrives({ endpoint, cacheKey }) {
       if (id !== requestId) return;
       drives.value = drivelist.map((drive) => ({
         ...drive,
-        past: drive.eventdate < todayInSingapore() || drive.status === 'cancelled',
+        past: driveHasEnded(drive),
         bookCount: bookCounts.get(drive.mrtstationid) ?? null,
       }));
       try {

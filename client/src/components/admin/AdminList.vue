@@ -1,4 +1,5 @@
 <script setup>
+import { Button } from '@/components/ui/button';
 import { computed, useSlots } from 'vue';
 import AppFilters from '@/components/shared/AppFilters.vue';
 import AppPagination from '@/components/shared/AppPagination.vue';
@@ -62,7 +63,7 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
       </template>
     </AppFilters>
     </fieldset>
-    <div v-if="props.error" role="alert" class="rounded-lg border p-5 space-y-3"><p>{{ props.error }}</p><button type="button" class="underline min-h-11" :disabled="props.loading || props.disabled" @click="emit('retry')">Retry</button></div>
+    <div v-if="props.error" role="alert" class="rounded-lg border p-5 space-y-3"><p>{{ props.error }}</p><Button variant="outline" type="button" class="min-h-11" :disabled="props.loading || props.disabled" @click="emit('retry')">Retry</Button></div>
 
     <AdminTable v-if="!props.error" :rows="props.rows" :columns="props.columns" :selectedIds="selectedIds"
       :disabled="props.disabled || props.loading" :isLoading="props.loading" :selectable="props.selectable" :emptyTitle="props.emptyTitle" :emptyDescription="props.emptyDescription"

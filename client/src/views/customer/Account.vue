@@ -47,6 +47,7 @@ async function loadAccount() {
     if (!response.account) throw new Error('could not load your account > please try again');
     account.value = response.account;
     preferredgenres.value = [...(response.account.preferredgenres || [])];
+    auth.updateUser({ preferredgenres: preferredgenres.value });
     Object.assign(draft, { name: response.account.name, email: response.account.email });
   } catch (error) {
     if (id !== requestId || request.signal.aborted) return;
@@ -97,6 +98,7 @@ async function savePreferences() {
     if (request.signal.aborted) return;
     account.value.preferredgenres = response.preferredgenres;
     preferredgenres.value = [...response.preferredgenres];
+    auth.updateUser({ preferredgenres: response.preferredgenres });
     toast.success('Favourite genres saved');
   } catch (error) {
     if (!request.signal.aborted) preferencesError.value = error.message;

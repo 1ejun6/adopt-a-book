@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { driveTimeLabel } from '../../../../shared/drives.mjs';
 import { ArrowRight01Icon, Book02Icon, UserGroupIcon } from '@hugeicons/core-free-icons';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,7 +16,6 @@ const emit = defineEmits(['open']);
 // @brod > check if drive has ended
 const ended = computed(() => props.drive?.past && props.drive.status !== 'cancelled');
 const status = computed(() => ended.value ? 'ended' : props.drive?.status);
-const calendarcolour = computed(() => ({ open: 'bg-badge-green', closed: 'bg-badge-rose' })[status.value] || 'bg-badge-neutral');
 
 const when = computed(() => ({
   day: formatDate(props.drive?.eventdate, { day: 'numeric' }),
@@ -51,8 +51,7 @@ const booklabel = computed(() => `${bookcount.value ?? '—'} ${bookcount.value 
     class="washi-tape-hover flex w-full items-center gap-2.5 rounded-lg border p-5 sm:gap-5 text-left text-sm"
     @click="emit('open')">
     <time :datetime="drive.eventdate"
-      class="grid size-14 shrink-0 self-start place-content-center rounded-lg border text-center"
-      :class="calendarcolour">
+      class="grid size-14 shrink-0 self-start place-content-center rounded-lg border bg-primary text-center">
       <strong class="font-heading text-2xl">{{ when.day }}</strong>
       <small class="text-xs">{{ when.month }}</small>
     </time>
@@ -65,7 +64,7 @@ const booklabel = computed(() => `${bookcount.value ?? '—'} ${bookcount.value 
       </div>
       <p class="text-sm">{{ drive.location }}</p>
       <div class="flex flex-wrap items-center justify-between gap-2.5">
-        <p class="text-sm">{{ when.full }}</p>
+        <p class="text-sm">{{ when.full }} · {{ driveTimeLabel(drive) }}</p>
         <div class="flex flex-wrap gap-2.5 sm:gap-5">
           <span v-if="!drive.past" class="flex gap-2.5" title="remaining attendee slots">
             <HugeiconsIcon :icon="UserGroupIcon" class="size-5 shrink-0" aria-hidden="true" />

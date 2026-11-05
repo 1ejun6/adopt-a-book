@@ -39,7 +39,7 @@ export function useServerPagination({ endpoint, filters, selectedIds, query = ()
             if (id !== requestId) { return; }
             rows.value = [];
             loadError.value = error.message;
-            toast.error(error.message, { action: { label: 'retry', onClick: refresh } });
+            toast.error(error.message, { duration: Infinity, action: { label: 'retry', onClick: refresh } });
         } finally {
             if (id === requestId) { loading.value = false; }
         }

@@ -3,7 +3,7 @@ const { errorstatus, errormessage } = require("../utils/errors");
 
 async function readbook(req, res) {
   try {
-    return res.json(await books.catalogue(req.query));
+    return res.json(await books.catalogue(req.query, req.user?.id));
   } catch (error) {
     return res.status(errorstatus(error)).json({ error: errormessage(error, "could not load books") });
   }

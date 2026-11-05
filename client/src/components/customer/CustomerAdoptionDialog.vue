@@ -66,7 +66,7 @@ const flowDescription = computed(() => {
   if (view.value === 'pickup' && state.value.pickupStep === 'details') {
     return getApplicationStatus(props.appointment) === 'appointment confirmed'
       ? 'Update your preferred pickup details. Your current pickup stays confirmed until you send changes.'
-      : 'Choose your preferred pickup location, date and time. The team will confirm them before you travel.';
+      : 'Choose a date and two available times for pickup at the book’s MRT station. The team will confirm one before you travel.';
   }
   return status.value?.description || '';
 });

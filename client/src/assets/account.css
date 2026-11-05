@@ -107,7 +107,7 @@
 .form-error {
   padding: 12px;
   border-radius: 8px;
-  background: var(--badge-rose);
+  background: var(--badge-purple);
   color: var(--destructive);
   font-size: 0.875rem;
 }

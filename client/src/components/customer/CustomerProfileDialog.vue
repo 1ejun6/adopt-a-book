@@ -78,7 +78,7 @@ async function saveDetails() {
         <DialogDescription>your name, sign-in email and password</DialogDescription>
       </DialogHeader>
       <form class="p-5" :aria-busy="saving" @submit.prevent="saveDetails">
-        <p v-if="error" ref="errorMessage" class="rounded-lg bg-badge-rose p-3 text-destructive" role="alert" tabindex="-1">{{ error }}</p>
+        <p v-if="error" ref="errorMessage" class="rounded-lg bg-badge-purple p-3 text-destructive" role="alert" tabindex="-1">{{ error }}</p>
         <div class="space-y-4">
           <Field>
             <FieldLabel for="account-name">Full name</FieldLabel>

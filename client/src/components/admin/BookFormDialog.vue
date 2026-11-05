@@ -1,4 +1,5 @@
 <script setup>
+import AppStationSelect from '@/components/shared/AppStationSelect.vue';
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { useFormValidation } from '@/composables/useFormValidation';
@@ -239,14 +240,7 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
             </Field>
             <Field>
                 <FieldLabel for="edit-station">Collection area (MRT station) <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
-                <select id="edit-station" v-model="bookForm.mrtstationid" required
-                    :aria-invalid="invalidFields.includes('edit-station')" @change="clearInvalid"
-                    class="w-full min-w-0 rounded-lg border px-3 text-base min-h-11">
-                    <option value="" disabled>Select an MRT station</option>
-                    <option v-for="station in stationOptions" :key="station.id" :value="station.id">
-                        {{ station.name }}
-                    </option>
-                </select>
+                <AppStationSelect id="edit-station" v-model="bookForm.mrtstationid" :stations="stationOptions" required :disabled="submitting" :aria-invalid="invalidFields.includes('edit-station')" />
             </Field>
             <Field class="sm:col-span-2">
                 <FieldLabel for="edit-description">Description</FieldLabel>

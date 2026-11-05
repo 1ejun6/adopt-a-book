@@ -1,5 +1,9 @@
 <script setup>
 import { computed } from 'vue';
+import AppCalendarButton from './AppCalendarButton.vue';
+import { driveEvent } from '@/lib/calendar';
+import { currentTime } from '@/lib/clock';
+import { driveTimeLabel, driveHasEnded } from '../../../../shared/drives.mjs';
 import { useRouter } from 'vue-router';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,7 +23,7 @@ function goauth(name) {
   router.push({ name, query: { redirect: `/customer/drives?drive=${props.drive.id}` } });
 }
 
-//@1ejun6 > rsvp needs an account > keep auth choices visible until clicked \ dismissed
+// RSVP requires login; keep the action available until used or dismissed.
 function requestrsvp() {
   toast.info('log in to rsvp', {
     id: 'drive-rsvp',
@@ -27,13 +31,12 @@ function requestrsvp() {
     closeButton: true,
     style: { pointerEvents: 'auto' },
     action: { label: 'log in', onClick: () => goauth('login') },
-    cancel: { label: 'create account', onClick: () => goauth('register') },
   });
 }
 
-const ended = computed(() => props.drive.past && props.drive.status !== 'cancelled');
-const statuscolor = computed(() => ended.value ? 'neutral' : ({ open: 'green', closed: 'rose', cancelled: 'neutral' })[props.drive.status]);
-const canRsvp = computed(() => props.drive.status === 'open' && !props.drive.past);
+const ended = computed(() => driveHasEnded(props.drive, currentTime.value) && props.drive.status !== 'cancelled');
+const statuscolor = computed(() => ended.value ? 'neutral' : ({ open: 'green', closed: 'purple', cancelled: 'neutral' })[props.drive.status]);
+const canRsvp = computed(() => props.drive.status === 'open' && !driveHasEnded(props.drive, currentTime.value));
 
 const actionMessage = computed(() => {
   if (props.drive.status === 'cancelled') return 'this drive has been cancelled';
@@ -47,6 +50,7 @@ const fields = computed(() => {
   const { eventdate, location } = props.drive;
   return [
     { label: 'date', value: formatDate(eventdate, { dateStyle: 'full' }) },
+    { label: 'time', value: driveTimeLabel(props.drive) },
     { label: 'venue', value: location },
   ];
 });
@@ -73,9 +77,12 @@ const spots = computed(() => Number.isInteger(props.drive.spotsleft) ? `${props.
             <template v-for="field in fields" :key="field.label">
               <dt class="text-muted-foreground">{{ field.label }}</dt>
               <dd>
-                <a v-if="field.value && field.label === 'venue'"
+                <template v-if="field.value && field.label === 'venue'">
+                <p class="break-words">{{ field.value }}</p>
+                <Button asChild variant="outline"><a
                   :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(/singapore/i.test(drive.location) ? drive.location : `${drive.location}, Singapore`)}`"
-                  target="_blank" rel="noopener noreferrer" class="underline">{{ field.value }}</a>
+                  target="_blank" rel="noopener noreferrer" class="">View on map</a></Button>
+                </template>
                 <template v-else>{{ field.value || 'not provided' }}</template>
               </dd>
             </template>
@@ -85,6 +92,7 @@ const spots = computed(() => Number.isInteger(props.drive.spotsleft) ? `${props.
             </template>
           </dl>
 
+          <AppCalendarButton :event="driveEvent(drive, currentTime)" />
           <AppAdoptionDriveBooks v-if="open && drive.mrtstationid" :stationId="drive.mrtstationid" />
         </div>
 

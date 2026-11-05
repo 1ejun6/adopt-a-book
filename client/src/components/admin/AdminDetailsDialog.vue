@@ -1,4 +1,5 @@
 <script setup>
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import BookIdentity from '@/components/shared/AppBookIdentity.vue';
 import StatusBadge from '@/components/shared/AppStatusBadge.vue';
@@ -21,7 +22,7 @@ const emit = defineEmits(['update:open', 'retry']);
     <!--@lee-hlmilk > open is read from the view > update:open asks the view to store X ||| Escape ||| outside-click changes-->
     <Dialog :open="props.open" @update:open="!busy && emit('update:open', $event)">
         <DialogContent :showCloseButton="!busy" :aria-describedby="undefined" class="p-4">
-            <p v-if="error" role="alert">{{ error }} Actions are unavailable until details refresh. <button type="button" class="underline min-h-11" :disabled="busy" @click="emit('retry')">Retry details</button></p>
+            <p v-if="error" role="alert">{{ error }} Actions are unavailable until details refresh. <Button variant="outline" type="button" class="min-h-11" :disabled="busy" @click="emit('retry')">Retry details</Button></p>
             <DialogHeader>
                 <DialogTitle>{{ props.title }}</DialogTitle>
             </DialogHeader>

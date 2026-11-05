@@ -79,7 +79,8 @@ async function loadcurrentuser(req, res, next) {
         req.user = {
           id: profile.id,
           email: profile.email,
-          role: profile.role
+          role: profile.role,
+          preferredgenres: profile.preferredgenres || []
         };
         req.accesstoken = accesstoken;
       }

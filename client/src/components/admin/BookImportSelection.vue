@@ -1,4 +1,5 @@
 <script setup>
+import AppStationSelect from '@/components/shared/AppStationSelect.vue';
 import { computed, nextTick, toRefs, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import AdminTable from '@/components/admin/AdminTable.vue';
@@ -114,12 +115,7 @@ watch(() => props.importedIds, ids => {
                     <template #headerActions><span class="sr-only">Actions</span></template>
                     <template #cellMrtstationid="{ row }">
                         <!--@lee-hlmilk > review rows are draft copies > this native v-model stores each copy's station before submission-->
-                        <select v-model="row.mrtstationid" required :aria-label="`MRT station for ${row.title}`"
-                            :aria-invalid="invalidIds.includes(row.id)" class="w-full min-w-0 rounded-lg border px-3 text-base min-h-11"
-                            @change="invalidIds = invalidIds.filter(id => id !== row.id)">
-                            <option value="" disabled>Select an MRT station</option>
-                            <option v-for="station in props.stations" :key="station.id" :value="station.id">{{ station.name }}</option>
-                        </select>
+                        <AppStationSelect v-model="row.mrtstationid" :stations="props.stations" required :disabled="props.submitting" :aria-label="`MRT station for ${row.title}`" :aria-invalid="invalidIds.includes(row.id)" @change="invalidIds = invalidIds.filter(id => id !== row.id)" />
                     </template>
                     <template #cellActions="{ row }">
                         <Button type="button" variant="outline" :aria-label="`Remove ${row.title}`" @click.stop="removeBook(row.id)">Remove</Button>

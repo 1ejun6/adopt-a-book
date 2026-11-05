@@ -44,7 +44,7 @@ function handleInteractOutside(event) {
   <DialogPortal>
     <DialogOverlay />
     <DialogContent @interactOutside="handleInteractOutside" data-slot="dialog-content" v-bind="{ ...$attrs, ...forwarded }" :class="cn(
-      'fixed left-[max(1rem,env(safe-area-inset-left))] right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] z-50 mx-auto h-fit w-auto max-w-3xl max-h-[calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom)))] overflow-y-auto [overflow-wrap:anywhere] bg-background text-sm rounded-lg',
+      'fixed left-[max(1rem,env(safe-area-inset-left))] right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 m-auto h-fit w-auto max-w-3xl max-h-[calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom)))] overflow-y-auto [overflow-wrap:anywhere] bg-background text-sm rounded-lg',
       props.class,
     )
       ">

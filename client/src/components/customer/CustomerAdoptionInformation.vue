@@ -1,4 +1,5 @@
 <script setup>
+import { Button } from '@/components/ui/button';
 import { computed } from 'vue';
 import { pickupTimeText } from '@/lib/pickupTimes';
 import { displayDate, pickupStatus, recordId } from '@/lib/adoptions';
@@ -24,14 +25,14 @@ const attempts = computed(() =>
             {{ pickupTimeText(attempt) }} SGT
           </p>
           <p>{{ attempt.location || 'Location unavailable' }}</p>
-          <button
+          <Button variant="outline"
             type="button"
-            class="min-h-11 underline underline-offset-4"
+            class="min-h-11 "
             :aria-label="`View pickup record ${recordId(attempt)}`"
             @click="emit('pickup-record', attempt)"
           >
             View pickup record
-          </button>
+          </Button>
         </li>
       </ol>
   </section>

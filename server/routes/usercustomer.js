@@ -6,6 +6,7 @@ router.use(authenticated, customer);
 router.get("/", controller.home);
 router.patch("/preferences", controller.updatepreferences);
 router.get("/shelf", controller.readshelf);
+router.get("/catalogue", require("../controllers/bookcustomercontroller").readbook);
 router.get("/profile", controller.readaccount);
 router.patch("/profile", controller.updateaccount);
 router.patch("/password", controller.updatepassword);

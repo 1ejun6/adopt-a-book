@@ -15,9 +15,9 @@ export function availablePickupTimes(appointmentdate) {
 }
 
 export function appointmentTimes(appointment) {
-  if (appointment?.optionsby === 'customer' && appointment.pickupoptions?.length === 3)
-    return appointment.pickupoptions.map((option) => option.timeslot);
-  return [pickupTimes.includes(appointment?.timeslot) ? appointment.timeslot : '', '', ''];
+  if (appointment?.optionsby === 'customer' && [2, 3].includes(appointment.pickupoptions?.length))
+    return appointment.pickupoptions.slice(0, 2).map((option) => option.timeslot);
+  return [pickupTimes.includes(appointment?.timeslot) ? appointment.timeslot : '', ''];
 }
 export function copyPickupDraft(draft) {
   return { ...draft, timeslots: [...draft.timeslots] };
@@ -27,7 +27,7 @@ export function pickupTimeText(appointment) {
   if (
     appointment?.status === 'pending confirmation' &&
     appointment.optionsby === 'customer' &&
-    appointment.pickupoptions?.length === 3
+    [2, 3].includes(appointment.pickupoptions?.length)
   )
     return appointment.pickupoptions.map((option) => option.timeslot).join(' · ');
   return appointment?.timeslot || 'Time unavailable';

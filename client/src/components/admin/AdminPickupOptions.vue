@@ -66,7 +66,7 @@ async function confirmTime() {
     <fieldset :disabled="disabled || saving || uncertain" class="space-y-3">
       <legend class="text-lg">Confirm a time</legend>
       <p class="text-sm text-muted-foreground">
-        The customer is available at these three times. Select one to confirm pickup at
+        The customer is available at these proposed times. Select one to confirm pickup at
         {{ appointment.location }}.
       </p>
       <label

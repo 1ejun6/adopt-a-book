@@ -35,7 +35,7 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
   }
   function fillDraft() {
     Object.assign(draft, {
-      location: props.appointment?.location || collectionLocation(props.record?.book),
+      location: collectionLocation(props.record?.book),
       appointmentdate: props.appointment?.appointmentdate || '',
       timeslots: appointmentTimes(props.appointment),
     });
@@ -103,7 +103,7 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
     currentTime.value = Date.now();
     today.value = todayInSingapore();
     if (!draft.location.trim()) {
-      errors.location = 'Enter a preferred pickup location.';
+      errors.location = 'The book’s MRT station is unavailable. Refresh the book details before arranging pickup.';
     }
     if (!validPickupDate(draft.appointmentdate)) {
       errors.appointmentdate = 'Choose a valid pickup date.';
@@ -111,12 +111,12 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
       errors.appointmentdate = pickupDateError.value;
     }
     if (
-      new Set(draft.timeslots).size !== 3 ||
+      new Set(draft.timeslots).size !== 2 ||
       !draft.timeslots.every((timeslot) =>
         availablePickupSlot({ appointmentdate: draft.appointmentdate, timeslot }),
       )
     ) {
-      errors.timeslot = 'Choose three different future times on your preferred date.';
+      errors.timeslot = 'Choose two different future times on your preferred date.';
     }
     if (!changed.value) {
       errors.form = 'Change at least one pickup detail before sending an updated request.';

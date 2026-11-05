@@ -2,9 +2,9 @@ import { computed, watch } from 'vue';
 import { recordId, bookAuthors, actionPriority } from '@/lib/adoptions';
 
 export function useAdoptionResults({ grouping, navigation, loading, loadError, pickupError }) {
-  const { entries, entryDate, entrySection, groups, stageGroups, stageCounts, actionGroups } =
+  const { entries, entryDate, entrySection, groups, stageGroups, stageCounts, actionGroups, waitingGroups } =
     grouping;
-  const { search, searching, tab, stage, action, page, pageSize, updateQuery } = navigation;
+  const { search, searching, tab, stage, action, waiting, page, pageSize, updateQuery } = navigation;
   function matchesSearch(entry, query = search.value.trim().toLocaleLowerCase()) {
     if (!query) return true;
     const book = entry.kind === 'request' ? entry.record.book : null;
@@ -24,7 +24,7 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
       : tab.value === 'active'
         ? stage.value === 'needs-action'
           ? actionGroups.value[action.value]
-          : stageGroups.value[stage.value]
+          : stage.value === 'waiting' ? waitingGroups.value[waiting.value] : stageGroups.value[stage.value]
         : groups.value.history
     ).filter((entry) => matchesSearch(entry)),
   );
@@ -77,13 +77,13 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
         {
           key: 'arrange',
           title: 'Arrange a pickup',
-          description: 'Your book is approved. Propose a meeting point, date and three available times.',
+          description: 'Your book is approved. Choose a date and two times for pickup at its MRT station.',
         },
         {
           key: 'confirmed',
           title: 'Your confirmed pickups',
           description:
-            'Your time and meeting point are confirmed. Open a book to view or change them.',
+            'Your pickup is confirmed. Open a book to view the details or request a different time.',
         },
         {
           key: 'confirmation',
@@ -122,7 +122,7 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
         ? 'History'
         : {
             'needs-action': 'Your next steps',
-            waiting: 'Waiting for the team',
+            waiting: waiting.value === 'approval' ? 'Waiting for adoption approval' : 'Waiting for pickup confirmation',
             pickups: 'Your confirmed pickups',
             all: 'All your current adoptions',
           }[stage.value],
@@ -169,8 +169,8 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
           ];
     if (stage.value === 'waiting')
       return [
-        'No requests awaiting a response',
-        'Requests appear here while the team reviews a book request or confirms a pickup.',
+        waiting.value === 'approval' ? 'No adoptions awaiting approval' : 'No pickups awaiting confirmation',
+        waiting.value === 'approval' ? 'Book requests appear here while the team reviews them.' : 'Pickup requests appear here while the team chooses a time.',
       ];
     if (stage.value === 'pickups')
       return [

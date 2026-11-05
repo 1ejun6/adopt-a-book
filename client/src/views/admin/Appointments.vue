@@ -1,4 +1,6 @@
 <script setup>
+import AppCalendarButton from '@/components/shared/AppCalendarButton.vue';
+import { pickupEvent } from '@/lib/calendar';
 import { useAdminRecord } from '@/composables/useAdminRecord';
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -28,7 +30,7 @@ const appointmentFields = computed(() => [
     { label: 'Customer', value: selectedAppointment.value?.customer },
     { label: 'Email', value: selectedAppointment.value?.email },
     { label: 'Collection date', value: selectedAppointment.value?.appointmentdate ? formatDate(selectedAppointment.value.appointmentdate) : null },
-    { label: 'Time', value: selectedAppointment.value?.status === 'pending confirmation' && selectedAppointment.value?.optionsby === 'customer' ? 'Choose from the three times below' : selectedAppointment.value?.timeslot },
+    { label: 'Time', value: selectedAppointment.value?.status === 'pending confirmation' && selectedAppointment.value?.optionsby === 'customer' ? 'Choose from the proposed times below' : selectedAppointment.value?.timeslot },
     { label: 'Location', value: selectedAppointment.value?.location }
 ]);
 const detailsHint = computed(() => selectedAppointment.value ? actionHint([selectedAppointment.value], selectedAppointment.value.status === 'pending confirmation' ? 'appointment confirmed' : 'collected') : '');
@@ -213,7 +215,7 @@ fetchAppointments().then(loadAppointmentLink);
             <BookIdentity :title="row.booktitle" :author="row.book?.authors?.join(', ') || 'Unknown Author'" :cover="row.book?.coverurl" />
         </template>
         <template #cellCollection="{ row }">
-            <p>{{ formatDate(row.appointmentdate) }} · {{ row.status === 'pending confirmation' && row.optionsby === 'customer' ? 'Three times proposed' : row.timeslot }}</p>
+            <p>{{ formatDate(row.appointmentdate) }} · {{ row.status === 'pending confirmation' && row.optionsby === 'customer' ? 'Times proposed' : row.timeslot }}</p>
             <p class="text-muted-foreground">{{ row.location }}</p>
         </template>
         <template #cellStatus="{ value, row }"><StatusBadge :status="value" /><p v-if="value === 'pending confirmation' && pendingPickupState(row, currentTime) !== 'awaiting'" class="hidden text-sm text-destructive lg:block">Needs attention: no future pickup time or incomplete details</p><p v-else-if="value === 'pending confirmation' && row.pickupoptions?.length" class="hidden text-sm text-muted-foreground lg:block">Select a proposed time</p></template>
@@ -230,7 +232,8 @@ fetchAppointments().then(loadAppointmentLink);
         <p v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" class="text-muted-foreground">
             {{ detailsHint || (selectedAppointment.status === 'pending confirmation' ? 'Confirm after checking the requested date, time, and location.' : 'Mark collected only after the customer has physically received the book.') }}
         </p>
-        <AdminPickupOptions v-if="selectedAppointment.status === 'pending confirmation' && selectedAppointment.optionsby === 'customer' && selectedAppointment.pickupoptions?.length === 3 && selectedAppointment.book?.status === 'reserved'"
+        <AppCalendarButton :event="pickupEvent(selectedAppointment, selectedAppointment.booktitle, currentTime)" :disabled="detailLoading || !!detailError" />
+        <AdminPickupOptions v-if="selectedAppointment.status === 'pending confirmation' && selectedAppointment.optionsby === 'customer' && [2, 3].includes(selectedAppointment.pickupoptions?.length) && selectedAppointment.book?.status === 'reserved'"
             :disabled="detailLoading || !!detailError" :key="selectedAppointment.id" :appointment="selectedAppointment" v-model:saving="saving" @updated="pickupOptionsUpdated" />
         <template v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" #actions>
             <template v-if="selectedAppointment.status === 'pending confirmation'">

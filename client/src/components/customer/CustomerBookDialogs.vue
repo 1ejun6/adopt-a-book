@@ -327,7 +327,7 @@ defineExpose({ openBookDetails, closeBookDetails });
 </script>
 
 <template>
-  <p v-if="targetError" role="alert">{{ targetError }} <RouterLink class="underline min-h-11 inline-flex items-center" :to="{ query: { ...route.query, book: undefined } }">Browse available books</RouterLink></p>
+  <p v-if="targetError" role="alert">{{ targetError }} <Button asChild variant="outline"><RouterLink class="min-h-11 inline-flex items-center" :to="{ query: { ...route.query, book: undefined } }">Browse available books</RouterLink></Button></p>
   <AppBookPreviewDialog @close-auto-focus="restoreRequestFocus" @retry="openBookDetails(dialogBook, { viewOnly, onReturn: returnToAdoption })" v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError"
     :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)"
     @save="emit('save', $event)">
@@ -364,10 +364,10 @@ defineExpose({ openBookDetails, closeBookDetails });
         <Button v-else class="w-full" :disabled="!canRequestBook" @click="openRequestDialog">
           {{ requestButtonLabel }}
         </Button>
-        <button v-if="applicationsError" type="button" class="min-h-11 text-sm underline underline-offset-4"
+        <Button variant="outline" v-if="applicationsError" type="button" class="min-h-11 text-sm "
           @click="openBookDetails(dialogBook)">
           Retry request check
-        </button>
+        </Button>
       </div>
     </template>
   </AppBookPreviewDialog>

@@ -7,9 +7,9 @@ const pickupslots = Array.from({ length: 9 }, (_, i) =>
 const pickupoptionsschema = z.object({
   location: z.string().trim().min(1).max(300),
   appointmentdate: z.iso.date(),
-  pickupoptions: z.array(z.object({ appointmentdate: z.iso.date(), timeslot: z.enum(pickupslots) }).strict()).length(3)
+  pickupoptions: z.array(z.object({ appointmentdate: z.iso.date(), timeslot: z.enum(pickupslots) }).strict()).length(2)
 }).strict().refine(value => value.pickupoptions.every(option => option.appointmentdate === value.appointmentdate) &&
-  new Set(value.pickupoptions.map(option => option.timeslot)).size === 3, "Choose three different times on the same date");
+  new Set(value.pickupoptions.map(option => option.timeslot)).size === 2, "Choose two different times on the same date");
 const pickupchoiceschema = z.object({ proposalversion: z.string().uuid(), slot: z.number().int().min(0).max(2) }).strict();
 
 const appointmentstatusschema = z.enum([

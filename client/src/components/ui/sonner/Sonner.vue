@@ -5,7 +5,7 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
 </script>
 
 <template>
-  <Toaster position="top-center" :duration="4000" close-button :mobileOffset="10" class="quietToaster">
+  <Toaster position="top-center" :duration="1000" close-button :mobileOffset="10" class="quietToaster">
     <template #success-icon>
       <HugeiconsIcon :icon="CheckmarkCircle02Icon" :size="20" />
     </template>
@@ -56,5 +56,6 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
 .quietToaster [data-button] { grid-row: 2; min-height: 44px; padding: 8px; border-radius: 8px; background: var(--primary); }
 .quietToaster [data-cancel] { grid-column: 2; background: transparent; }
 .quietToaster [data-action] { grid-column: 3; }
+.quietToaster [data-action]:not([data-cancel] ~ [data-action]) { grid-column: 2 / -1; }
 .quietToaster [data-close-button] { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 44px; height: 44px; }
 </style>

@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import AppPagination from '@/components/shared/AppPagination.vue';
@@ -8,6 +9,7 @@ import CustomerAdoptionCard from './CustomerAdoptionCard.vue';
 import CustomerAdoptionEmpty from './CustomerAdoptionEmpty.vue';
 defineProps({
   actionCounts: Object,
+  waitingCounts: Object,
   searching: Boolean,
   tab: String,
   loading: Boolean,
@@ -28,10 +30,12 @@ defineProps({
   emptyStageTarget: String,
   emptyStageAction: String,
 });
+const waiting = defineModel('waiting', { type: String });
 const action = defineModel('action', { type: String });
 const page = defineModel('page', { type: Number });
 const stage = defineModel('stage', { type: String });
 const search = defineModel('search', { type: String });
+const subtask = computed({ get: () => stage.value === 'waiting' ? waiting.value : action.value, set: value => { if (stage.value === 'waiting') waiting.value = value; else action.value = value; } });
 const emit = defineEmits(['appointment', 'details', 'pickup', 'refresh']);
 </script>
 <template>
@@ -43,10 +47,16 @@ const emit = defineEmits(['appointment', 'details', 'pickup', 'refresh']);
     :aria-busy="loading"
   >
     <component
-      :is="!searching && tab === 'active' && stage === 'needs-action' ? Tabs : 'div'"
-      v-model="action"
+      :is="!searching && tab === 'active' && ['needs-action', 'waiting'].includes(stage) ? Tabs : 'div'"
+      v-model="subtask"
       class="space-y-4"
     >
+
+      <TabsList v-if="!searching && tab === 'active' && stage === 'waiting'" aria-label="Waiting tasks" class="adoption-tabs">
+        <TabsTrigger value="approval">Adoption approval <Badge v-if="!loading && !loadError && !pickupError" variant="neutral">{{ waitingCounts.approval }}</Badge></TabsTrigger>
+        <TabsTrigger value="confirmation">Pickup confirmation <Badge v-if="!loading && !loadError && !pickupError" variant="neutral">{{ waitingCounts.confirmation }}</Badge></TabsTrigger>
+      </TabsList>
+
       <TabsList
         v-if="!searching && tab === 'active' && stage === 'needs-action'"
         aria-label="Pickup actions"
@@ -57,13 +67,13 @@ const emit = defineEmits(['appointment', 'details', 'pickup', 'refresh']);
           <Badge v-if="!loading && !loadError && !pickupError" variant="neutral" class="adoption-tab-count tabular-nums">{{ actionCounts.arrange }}</Badge>
         </TabsTrigger>
         <TabsTrigger value="check" >
-          Check pickup
+          Review issues
           <Badge v-if="!loading && !loadError && !pickupError" variant="neutral" class="adoption-tab-count tabular-nums">{{ actionCounts.check }}</Badge>
         </TabsTrigger>
       </TabsList>
       <component
-        :is="!searching && tab === 'active' && stage === 'needs-action' ? TabsContent : 'div'"
-        :value="action"
+        :is="!searching && tab === 'active' && ['needs-action', 'waiting'].includes(stage) ? TabsContent : 'div'"
+        :value="subtask"
         class="space-y-4"
       >
         <header

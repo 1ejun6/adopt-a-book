@@ -1,4 +1,5 @@
 <script setup>
+import AppCalendarButton from '@/components/shared/AppCalendarButton.vue';
 import { pickupTimeText } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
 
@@ -13,10 +14,10 @@ defineProps({
   uncertain: Boolean,
   manageable: Boolean,
   editLabel: String,
-  calendar: String,
+  calendar: Object,
 });
 const confirming = defineModel('confirming', { type: Boolean });
-const emit = defineEmits(['pickup-record', 'cancel', 'edit', 'back', 'calendar']);
+const emit = defineEmits(['pickup-record', 'cancel', 'edit', 'back']);
 </script>
 <template>
   <h3 class="font-body text-sm font-semibold">
@@ -52,7 +53,7 @@ const emit = defineEmits(['pickup-record', 'cancel', 'edit', 'back', 'calendar']
   />
   <section
     v-if="confirming"
-    class="space-y-3 rounded-lg bg-badge-rose/40 p-4"
+    class="space-y-3 rounded-lg bg-badge-purple/40 p-4"
     aria-label="Confirm pickup cancellation"
   >
     <h3 class="text-xl">Cancel this pickup?</h3>
@@ -86,14 +87,7 @@ const emit = defineEmits(['pickup-record', 'cancel', 'edit', 'back', 'calendar']
     </Button>
   </div>
   <div v-if="!confirming" class="flex flex-wrap gap-x-5 gap-y-2">
-    <button
-      v-if="calendar"
-      type="button"
-      class="min-h-11 text-sm underline underline-offset-4"
-      @click="emit('calendar')"
-    >
-      Add to calendar
-    </button>
+    <AppCalendarButton v-if="calendar" :event="calendar" :disabled="saving || uncertain" />
     <p
       v-if="(!manageable || uncertain) && record?.canArrange"
       class="text-sm text-muted-foreground"

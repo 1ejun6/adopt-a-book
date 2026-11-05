@@ -50,7 +50,6 @@ async function login() {
         <Button type="submit" class="w-full " :disabled="auth.loginLoading">{{ auth.loginLoading ? 'Signing in…' : 'Login' }}</Button>
         </fieldset>
       </form>
-      <RouterLink class="underline" :to="{ name: 'register', query: { redirect: route.query.redirect } }">Create an account</RouterLink>
     </div>
   </section>
 </template>

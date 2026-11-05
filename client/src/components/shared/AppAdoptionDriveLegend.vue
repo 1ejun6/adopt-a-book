@@ -2,7 +2,7 @@
 const status = defineModel('status', { type: String, default: 'all' });
 const options = [
   { value: 'open', color: 'bg-badge-green' },
-  { value: 'closed', color: 'bg-badge-rose' },
+  { value: 'closed', color: 'bg-badge-purple' },
   { value: 'cancelled', color: 'bg-badge-neutral' },
 ];
 </script>

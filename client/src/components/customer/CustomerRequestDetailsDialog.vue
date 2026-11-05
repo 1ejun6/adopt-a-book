@@ -132,7 +132,7 @@ watchEffect(() => {
       <p>Your request has been withdrawn and moved to History.</p>
       <Button type="button" :disabled="saving" @click="emit('history')">View in History</Button>
     </section>
-    <section v-else-if="confirming" class="space-y-3 rounded-lg bg-badge-rose/40 p-4" aria-label="Confirm withdrawal">
+    <section v-else-if="confirming" class="space-y-3 rounded-lg bg-badge-purple/40 p-4" aria-label="Confirm withdrawal">
       <p class="text-sm">You can request this book again if it is still available.</p>
       <div class="adoption-actions">
         <Button type="button" variant="destructive" :disabled="saving || uncertain || !ready || !record.canWithdraw"
@@ -174,10 +174,10 @@ watchEffect(() => {
         <Button v-if="record.action" :disabled="!ready || saving" type="button" @click="emit('pickup', record)">{{
           record.actionLabel }}</Button>
       </div>
-      <button v-if="record.canWithdraw && !uncertain" :disabled="!ready || saving" type="button"
-        class="min-h-11 text-sm text-destructive underline underline-offset-4" @click="confirming = true">
+      <Button variant="destructive" v-if="record.canWithdraw && !uncertain" :disabled="!ready || saving" type="button"
+        class="min-h-11 text-sm text-destructive " @click="confirming = true">
         Withdraw request
-      </button>
+      </Button>
     </template>
   </div>
 </template>

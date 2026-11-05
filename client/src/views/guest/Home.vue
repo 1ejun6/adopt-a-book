@@ -1,6 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
@@ -8,9 +7,6 @@ import BookShelf from '@/components/books/BookShelf.vue';
 
 import AppBookPreviewDialog from '@/components/shared/AppBookPreviewDialog.vue';
 const selectedbook = ref(null), dialogopen = ref(false);
-const router = useRouter();
-//@lee-hlmilk > return to the exact physical copy after authentication > opening it never sends a request
-const bookDestination = computed(() => router.resolve({ name: 'customerBooks', query: { book: selectedbook.value?.id } }).fullPath);
 const cachekey = 'guest-bookshelf';
 const books = ref([]);
 const loading = ref(true);
@@ -72,13 +68,8 @@ onMounted(loadbooks);
             <div v-if="!loaderror || books.length">
                 <BookShelf :books="books" :loading="loading && !books.length" @select="selectedbook = $event; dialogopen = true" />
             </div>
-            <p v-if="loaderror" role="alert">Could not refresh books. <button class="underline min-h-11" :disabled="loading" @click="loadbooks(true)">Retry</button></p>
+            <p v-if="loaderror" role="alert">Could not refresh books. <Button variant="outline" class="min-h-11" :disabled="loading" @click="loadbooks(true)">Retry</Button></p>
         </div>
-        <AppBookPreviewDialog v-model:open="dialogopen" :book="selectedbook">
-            <template #actions>
-                <Button asChild><RouterLink :to="{ name: 'login', query: { redirect: bookDestination } }">Log in to request</RouterLink></Button>
-                <Button asChild variant="outline"><RouterLink :to="{ name: 'register', query: { redirect: bookDestination } }">Create an account</RouterLink></Button>
-            </template>
-        </AppBookPreviewDialog>
+        <AppBookPreviewDialog v-model:open="dialogopen" :book="selectedbook" />
     </section>
 </template>

@@ -99,10 +99,13 @@ const catalogueschema = z.object({
   page: z.coerce.number().int().min(1).max(Number.MAX_SAFE_INTEGER).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(24)
 });
-async function catalogue(query) {
+async function catalogue(query, customerid = null) {
   const filters = catalogueschema.parse(query);
   if (filters.sort === "nearest" && filters.mrtstationids === undefined) throw stations.invalid("nearest sorting requires mrtstationids");
-  const { data, error } = await supabase.rpc("browse_books", {
+  if (query.genregroup && !customerid) throw stations.invalid("sign in to filter by your genres");
+  const genre = z.enum(["my", "other"]).optional().parse(query.genregroup);
+  const { data, error } = await supabase.rpc(customerid ? "browse_customer_books" : "browse_books", {
+    ...(customerid ? { customer_id: customerid, genre_group: genre || null } : {}),
     search_term: filters.search,
     book_status: filters.status || null,
     book_subject: filters.subject || null,
@@ -144,10 +147,8 @@ async function inventory(query) {
   };
 }
 
-async function shelf(preferredgenres = []) {
-  let query = supabase.from("books").select(publicfields).eq("status", "available");
-  if (preferredgenres.length) query = query.overlaps("subjects", preferredgenres);
-  const { data, error } = await query.order("title").order("id").limit(100);
+async function shelf(customerid) {
+  const { data, error } = await supabase.rpc("customer_shelf", { customer_id: customerid });
   if (error) throw error;
   return data.map(mapbook);
 }

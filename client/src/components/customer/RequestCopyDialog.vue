@@ -109,19 +109,19 @@ function preventClosing(event) {
             {{ receiptWarning }}
           </p>
           <details v-if="applicationId" class="text-sm">
-            <summary class="min-h-11 cursor-pointer py-3 underline underline-offset-4">
+            <summary class="min-h-11 cursor-pointer rounded-lg border px-3 py-3">
               Request reference
             </summary>
             <p class="select-all [overflow-wrap:anywhere]">{{ applicationId }}</p>
           </details>
           <div class="adoption-actions">
-            <button
+            <Button variant="outline"
               type="button"
-              class="min-h-11 text-sm underline underline-offset-4"
+              class="min-h-11 text-sm "
               @click="open = false"
             >
               Continue browsing
-            </button>
+            </Button>
             <Button asChild >
               <RouterLink :to="adoptionsLink">View my request</RouterLink>
             </Button>

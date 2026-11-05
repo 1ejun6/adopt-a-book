@@ -1,4 +1,5 @@
 <script setup>
+import { Button } from '@/components/ui/button';
 import { computed } from 'vue';
 import { Bookmark02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/vue';
@@ -63,7 +64,7 @@ const fields = computed(() => [
           </div>
         </div>
 
-        <div v-else-if="props.error" role="alert" class="space-y-3"><p>{{ props.error }}</p><button type="button" class="underline min-h-11" @click="emit('retry')">Retry book details</button></div>
+        <div v-else-if="props.error" role="alert" class="space-y-3"><p>{{ props.error }}</p><Button variant="outline" type="button" class="min-h-11" @click="emit('retry')">Retry book details</Button></div>
         <div v-else class="space-y-4">
           <div class="flex items-start gap-2.5">
             <AppBookIdentity :title="props.book.title" :author="props.book.authors?.join(', ') || 'author not listed'"
@@ -91,9 +92,15 @@ const fields = computed(() => [
             <div v-for="field in fields" :key="field.label" class="space-y-0.5">
               <dt class="text-xs text-muted-foreground">{{ field.label }}</dt>
               <dd>
-                <a v-if="field.label === 'collection'"
+                <template v-if="field.label === 'collection'">
+                <a
                   :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${field.value}, Singapore`)}`"
-                  target="_blank" rel="noopener noreferrer" class="underline underline-offset-4">{{ field.value }}</a>
+                  target="_blank" rel="noopener noreferrer"
+                  class="break-words rounded-sm underline underline-offset-4 hover:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                  :aria-label="`${field.value} on Google Maps (opens in a new tab)`">
+                  {{ field.value }} <span class="inline-block no-underline" aria-hidden="true">↗</span>
+                </a>
+                </template>
                 <template v-else>{{ field.value }}</template>
               </dd>
             </div>

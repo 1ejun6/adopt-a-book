@@ -1,4 +1,8 @@
 <script setup>
+import AppCalendarButton from '@/components/shared/AppCalendarButton.vue';
+import { driveEvent } from '@/lib/calendar';
+import { currentTime } from '@/lib/clock';
+import { driveHasEnded, driveTimeLabel } from '../../../../shared/drives.mjs';
 import { useAdminRecord } from '@/composables/useAdminRecord';
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
@@ -44,7 +48,7 @@ const columns = [
 ];
 const bookColumns = [{ key: 'title', label: 'Title / Author' }];
 //@lee-hlmilk > cancelled drives belong in Past regardless of their scheduled date
-function isPastDrive(drive) { return drive.eventdate < today.value || drive.status === 'cancelled'; }
+function isPastDrive(drive) { return driveHasEnded(drive, currentTime.value); }
 const statusOptions = computed(() => filters.view === 'past' ? ['closed', 'cancelled'] : ['open', 'closed']);
 //@lee-hlmilk > SQL owns tab/date/search filtering > only this page is loaded
 const { rows: drives, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchDrives } = useServerPagination({
@@ -55,6 +59,7 @@ const selectedDrives = computed(() => drives.value.filter(drive => selectedIds.v
 const pastDrive = computed(() => selectedDrive.value && isPastDrive(selectedDrive.value));
 const driveFields = computed(() => [
     { label: 'Event date', value: selectedDrive.value ? formatDate(selectedDrive.value.eventdate) : null },
+    { label: 'Time', value: driveTimeLabel(selectedDrive.value) },
     { key: 'location', label: 'Location', value: selectedDrive.value?.location },
     { label: 'Registrations', value: selectedDrive.value ? `${selectedDrive.value.userids.length} / ${selectedDrive.value.maxcapacity}` : null }
 ]);
@@ -94,7 +99,7 @@ async function fetchStationBooks() {
     } catch (error) {
         if (id !== booksRequestId) { return; }
         stationBooks.error = error.message;
-        toast.error(error.message, { action: { label: 'retry', onClick: fetchStationBooks } });
+        toast.error(error.message, { duration: Infinity, action: { label: 'retry', onClick: fetchStationBooks } });
     } finally { if (id === booksRequestId) { stationBooks.loading = false; } }
 }
 
@@ -187,7 +192,7 @@ fetchDrives();
         </template>
         <template #cellTitle="{ value }"><strong class="block break-words lg:truncate font-heading font-normal text-lg">{{ value }}</strong></template>
         <template #cellEventdate="{ row }">
-            <p>{{ formatDate(row.eventdate) }}</p>
+            <p>{{ formatDate(row.eventdate) }}</p><p>{{ driveTimeLabel(row) }}</p>
             <small class="block break-words text-sm lg:truncate lg:text-muted-foreground">{{ row.location }}</small>
         </template>
         <template #cellRegistrations="{ row }">{{ row.userids.length }} / {{ row.maxcapacity }}</template>
@@ -204,8 +209,9 @@ fetchDrives();
         <template #field-location="{ field }">
             <!--@lee-hlmilk > field-location matches the field's key > scoped field data keeps the map link beside its location-->
             <p>{{ field.value }}</p>
-            <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(field.value)}`" target="_blank" rel="noopener noreferrer" class="underline">Open in Google Maps ↗</a>
+            <Button asChild variant="outline"><a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(field.value)}`" target="_blank" rel="noopener noreferrer" class="">Open in Google Maps ↗</a></Button>
         </template>
+        <AppCalendarButton :event="driveEvent(selectedDrive, currentTime)" :disabled="detailLoading || !!detailError" />
         <section v-if="!pastDrive" class="space-y-2.5" aria-labelledby="drive-books-title">
             <h2 id="drive-books-title">Available books</h2>
             <Input v-if="selectedDrive.mrtstationid" v-model="stationBooks.search" type="search" aria-label="Search available books by title or author"

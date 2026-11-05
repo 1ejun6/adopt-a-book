@@ -73,7 +73,7 @@ async function fetchDashboard() {
       })
     ]);
     for (const result of results) {
-      if (result.status === 'rejected') { toast.error(result.reason.message, { action: { label: 'retry', onClick: fetchDashboard } }); }
+      if (result.status === 'rejected') { toast.error(result.reason.message, { duration: Infinity, action: { label: 'retry', onClick: fetchDashboard } }); }
     }
   } finally { loading.value = false; }
 }

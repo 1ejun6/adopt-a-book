@@ -67,7 +67,7 @@ async function loadShelf() {
     pool.value = [
       ...new Map(
         response.books
-          .filter((book) => book?.id && book.status === 'available')
+          .filter((book) => book?.id && book.status === 'available' && !savedIds.value.has(book.id))
           .map((book) => [book.id, book]),
       ).values(),
     ].slice(0, 100);
@@ -108,6 +108,12 @@ watch(
   },
   { immediate: true },
 );
+watch(() => `${[...savedIds.value].sort().join(',')}:${watchlist.pendingOperations.size}`,  () => {
+  pool.value = pool.value.filter(book => !savedIds.value.has(book.id));
+  selection.value = selection.value.filter(book => !savedIds.value.has(book.id));
+  void loadShelf();
+});
+watch(() => JSON.stringify(auth.user?.preferredgenres), () => { void loadShelf(); });
 onBeforeUnmount(() => {
   generation++;
   controller?.abort();
@@ -157,7 +163,6 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
         </div>
       </div>
       <p class="sr-only" role="status" aria-live="polite">{{ announcement }}</p>
-      <RouterLink v-if="loading || error || selection.length" :to="{ name: 'customerBooks' }" class="inline-flex min-h-11 items-center text-sm underline underline-offset-4">Browse all books</RouterLink>
     </section>
     <section aria-labelledby="saved-heading" class="saved-section">
       <div v-if="savedLoading || savedError || !entries.length" class="section-heading">

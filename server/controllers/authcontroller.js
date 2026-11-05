@@ -132,7 +132,7 @@ async function login(req, res) {
     setauthcookies(res, data.session);
     return res.json({
       message: "login successful",
-      user: { id: profile.id, email: profile.email, role: profile.role }
+      user: { id: profile.id, email: profile.email, role: profile.role, preferredgenres: profile.preferredgenres || [] }
     });
   } catch (error) {
     console.error("login error >", error.message);

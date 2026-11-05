@@ -6,7 +6,7 @@ export const buttonVariants = ({ variant, size } = {}) =>
   cn(
     'inline-flex items-center justify-center min-h-11 min-w-11 gap-2 rounded-lg px-4 py-2 text-sm',
     variant === 'destructive'
-      ? 'bg-badge-rose text-badge-rose-foreground'
+      ? 'bg-badge-purple text-badge-purple-foreground'
       : variant === 'outline'
       ? 'washi-tape-hover border bg-card'
       : 'washi-tape-hover bg-primary',

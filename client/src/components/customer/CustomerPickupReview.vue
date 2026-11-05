@@ -31,15 +31,17 @@ const emit = defineEmits(['change-field', 'back', 'submit']);
       <dt class="text-muted-foreground">{{ field.label }}</dt>
       <dd class="[overflow-wrap:anywhere]">{{ field.value }}</dd>
       <dd>
-        <button
+        <Button
+          v-if="field.key !== 'location'"
+          variant="outline"
           type="button"
-          class="min-h-11 underline underline-offset-4"
+
           :aria-label="`Change ${field.label.toLowerCase()}`"
           :disabled="saving"
           @click="emit('change-field', field.key)"
         >
           Change
-        </button>
+        </Button>
       </dd>
     </div>
   </dl>
@@ -57,7 +59,7 @@ const emit = defineEmits(['change-field', 'back', 'submit']);
     {{
       confirmed
         ? 'Sending these changes replaces your current confirmation. Wait until the updated pickup is confirmed before you travel.'
-        : 'The team will choose one of your three times and confirm the pickup. Check My Adoptions before travelling.'
+        : 'The team will choose one of your two times and confirm the pickup. Check My Adoptions before travelling.'
     }}
   </p>
   <div class="adoption-actions">

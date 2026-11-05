@@ -7,7 +7,7 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   savedIds: { type: Set, default: () => new Set() },
 });
-const colourClasses = ['bg-badge-rose', 'bg-badge-neutral', 'bg-badge-amber', 'bg-badge-green', 'bg-primary'];
+const colourClasses = ['bg-badge-purple', 'bg-badge-neutral', 'bg-badge-amber', 'bg-badge-green', 'bg-primary'];
 defineEmits(['select']);
 </script>
 

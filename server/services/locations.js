@@ -147,6 +147,30 @@ async function resolveplaces(query) {
   });
 }
 
+async function reverseplace(lat, lng) {
+  return cached(`address:${lat.toFixed(5)},${lng.toFixed(5)}`, 15 * 60 * 1000, async () => {
+    const url = new URL(`${onemapurl}/api/public/revgeocode`);
+    url.searchParams.set("location", `${lat},${lng}`);
+    url.searchParams.set("buffer", "100");
+    url.searchParams.set("addressType", "All");
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const data = await request(url, { headers: { Authorization: await gettoken() } });
+        const valid = value => value && !["NIL", "null", "NA"].includes(String(value));
+        const rows = (data.GeocodeInfo || []).filter(row => valid(row.ROAD));
+        rows.sort((a, b) => distancekm({ lat, lng }, point(a)) - distancekm({ lat, lng }, point(b)));
+        if (!rows.length) throw failure("Could not find an address here. Retry or enter a postcode or address.", 404);
+        const row = rows[0];
+        const name = [row.BLOCK, row.ROAD, row.BUILDINGNAME, row.POSTALCODE].filter(valid).join(" ");
+        return { name, postcode: valid(row.POSTALCODE) ? row.POSTALCODE : "", lat, lng, source: "onemap" };
+      } catch (error) {
+        if (attempt || !error.unauthorized || process.env.onemaptoken) throw error;
+        token = null;
+      }
+    }
+  });
+}
+
 function rankedstations(point, stations, radius = Infinity) {
   const ranked = [];
   for (const station of stations) {
@@ -175,7 +199,7 @@ async function nearby(input) {
   const [places, stations] = await Promise.all([
     input.query
       ? resolveplaces(input.query)
-      : [{ name: "Your selected location", lat: input.lat, lng: input.lng, source: "coordinates" }],
+      : reverseplace(input.lat, input.lng).then(place => [place]),
     require("../models/mrtstations").list()
   ]);
   if (!stations.length) throw failure("MRT catalogue unavailable; contact the administrator");

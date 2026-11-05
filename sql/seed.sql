@@ -1,27 +1,30 @@
--- Demo data for a fresh database after base.sql. Run /seed after /base.
--- Recreate the two application accounts from their existing Supabase Auth users.
-alter table public.users disable trigger protect_last_admin;
-delete from public.users;
-alter table public.users enable trigger protect_last_admin;
-update public.books set status = 'available', updatedat = now()
-where ownerid is null and status = 'reserved';
+-- Complete demo reset. Apply base.sql (fresh DB) or the forward migration first.
+-- This single DO statement is atomic even when executed directly in a SQL editor.
+-- Only the fixture IDs below and their demo-customer activity are rebuilt.
+-- Supabase Auth accounts and unrelated application records are preserved.
+do $seed$
+declare
+  admin_id constant uuid := 'a3c11c76-41a4-4786-9803-a384c1d207a7';
+  customer_id constant uuid := 'b3563099-7900-40ba-a478-e8bb63b2d477';
+  today date := (now() at time zone 'Asia/Singapore')::date;
+  item record; application_id uuid; appointment_id uuid; pickup_date date;
+  proposed jsonb; selected_status text;
+begin
+  -- Fail before touching data if the existing demo logins are missing or have the wrong role.
+  if (select count(*) from auth.users where id in (admin_id,customer_id)) <> 2 then
+    raise exception 'Seed requires the existing demo admin and customer Supabase Auth accounts. No data was changed.';
+  end if;
+  if exists(select 1 from public.users where (id=admin_id and role<>'admin') or (id=customer_id and role<>'customer')) then
+    raise exception 'Demo account roles do not match. No data was changed.';
+  end if;
+  insert into public.users(id,name,email,role)
+  select id,coalesce(nullif(btrim(raw_user_meta_data->>'name'),''),split_part(email,'@',1)),email,
+    case when id=admin_id then 'admin' else 'customer' end
+  from auth.users where id in (admin_id,customer_id)
+  on conflict(id) do nothing;
+  update public.users set preferredgenres=array['Fiction','Fantasy','Romance'] where id=customer_id;
 
-insert into public.users (id, name, email, role)
-select
-  authuser.id,
-  coalesce(nullif(btrim(authuser.raw_user_meta_data ->> 'name'), ''), split_part(authuser.email, '@', 1)),
-  authuser.email,
-  case authuser.id
-    when 'a3c11c76-41a4-4786-9803-a384c1d207a7'::uuid then 'admin'
-    when 'b3563099-7900-40ba-a478-e8bb63b2d477'::uuid then 'customer'
-  end
-from auth.users authuser
-where authuser.id in (
-  'a3c11c76-41a4-4786-9803-a384c1d207a7'::uuid,
-  'b3563099-7900-40ba-a478-e8bb63b2d477'::uuid
-);
-
-select public.sync_mrt_stations($stations$[
+  perform public.sync_mrt_stations($stations$[
 {"name":"Admiralty MRT","codes":["NS10"],"lat":1.44058856161847,"lng":103.800990519771},
 {"name":"Aljunied MRT","codes":["EW9"],"lat":1.31643261181572,"lng":103.882906044384},
 {"name":"Ang Mo Kio MRT","codes":["CR11","NS16"],"lat":1.36993284962264,"lng":103.849558092319},
@@ -190,21 +193,7 @@ select public.sync_mrt_stations($stations$[
 {"name":"Yishun MRT","codes":["NS13"],"lat":1.42944308477332,"lng":103.835005047246}
 ]$stations$::jsonb);
 
-insert into public.adoptiondrives (id,title,location,eventdate,description,maxcapacity,status,mrtstationid)
-select d.id,d.title,d.location,(now() at time zone 'Asia/Singapore')::date + d.daysfromnow,
-       d.description,d.maxcapacity,d.status,s.id
-from jsonb_to_recordset($drives$[
-{"id":"0362bead-243b-4449-a430-59ae38752e34","title":"Community Book Swap","location":"Dhoby Ghaut MRT","daysfromnow":14,"description":"Bring a book and find your next read.","maxcapacity":40,"status":"open","mrtcode":"NS24"},
-{"id":"55d453df-48fc-405a-8ee4-397466b15e6f","title":"Weekend Book Adoption","location":"Bugis MRT","daysfromnow":28,"description":"Discover books shared by the community.","maxcapacity":40,"status":"open","mrtcode":"EW12"},
-{"id":"ede2b15f-a4e2-418e-8833-b3dd4abcac53","title":"Neighbourhood Reading Day","location":"City Hall MRT","daysfromnow":42,"description":"Meet readers and browse books for adoption.","maxcapacity":40,"status":"open","mrtcode":"NS25"},
-{"id":"a4fb0a2c-5b13-4915-a812-97663c533f8f","title":"Books for Everyone","location":"Tampines MRT","daysfromnow":56,"description":"Share stories and take home a new read.","maxcapacity":40,"status":"open","mrtcode":"EW2"},
-{"id":"5096d7c2-3cc3-4935-b0af-6e9bc6cabc70","title":"Library Friends Meetup","location":"Bishan MRT","daysfromnow":70,"description":"Browse community books and meet fellow readers.","maxcapacity":40,"status":"open","mrtcode":"NS17"}
-]$drives$::jsonb)
-  as d(id uuid,title text,location text,daysfromnow integer,description text,maxcapacity integer,status text,mrtcode text)
-join public.mrtstations s on d.mrtcode = any(s.codes)
-on conflict (id) do nothing;
-
-with incoming as (
+  create temporary table demo_seed_books on commit drop as
   select * from jsonb_to_recordset($books$[
 {"id":"1100a411-b9fa-4574-82fc-dffa90f707d5","title":"Born a Crime","authors":["Trevor Noah"],"isbn":"3896675907","subjects":["Biography"],"publicationyear":2016,"description":"","coverurl":"https://covers.openlibrary.org/b/id/8294078-L.jpg","openlibraryid":"/works/OL17824318W","mrtcode":"EW27"},
 {"id":"1f7fa5eb-655b-4327-8218-097e91f3f0c6","title":"Devil and the Deep Sea","authors":["Sara Craven"],"isbn":"9780373111435","subjects":["Romance"],"publicationyear":1988,"description":"","coverurl":"https://covers.openlibrary.org/b/id/9620545-L.jpg","openlibraryid":"/works/OL11327658W","mrtcode":"DT14"},
@@ -245,75 +234,130 @@ with incoming as (
 {"id":"6a5d4e6c-b12c-49b9-8133-f542e58c475e","title":"When Breath Becomes Air","authors":["Paul Kalanithi"],"isbn":"8652122822","subjects":["Philosophy"],"publicationyear":2016,"description":"","coverurl":"https://covers.openlibrary.org/b/id/11463139-L.jpg","openlibraryid":"/works/OL17356252W","mrtcode":"DT27"},
 {"id":"01c33cd0-c1f3-4afd-8c57-83dddff26882","title":"Where the Red Fern Grows","authors":["Wilson Rawls"],"isbn":"0613835344","subjects":["Young adult"],"publicationyear":1961,"description":"","coverurl":"https://covers.openlibrary.org/b/id/7996608-L.jpg","openlibraryid":"/works/OL465360W","mrtcode":"NE16"},
 {"id":"724533b2-46ce-4177-8e03-b7eff2f70054","title":"Wings of Fire","authors":["A. P. J. Abdul Kalam"],"isbn":"8173711461","subjects":["Biography"],"publicationyear":1999,"description":"","coverurl":"https://covers.openlibrary.org/b/id/9153819-L.jpg","openlibraryid":"/works/OL1037811W","mrtcode":"DT37"},
-{"id":"4fb95c2a-2950-4e79-81bd-b5d4f0f9285b","title":"走ることについて語るときに僕の語ること","authors":["村上春樹"],"isbn":"3442739454","subjects":["Biography"],"publicationyear":2006,"description":"","coverurl":"https://covers.openlibrary.org/b/id/7167416-L.jpg","openlibraryid":"/works/OL2625422W","mrtcode":"NS23"}
+{"id":"4fb95c2a-2950-4e79-81bd-b5d4f0f9285b","title":"走ることについて語るときに僕の語ること","authors":["村上春樹"],"isbn":"3442739454","subjects":["Biography"],"publicationyear":2006,"description":"","coverurl":"https://covers.openlibrary.org/b/id/7167416-L.jpg","openlibraryid":"/works/OL2625422W","mrtcode":"NS23"},
+{"id":"de000001-0000-4000-8000-000000000001","title":"Community reading: Adventure","authors":["Community Library"],"subjects":["Adventure"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000002","title":"Community reading: Art","authors":["Community Library"],"subjects":["Art"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000003","title":"Community reading: Biography","authors":["Community Library"],"subjects":["Biography"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000004","title":"Community reading: Business","authors":["Community Library"],"subjects":["Business"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000005","title":"Community reading: Children","authors":["Community Library"],"subjects":["Children"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000006","title":"Community reading: Comics","authors":["Community Library"],"subjects":["Comics"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000007","title":"Community reading: Cooking","authors":["Community Library"],"subjects":["Cooking"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000008","title":"Community reading: Fantasy","authors":["Community Library"],"subjects":["Fantasy"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000009","title":"Community reading: Fiction","authors":["Community Library"],"subjects":["Fiction"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000010","title":"Community reading: Health","authors":["Community Library"],"subjects":["Health"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000011","title":"Community reading: Historical fiction","authors":["Community Library"],"subjects":["Historical fiction"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000012","title":"Community reading: History","authors":["Community Library"],"subjects":["History"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000013","title":"Community reading: Horror","authors":["Community Library"],"subjects":["Horror"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000014","title":"Community reading: Mystery","authors":["Community Library"],"subjects":["Mystery"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000015","title":"Community reading: Nonfiction","authors":["Community Library"],"subjects":["Nonfiction"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000016","title":"Community reading: Philosophy","authors":["Community Library"],"subjects":["Philosophy"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000017","title":"Community reading: Poetry","authors":["Community Library"],"subjects":["Poetry"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000018","title":"Community reading: Religion","authors":["Community Library"],"subjects":["Religion"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000019","title":"Community reading: Romance","authors":["Community Library"],"subjects":["Romance"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000020","title":"Community reading: Science","authors":["Community Library"],"subjects":["Science"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000021","title":"Community reading: Science fiction","authors":["Community Library"],"subjects":["Science fiction"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000022","title":"Community reading: Self-help","authors":["Community Library"],"subjects":["Self-help"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000023","title":"Community reading: Technology","authors":["Community Library"],"subjects":["Technology"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000024","title":"Community reading: Thriller","authors":["Community Library"],"subjects":["Thriller"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000025","title":"Community reading: Travel","authors":["Community Library"],"subjects":["Travel"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000001-0000-4000-8000-000000000026","title":"Community reading: Young adult","authors":["Community Library"],"subjects":["Young adult"],"description":"Demo genre discovery copy.","mrtcode":"NS24"},
+{"id":"de000002-0000-4000-8000-000000000001","title":"Born a Crime — journey demo copy","authors":["Trevor Noah"],"isbn":"3896675907","subjects":["Biography"],"publicationyear":2016,"description":"","coverurl":"https://covers.openlibrary.org/b/id/8294078-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":1},
+{"id":"de000002-0000-4000-8000-000000000002","title":"Devil and the Deep Sea — journey demo copy","authors":["Sara Craven"],"isbn":"9780373111435","subjects":["Romance"],"publicationyear":1988,"description":"","coverurl":"https://covers.openlibrary.org/b/id/9620545-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":2},
+{"id":"de000002-0000-4000-8000-000000000003","title":"Educated — journey demo copy","authors":["Tara Westover","Orah Danḳner"],"isbn":"9722533797","subjects":["Biography"],"publicationyear":2018,"description":"","coverurl":"https://covers.openlibrary.org/b/id/8314077-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":3},
+{"id":"de000002-0000-4000-8000-000000000004","title":"Five on a Treasure Island — journey demo copy","authors":["Enid Blyton"],"isbn":"9798511735979","subjects":["Adventure"],"publicationyear":1942,"description":"","coverurl":"https://covers.openlibrary.org/b/id/14570937-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":4},
+{"id":"de000002-0000-4000-8000-000000000005","title":"Howl, and Other Poems — journey demo copy","authors":["Allen Ginsberg"],"isbn":"0872860175","subjects":["Poetry"],"publicationyear":1956,"description":"","coverurl":"https://covers.openlibrary.org/b/id/662901-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":5},
+{"id":"de000002-0000-4000-8000-000000000006","title":"I Don't Love You Anymore — journey demo copy","authors":["Rithvik Singh"],"isbn":"0143469134","subjects":["Poetry"],"publicationyear":2024,"description":"","coverurl":"https://covers.openlibrary.org/b/id/15116470-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":6},
+{"id":"de000002-0000-4000-8000-000000000007","title":"Ikigai — journey demo copy","authors":["Chiemi Souen","Flor Kaneshiro"],"isbn":"9781953021168","subjects":["Biography"],"publicationyear":2021,"description":"","coverurl":"https://covers.openlibrary.org/b/id/13110612-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":7},
+{"id":"de000002-0000-4000-8000-000000000008","title":"It Starts with Us — journey demo copy","authors":["Colleen Hoover"],"isbn":"9781797145105","subjects":["Romance"],"publicationyear":2022,"description":"","coverurl":"https://covers.openlibrary.org/b/id/12749873-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":8},
+{"id":"de000002-0000-4000-8000-000000000009","title":"Married at first sight — journey demo copy","authors":["Gu Lingfei"],"isbn":null,"subjects":["Romance"],"publicationyear":2015,"description":"","coverurl":"https://covers.openlibrary.org/b/id/14312142-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":9},
+{"id":"de000002-0000-4000-8000-000000000010","title":"Milk and Honey — journey demo copy","authors":["Rupi Kaur"],"isbn":"9781449483135","subjects":["Poetry"],"publicationyear":2014,"description":"","coverurl":"https://covers.openlibrary.org/b/id/8743595-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":10},
+{"id":"de000002-0000-4000-8000-000000000011","title":"Neverseen — journey demo copy","authors":["Shannon Messenger"],"isbn":"2266272675","subjects":["Fantasy"],"publicationyear":2015,"description":"","coverurl":"https://covers.openlibrary.org/b/id/7990188-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":11},
+{"id":"de000002-0000-4000-8000-000000000012","title":"November 9 — journey demo copy","authors":["Colleen Hoover"],"isbn":"9781785412691","subjects":["Romance"],"publicationyear":2015,"description":"","coverurl":"https://covers.openlibrary.org/b/id/9219001-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":12},
+{"id":"de000002-0000-4000-8000-000000000013","title":"Outcast — journey demo copy","authors":["Erin Hunter"],"isbn":"9780061651281","subjects":["Fantasy"],"publicationyear":2008,"description":"","coverurl":"https://covers.openlibrary.org/b/id/7027037-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":13},
+{"id":"de000002-0000-4000-8000-000000000014","title":"Papillon — journey demo copy","authors":["Henri Charrière"],"isbn":"0688022693","subjects":["Biography"],"publicationyear":1969,"description":"","coverurl":"https://covers.openlibrary.org/b/id/8752-L.jpg","openlibraryid":null,"mrtcode":"NS24","scenario":14}
 ]$books$::jsonb)
-    as book(id uuid,title text,authors text[],isbn text,subjects text[],publicationyear integer,
-      description text,coverurl text,openlibraryid text,mrtcode text)
-), updated as (
-  update public.books existing
-  set subjects = b.subjects, updatedat = now()
-  from incoming b
-  where (existing.id = b.id or existing.openlibraryid = b.openlibraryid)
-    and existing.subjects is distinct from b.subjects
-  returning existing.id
-), inserted as (
-  insert into public.books
-    (id,title,authors,isbn,subjects,publicationyear,description,coverurl,openlibraryid,source,status,mrtstationid)
-  select b.id,b.title,b.authors,b.isbn,b.subjects,b.publicationyear,b.description,b.coverurl,b.openlibraryid,
-         'open_library','available',s.id
-  from incoming b join public.mrtstations s on b.mrtcode = any(s.codes)
-  where not exists (select 1 from public.books existing where existing.openlibraryid = b.openlibraryid)
-  on conflict (id) do nothing
-  returning id
-)
-select (select count(*)::integer from inserted) as inserted,
-       (select count(*)::integer from incoming) - (select count(*)::integer from inserted) as skipped;
+    as b(id uuid,title text,authors text[],isbn text,subjects text[],publicationyear integer,
+      description text,coverurl text,openlibraryid text,mrtcode text,scenario integer);
+  -- A fixture used by another customer is no longer disposable demo data.
+  delete from demo_seed_books d where exists(select 1 from public.adoptionapplications a where a.bookid=d.id and a.userid<>customer_id)
+    or exists(select 1 from public.appointments a where a.bookid=d.id and a.userid<>customer_id)
+    or exists(select 1 from public.watchlist w where w.bookid=d.id and w.userid<>customer_id)
+    or exists(select 1 from public.books b where b.id=d.id and b.ownerid is not null);
+  delete from public.appointments where userid=customer_id and bookid in (select id from demo_seed_books);
+  delete from public.adoptionapplications where userid=customer_id and bookid in (select id from demo_seed_books);
+  delete from public.watchlist where userid=customer_id and bookid in (select id from demo_seed_books);
+  insert into public.books(id,title,authors,isbn,subjects,publicationyear,description,coverurl,openlibraryid,source,status,mrtstationid,createdby,condition)
+  select b.id,b.title,b.authors,b.isbn,b.subjects,b.publicationyear,coalesce(b.description,''),b.coverurl,b.openlibraryid,
+    case when b.openlibraryid is null then 'manual' else 'open_library' end,'available',s.id,admin_id,'good'
+  from demo_seed_books b join public.mrtstations s on b.mrtcode=any(s.codes)
+  on conflict(id) do update set title=excluded.title,authors=excluded.authors,isbn=excluded.isbn,subjects=excluded.subjects,
+    publicationyear=excluded.publicationyear,description=excluded.description,coverurl=excluded.coverurl,
+    mrtstationid=excluded.mrtstationid,status='available',condition=excluded.condition,updatedat=now();
 
--- Add repeatable demo activity for the seeded customer account.
-do $$
-declare
-  demo_admin_id constant uuid := 'a3c11c76-41a4-4786-9803-a384c1d207a7';
-  demo_customer_id constant uuid := 'b3563099-7900-40ba-a478-e8bb63b2d477';
-  selected_book record;
-  application_id uuid;
-  appointment_number integer := 0;
-begin
-  for selected_book in
-    select id, title, collectionarea
-    from public.books
-    where status = 'available' and ownerid is null
-    order by id
-    limit 3
-  loop
-    insert into public.adoptionapplications (userid, bookid)
-    values (demo_customer_id, selected_book.id)
-    returning id into application_id;
+  -- Saved matching genres, notes, and a saved copy that will become unavailable.
+  insert into public.watchlist(id,userid,bookid,comments)
+  select b.id,customer_id,b.id,'I would like to read this next.'
+  from public.books b join demo_seed_books d on d.id=b.id
+  where d.scenario in (5,10) or b.id in (
+    select b2.id from public.books b2 join demo_seed_books d2 on d2.id=b2.id
+    where d2.scenario is null and b2.subjects && array['Fantasy','Romance'] order by b2.id limit 3
+  );
 
-    perform public.decide_book_application(application_id, demo_admin_id, 'approved');
-
-    appointment_number := appointment_number + 1;
-    insert into public.appointments
-      (userid, bookid, booktitle, location, appointmentdate, timeslot)
-    values
-      (demo_customer_id, selected_book.id, selected_book.title,
-       selected_book.collectionarea, (now() at time zone 'Asia/Singapore')::date + appointment_number,
-       case appointment_number
-         when 1 then '10:00 - 11:00'
-         when 2 then '11:00 - 12:00'
-         else '14:00 - 15:00'
-       end);
+  -- One copy per journey: approval, rejection, withdrawal, arrange, waiting,
+  -- tomorrow/today/overdue confirmations, expired proposal, collected, cancelled,
+  -- declined, a legacy three-option request, and incomplete legacy information.
+  for item in select b.*,d.scenario from public.books b join demo_seed_books d on d.id=b.id where d.scenario is not null order by d.scenario loop
+    application_id := ('de000005-0000-4000-8000-' || lpad(item.scenario::text,12,'0'))::uuid;
+    appointment_id := ('de000006-0000-4000-8000-' || lpad(item.scenario::text,12,'0'))::uuid;
+    insert into public.adoptionapplications(id,userid,bookid) values(application_id,customer_id,item.id);
+    if item.scenario=1 then continue; end if;
+    if item.scenario=2 then perform public.decide_book_application(application_id,admin_id,'rejected'); continue; end if;
+    if item.scenario=3 then update public.adoptionapplications set status='cancelled' where id=application_id; continue; end if;
+    perform public.decide_book_application(application_id,admin_id,'approved');
+    if item.scenario=4 then continue; end if;
+    pickup_date := case when item.scenario in (8,9,10) then today-2 when item.scenario=7 then today else today+2 end;
+    proposed := jsonb_build_array(
+      jsonb_build_object('appointmentdate',pickup_date,'timeslot','10:00–11:00'),
+      jsonb_build_object('appointmentdate',pickup_date,'timeslot','14:00–15:00'));
+    if item.scenario=13 then proposed := proposed || jsonb_build_array(jsonb_build_object('appointmentdate',pickup_date,'timeslot','16:00–17:00')); end if;
+    if item.scenario=14 then proposed := '[]'::jsonb; end if;
+    selected_status := case when item.scenario in (6,7,8) then 'appointment confirmed' when item.scenario=10 then 'collected'
+      when item.scenario=11 then 'cancelled' when item.scenario=12 then 'rejected' else 'pending confirmation' end;
+    insert into public.appointments(id,userid,bookid,booktitle,location,appointmentdate,timeslot,status,pickupoptions,optionsby,proposalversion)
+    values(appointment_id,customer_id,item.id,item.title,item.collectionarea,pickup_date,
+      case when item.scenario=14 then 'Time to be arranged' else '10:00–11:00' end,selected_status,proposed,
+      case when item.scenario=14 then null else 'customer' end,
+      case when item.scenario=14 then null else ('de000007-0000-4000-8000-' || lpad(item.scenario::text,12,'0'))::uuid end);
+    if item.scenario=10 then update public.books set status='adopted' where id=item.id; end if;
   end loop;
 
-  insert into public.watchlist (userid, bookid, comments)
-  select demo_customer_id, book.id, 'Seeded watchlist example'
-  from public.books book
-  where book.status = 'available'
-    and book.ownerid is null
-    and not exists (
-      select 1 from public.watchlist saved
-      where saved.userid = demo_customer_id and saved.bookid = book.id
-    )
-  order by book.id
-  limit 3;
+  create temporary table demo_seed_drives on commit drop as
+  select * from jsonb_to_recordset($drives$[
+{"id":"0362bead-243b-4449-a430-59ae38752e34","title":"Community Book Swap","location":"Dhoby Ghaut MRT","daysfromnow":14,"description":"Bring a book and find your next read.","maxcapacity":40,"status":"open","mrtcode":"NS24"},
+{"id":"55d453df-48fc-405a-8ee4-397466b15e6f","title":"Weekend Book Adoption","location":"Bugis MRT","daysfromnow":28,"description":"Discover books shared by the community.","maxcapacity":40,"status":"open","mrtcode":"EW12"},
+{"id":"ede2b15f-a4e2-418e-8833-b3dd4abcac53","title":"Neighbourhood Reading Day","location":"City Hall MRT","daysfromnow":42,"description":"Meet readers and browse books for adoption.","maxcapacity":40,"status":"open","mrtcode":"NS25"},
+{"id":"a4fb0a2c-5b13-4915-a812-97663c533f8f","title":"Books for Everyone","location":"Tampines MRT","daysfromnow":56,"description":"Share stories and take home a new read.","maxcapacity":40,"status":"open","mrtcode":"EW2"},
+{"id":"5096d7c2-3cc3-4935-b0af-6e9bc6cabc70","title":"Library Friends Meetup","location":"Bishan MRT","daysfromnow":70,"description":"Browse community books and meet fellow readers.","maxcapacity":40,"status":"open","mrtcode":"NS17"},
+{"id":"de000003-0000-4000-8000-000000000001","title":"Today’s reading meetup","location":"Dhoby Ghaut MRT","daysfromnow":0,"status":"open","maxcapacity":20,"mrtcode":"NS24","registered":true,"description":"Demo drive scheduling and registration."},
+{"id":"de000003-0000-4000-8000-000000000002","title":"Fully booked community drive","location":"Dhoby Ghaut MRT","daysfromnow":3,"status":"open","maxcapacity":1,"mrtcode":"NS24","registered":true,"description":"Demo drive scheduling and registration."},
+{"id":"de000003-0000-4000-8000-000000000003","title":"Registration closed","location":"Dhoby Ghaut MRT","daysfromnow":4,"status":"closed","maxcapacity":20,"mrtcode":"NS24","registered":false,"description":"Demo drive scheduling and registration."},
+{"id":"de000003-0000-4000-8000-000000000004","title":"Cancelled community drive","location":"Dhoby Ghaut MRT","daysfromnow":5,"status":"cancelled","maxcapacity":20,"mrtcode":"NS24","registered":false,"description":"Demo drive scheduling and registration."},
+{"id":"de000003-0000-4000-8000-000000000005","title":"Last week’s book drive","location":"Dhoby Ghaut MRT","daysfromnow":-7,"status":"closed","maxcapacity":20,"mrtcode":"NS24","registered":true,"description":"Demo drive scheduling and registration."}
+]$drives$::jsonb)
+    as d(id uuid,title text,location text,daysfromnow integer,description text,maxcapacity integer,status text,mrtcode text,registered boolean);
+  delete from demo_seed_drives d where exists(select 1 from public.adoptiondrives a where a.id=d.id and exists(select 1 from unnest(a.userids) u where u<>customer_id));
+  -- Historical fixtures deliberately predate today; all capacity and date values
+  -- below are explicit. The trigger is restored within this atomic statement.
+  alter table public.adoptiondrives disable trigger check_drive_capacity;
+  insert into public.adoptiondrives(id,title,location,eventdate,starttime,endtime,description,maxcapacity,status,mrtstationid,userids,createdby,closedbycapacity)
+  select d.id,d.title,d.location,today+d.daysfromnow,'10:00'::time,'16:00'::time,coalesce(d.description,''),d.maxcapacity,
+    case when d.maxcapacity=1 and d.registered then 'closed' else d.status end,s.id,
+    case when d.registered then array[customer_id] else '{}'::uuid[] end,admin_id,coalesce(d.maxcapacity=1 and d.registered,false)
+  from demo_seed_drives d join public.mrtstations s on d.mrtcode=any(s.codes)
+  on conflict(id) do update set title=excluded.title,location=excluded.location,eventdate=excluded.eventdate,
+    starttime=excluded.starttime,endtime=excluded.endtime,description=excluded.description,maxcapacity=excluded.maxcapacity,
+    status=excluded.status,mrtstationid=excluded.mrtstationid,userids=excluded.userids,closedbycapacity=excluded.closedbycapacity,updatedat=now();
+  alter table public.adoptiondrives enable trigger check_drive_capacity;
+  drop table demo_seed_books, demo_seed_drives;
 end;
-$$;
+$seed$;

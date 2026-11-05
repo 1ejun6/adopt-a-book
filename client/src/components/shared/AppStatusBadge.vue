@@ -13,7 +13,7 @@ const statusLabel = computed(() => ({ 'pending confirmation': 'pending', 'appoin
 const badgeColour = computed(() => {
   const status = props.status.toLowerCase().trim();
   if (['available', 'approved', 'pickup confirmed', 'appointment confirmed', 'confirmed', 'open'].includes(status)) { return 'green'; }
-  if (['rejected', 'cancelled'].includes(status)) { return 'rose'; }
+  if (['rejected', 'cancelled'].includes(status)) { return 'purple'; }
   if (['adopted', 'closed', 'collected'].includes(status)) { return 'neutral'; }
 
   return 'amber';

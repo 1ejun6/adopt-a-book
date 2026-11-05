@@ -1,21 +1,11 @@
 <script setup>
-import { computed, nextTick, ref, useId } from 'vue';
+import { ref, useId } from 'vue';
 import genres from '../../../../shared/genres.json';
 const selected = defineModel({ type: Array, default: () => [] });
-const props = defineProps({ disabled: Boolean, compact: Boolean, required: Boolean, error: { type: String, default: '' } });
-const expanded = ref(false);
+defineProps({ disabled: Boolean, required: Boolean, error: { type: String, default: '' } });
 const fieldset = ref(null);
-const toggle = ref(null);
 const id = useId();
-const visibleGenres = computed(() => !props.compact || expanded.value
-  ? genres
-  : genres.filter((genre, index) => index < 8 || selected.value.includes(genre)));
 defineExpose({ focus: () => fieldset.value?.querySelector('input')?.focus() });
-function restoreGenreFocus(event) {
-  if (props.compact && !expanded.value && !event.target.checked && genres.indexOf(event.target.value) >= 8) {
-    nextTick(() => toggle.value?.focus());
-  }
-}
 </script>
 
 <template>
@@ -24,18 +14,14 @@ function restoreGenreFocus(event) {
     <legend>Favourite genres{{ required ? ' (required)' : '' }}</legend>
     <p :id="`${id}-help`" class="genre-help">{{ required ? 'Choose at least one genre for your shelf. You can change these in your account.' : 'Choose one or more for your shelf.' }}</p>
     <div :id="`${id}-options`" class="genre-options">
-      <label v-for="genre in visibleGenres" :key="genre" class="genre-option">
-        <input v-model="selected" type="checkbox" :aria-label="genre" :value="genre" class="genre-input" @change="restoreGenreFocus" />
+      <label v-for="genre in genres" :key="genre" class="genre-option">
+        <input v-model="selected" type="checkbox" :aria-label="genre" :value="genre" class="genre-input" />
         <span class="genre-chip">
           <span class="genre-check" aria-hidden="true">{{ selected.includes(genre) ? '✓' : '+' }}</span>
           {{ genre }}
         </span>
       </label>
     </div>
-    <button v-if="compact" ref="toggle" type="button" class="min-h-11 py-2 text-sm underline underline-offset-4"
-      :aria-expanded="expanded" :aria-controls="`${id}-options`" @click="expanded = !expanded">
-      {{ expanded ? 'Show fewer genres' : `Show all genres (${genres.length})` }}
-    </button>
     <p v-if="error" :id="`${id}-error`" role="alert" class="text-sm text-destructive">{{ error }}</p>
     <p class="genre-count" role="status">{{ selected.length }} selected</p>
   </fieldset>

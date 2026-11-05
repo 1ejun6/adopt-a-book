@@ -1,193 +1,112 @@
 <script setup>
-import { computed, onBeforeUnmount, ref, useId, watch } from 'vue';
-import { toast } from 'vue-sonner';
-import { Location08Icon } from '@hugeicons/core-free-icons';
+import { onBeforeUnmount, ref, useId, watch, computed } from 'vue';
+import { Location08Icon, Search01Icon } from '@hugeicons/core-free-icons';
 import { api } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
+import { Field, FieldLabel } from '@/components/ui/field';
 
-const props = defineProps({
-  defaultRadius: { type: Number, default: 3 },
-  placeholder: { type: String, default: 'postcode or place' }
-});
-
+const props = defineProps({ selection: { type: Object, default: null }, defaultRadius: { type: Number, default: 3 }, placeholder: { type: String, default: 'Postcode or address' } });
 const stationIds = defineModel('stationIds', { type: String, default: '' });
 const emit = defineEmits(['change']);
-
-//@ChitanyaBharathi > useId > unique id per copy > label still points at its own input when a page has 2 filters
 const inputId = useId();
-const query = ref('');
-const radius = ref(props.defaultRadius);
-//@ChitanyaBharathi > Slider wants an array (one per thumb) > wrap it so radius stays a plain number
-const sliderValue = computed({
-  get: () => [radius.value],
-  set: ([value]) => { radius.value = value; }
-});
-//@ChitanyaBharathi > keep device coordinates ready until search applies selected distance
-const location = ref(null);
-const usingCurrentLocation = ref(false);
-const nearestStation = ref(null);
-const locationInput = ref(null);
-const locationLabel = computed(() => { if (!location.value) return '';
-  if (usingCurrentLocation.value) {
-    if (nearestStation.value?.name) {
-      return `Near ${nearestStation.value.name}`;
-   }
-
-    return `${Number(location.value.lat).toFixed(4)}, ${Number(location.value.lng).toFixed(4)}`;
+const query = ref(''), radius = ref(props.defaultRadius), location = ref(null);
+const loading = ref(false), error = ref('');
+const sliderValue = computed({ get: () => [radius.value], set: ([value]) => { radius.value = value; } });
+let generation = 0, controller, writingAddress = false, lastLookup;
+function cancel() { generation++; controller?.abort(); loading.value = false; }
+onBeforeUnmount(cancel);
+function setAddress(value) {
+  writingAddress = true;
+  query.value = value;
+  writingAddress = false;
+}
+function clear() {
+  cancel(); setAddress(''); location.value = null; error.value = ''; lastLookup = null;
+  radius.value = props.defaultRadius; stationIds.value = ''; emit('change', null);
+}
+watch(() => props.selection, (selection, previous) => {
+  if (selection) {
+    cancel(); location.value = selection.location; radius.value = selection.radiusKm;
+    setAddress(selection.location.name); stationIds.value = selection.stations.map(station => station.id).join(',');
+    error.value = '';
+  } else if (previous && query.value === previous.location.name) {
+    // A different tab/URL cleared the selection; keep separately typed draft text intact.
+    cancel(); setAddress(''); location.value = null; stationIds.value = ''; radius.value = props.defaultRadius;
   }
-
-  return location.value.name || query.value.trim();
-});
-
-function changeLocation() {
-  clear();
-  locationInput.value?.$el?.focus();
-}
-const loading = ref(false);
-let requestId = 0;
-let controller;
-let clearing = false;
-
-function cancelLookup() {
-  requestId++;
-  controller?.abort();
-  loading.value = false;
-}
-
-onBeforeUnmount(cancelLookup);
-
-async function lookup(body) {
-  cancelLookup();
-  const id = requestId;
-  controller = new AbortController();
-  loading.value = true;
+}, { immediate: true });
+watch(query, value => {
+  if (writingAddress) return;
+  cancel(); location.value = null; error.value = ''; lastLookup = null;
+  stationIds.value = ''; emit('change', null);
+  if (!value.trim()) radius.value = props.defaultRadius;
+}, { flush: 'sync' });
+async function lookup(body, apply = true) {
+  cancel(); const id = generation; controller = new AbortController();
+  loading.value = true; error.value = ''; lastLookup = { body, apply };
   try {
-    //@ChitanyaBharathi - ...body = make a copy but not exactly a copy becauuse if not itll be an object in an object
     const result = await api('/locations/nearby', { method: 'POST', signal: controller.signal, body: { ...body, radiusKm: radius.value } });
-    if (id !== requestId) return;
+    if (id !== generation) return;
     location.value = result.location;
-    nearestStation.value = result.nearestStation;
-    stationIds.value = result.stations.map(station => station.id).join(',');
-    emit('change', result);
-    toast.success('location filter applied');
-  } catch (lookupError) {
-    if (id !== requestId) return;
-    toast.error(lookupError.message || 'could not search this location > please try again');
-  } finally {
-    if (id === requestId) loading.value = false;
-  }
+    setAddress(result.location.name);
+    if (apply) {
+      stationIds.value = result.stations.map(station => station.id).join(',');
+      emit('change', result);
+    }
+  } catch (failure) {
+    if (id !== generation) return;
+    error.value = failure.message || 'Could not find this address. Please retry.';
+  } finally { if (id === generation) loading.value = false; }
 }
-
 function searchPlace() {
   if (loading.value) return;
-  if (query.value.trim()) lookup({ query: query.value.trim() });
-  else if (location.value) lookup({ lat: location.value.lat, lng: location.value.lng });
+  if (location.value) return lookup({ lat: location.value.lat, lng: location.value.lng });
+  if (query.value.trim()) return lookup({ query: query.value.trim() });
 }
-
-//@ChitanyaBharathi > browser asks permission > coordinates skip OneMap so it works without the token
 function nearMe() {
-  if (!navigator.geolocation) {
-    toast.error('your browser cannot share its location > try a postcode instead');
-    return;
-  }
-  cancelLookup();
-  const id = requestId;
-  loading.value = true;
-  navigator.geolocation.getCurrentPosition(
-    position => {
-      //@ChitanyaBharathi > near me button if clicked, empties the input search box
-      if (id !== requestId) return;
-      clear();
-      usingCurrentLocation.value = true;
-      location.value = { name: 'your current location', lat: position.coords.latitude, lng: position.coords.longitude };
-      loading.value = false;
-      toast.info('current location ready', { description: 'adjust distance & click search' });
-    },
-    error => {
-      if (id !== requestId) return;
-      loading.value = false;
-      const messages = {
-        1: String.raw`location permission denied > allow location access \ enter a postcode`,
-        2: 'your location is unavailable > try a postcode instead',
-        3: String.raw`getting your location timed out > try again \ enter a postcode`,
-      };
-      toast.error(messages[error.code] || 'could not get your location > try a postcode instead');
-    },
-    { timeout: 10000, maximumAge: 60000 }
-  );
+  if (!navigator.geolocation) { error.value = 'Location is unavailable in this browser. Enter an address instead.'; return; }
+  cancel(); const id = generation; loading.value = true; error.value = ''; lastLookup = null;
+  navigator.geolocation.getCurrentPosition(position => {
+    if (id !== generation) return;
+    void lookup({ lat: position.coords.latitude, lng: position.coords.longitude }, false);
+  }, failure => {
+    if (id !== generation) return;
+    loading.value = false;
+    error.value = failure.code === 1 ? 'Location permission was denied. Enter an address or allow location access and retry.' : 'Could not get your location. Retry or enter an address.';
+  }, { timeout: 10000, maximumAge: 60000 });
 }
-
-//@ChitanyaBharathi > X in the search box (or deleting the text) empties query > drop the location filter too
-watch(query, value => {
-  if (clearing) return;
-  cancelLookup();
-  if (!value.trim()) {
-  clear();
-} else {
-  location.value = null;
-  nearestStation.value = null;
-  usingCurrentLocation.value = false;
-}});
-
-function clear() {
-  cancelLookup();
-  clearing = true;
-  query.value = '';
-  clearing = false;
-  radius.value = props.defaultRadius;
-  location.value = null;
-  stationIds.value = '';
-  emit('change', null);
-  usingCurrentLocation.value = false;
-  nearestStation.value = null;
-}
-
+function retry() { if (lastLookup) void lookup(lastLookup.body, lastLookup.apply); else nearMe(); }
 defineExpose({ clear });
 </script>
 
 <template>
-  <!--@ChitanyaBharathi > the form is the card itself > no extra wrapper-->
-  <form class="space-y-3 rounded-lg border p-4" :aria-busy="loading" @submit.prevent="searchPlace">
+  <form class="space-y-3" :aria-busy="loading" @submit.prevent="searchPlace">
     <Field>
-      <FieldLabel :for="inputId" class="sr-only">location</FieldLabel>
+      <FieldLabel :for="inputId" class="sr-only">Location</FieldLabel>
       <div class="flex gap-2.5">
-        <Button type="button" variant="outline" :disabled="loading" @click="nearMe">
-          <HugeiconsIcon :icon="Location08Icon" aria-hidden="true" />
-          <span class="sr-only">use current location</span>
-        </Button>
-        <Input ref="locationInput" :id="inputId" v-model="query" type="search" :placeholder="props.placeholder" class="flex-1" />
-        <Button type="submit" :disabled="loading || (!query.trim() && !location)">search</Button>
+        <button type="button" class="location-icon-button grid size-11 shrink-0 place-items-center rounded-lg border" :disabled="loading" @click="nearMe">
+          <HugeiconsIcon :icon="Location08Icon" :size="20" :stroke-width="1.5" aria-hidden="true" />
+          <span class="sr-only">Use current location</span>
+        </button>
+        <Input :id="inputId" v-model="query" type="search" :placeholder="props.placeholder" class="min-w-0 flex-1" :aria-describedby="error ? `${inputId}-error` : undefined" />
+        <button type="submit" class="location-icon-button grid size-11 shrink-0 place-items-center rounded-lg border" :disabled="loading || !query.trim()">
+          <HugeiconsIcon :icon="Search01Icon" :size="20" :stroke-width="1.5" aria-hidden="true" />
+          <span class="sr-only">Search</span>
+        </button>
       </div>
     </Field>
-
-    <div v-if="location" class="flex items-start justify-between gap-3 text-sm" role="status">
-  <div class="min-w-0 space-y-1">
-    <p class="text-muted-foreground">
-      {{ usingCurrentLocation ? 'Using your current location' : 'Selected location' }}
-    </p>
-    <p class="break-words">
-      {{ locationLabel }}
-    </p>
-
-    <p v-if="usingCurrentLocation && !nearestStation" class="text-xs text-muted-foreground">
-      Select Search to find nearby MRT stations.
-    </p>
-  </div>
-
-    <button type="button" class="shrink-0 underline underline-offset-4" :disabled="loading" @click="changeLocation">
-      Change
-    </button>
-    </div>
-
-    <!-- Choose a distance first; only Search applies it. -->
     <Field v-if="query.trim() || location" class="flex-row items-center">
       <FieldLabel class="shrink-0 whitespace-nowrap">Distance: {{ radius }} km</FieldLabel>
-      <Slider v-model="sliderValue" class="min-w-0 flex-1" :min="1" :max="20" :step="1" :disabled="loading" />
+      <Slider v-model="sliderValue" aria-label="Search distance in kilometres" class="min-w-0 flex-1" :min="1" :max="20" :step="1" :disabled="loading" />
     </Field>
-
-    <FieldDescription v-if="loading" role="status" >loading location..</FieldDescription>
+    <p v-if="loading" role="status" class="text-sm text-muted-foreground">Finding address…</p>
+    <div v-if="error" :id="`${inputId}-error`" role="alert" class="space-y-2 text-sm">
+      <p>{{ error }}</p><Button type="button" variant="outline" :disabled="loading" @click="retry">Retry location</Button>
+    </div>
   </form>
 </template>
+
+<style scoped>
+.location-icon-button:disabled { opacity: 1; cursor: not-allowed; }
+</style>
