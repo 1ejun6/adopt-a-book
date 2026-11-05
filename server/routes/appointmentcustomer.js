@@ -1,7 +1,7 @@
 const express = require("express");
 const controller = require("../controllers/appointmentcustomercontroller");
 const { validateid } = require("../utils/validation");
-const { authenticated, customer } = require("../middleware");
+const { authenticated, customer } = require("../authmiddleware");
 const router = express.Router();
 router.use(authenticated, customer);
 router.param("id", validateid);

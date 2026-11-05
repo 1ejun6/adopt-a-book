@@ -81,12 +81,14 @@ const selectedAppointments = computed(() => appointments.value.filter(appointmen
 function actionHint(rows, status) {
     const requiredStatus = status === 'collected' ? 'appointment confirmed' : 'pending confirmation';
     if (rows.some(appointment => appointment.status !== requiredStatus)) {
+        if (status === 'rejected') { return 'Only pending appointments can be rejected.'; }
         return status === 'collected' ? 'Only confirmed appointments can be marked collected.' : 'Only appointments awaiting confirmation can be confirmed.';
     }
     if (status === 'appointment confirmed' && rows.some(appointment => appointment.appointmentdate < today.value)) { return 'Past appointments cannot be confirmed. The customer needs to reschedule.'; }
     if (rows.some(appointment => appointment.book?.status !== 'reserved')) { return 'The copy must still be reserved for collection.'; }
     return '';
 }
+const rejectHint = computed(() => selectedAppointment.value ? actionHint([selectedAppointment.value], 'rejected') : '');
 const confirmHint = computed(() => actionHint(selectedAppointments.value, 'appointment confirmed'));
 const collectHint = computed(() => actionHint(selectedAppointments.value, 'collected'));
 const selectionHint = computed(() => {
@@ -107,12 +109,22 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
     if (loading.value || saving.value || !rows.length || actionHint(rows, status)) { return; }
     const targets = [...rows];
     const single = targets.length === 1;
-    if (!await confirm(`${status === 'collected' ? 'Mark' : 'Confirm'} ${single ? 'appointment' : 'appointments'}${status === 'collected' ? ' collected' : ''}?`, {
-        description: (status === 'collected'
-            ? single ? 'Confirm that this customer has physically received their book. The copy will become adopted.' : 'Confirm that these customers have physically received their books. Their copies will become adopted.'
-            : single ? 'Confirm the requested date, time, and collection location.' : 'Confirm the requested dates, times, and collection locations.') +
-            '\n' + targets.map(appointment => `${appointment.customer} — ${appointment.booktitle}\n${formatDate(appointment.appointmentdate)} · ${appointment.timeslot} · ${appointment.location}`).join('\n'),
-        actionLabel: status === 'collected' ? 'Mark collected' : 'Confirm'
+    const action = {
+        'appointment confirmed': 'Confirm',
+        rejected: 'Reject',
+        collected: 'Mark collected'
+    }[status];
+    const subject = single ? 'appointment' : 'appointments';
+    const title = status === 'collected' ? `Mark ${subject} collected?` : `${action} ${subject}?`;
+    const descriptions = {
+        'appointment confirmed': 'Confirm the requested collection details.',
+        rejected: 'The book stays reserved and the customer can propose another pickup time.',
+        collected: 'Confirm the customer received the book. The copy will become adopted.'
+    };
+    if (!await confirm(title, {
+        description: descriptions[status] + '\n' + targets.map(appointment => `${appointment.customer} — ${appointment.booktitle}\n${formatDate(appointment.appointmentdate)} · ${appointment.timeslot} · ${appointment.location}`).join('\n'),
+        actionLabel: action,
+        destructive: status === 'rejected'
     })) { return; }
     if (loading.value || saving.value) { return; }
     //@lee-hlmilk > a dashboard link can load details outside this page > retain that record for confirmation checks
@@ -129,7 +141,7 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
                 completed++;
             } catch (error) { failures.push(`${appointment.customer} — ${appointment.booktitle}: ${error.message}`); }
         }
-        if (completed) { toast.success(`${completed} ${completed === 1 ? 'appointment' : 'appointments'} ${status === 'collected' ? 'marked collected' : 'confirmed'}`); }
+        if (completed) { toast.success(`${completed} ${completed === 1 ? 'appointment' : 'appointments'} ${status === 'collected' ? 'marked collected' : status === 'rejected' ? 'rejected' : 'confirmed'}`); }
         if (failures.length) { toast.error(`${failures.length} ${failures.length === 1 ? 'update' : 'updates'} failed`, { description: failures.join('\n'), style: { whiteSpace: 'pre-line' } }); }
         await fetchAppointments();
     } finally { saving.value = false; }
@@ -211,7 +223,10 @@ fetchAppointments().then(loadAppointmentLink);
             {{ detailsHint || (selectedAppointment.status === 'pending confirmation' ? 'Confirm after checking the requested date, time, and location.' : 'Mark collected only after the customer has physically received the book.') }}
         </p>
         <template v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" #actions>
-            <Button v-if="selectedAppointment.status === 'pending confirmation'" type="button" class="w-full min-h-11" :disabled="!!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])">Confirm appointment</Button>
+            <template v-if="selectedAppointment.status === 'pending confirmation'">
+                <Button type="button" variant="destructive" class="flex-1 min-h-11" :disabled="loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])">Reject appointment</Button>
+                <Button type="button" class="flex-1 min-h-11" :disabled="loading || saving || !!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])">Confirm appointment</Button>
+            </template>
             <Button v-else type="button" class="w-full min-h-11" :disabled="!!detailsHint" @click="updateAppointments('collected', [selectedAppointment])">Mark collected</Button>
         </template>
     </AdminDetailsDialog>

@@ -3,7 +3,7 @@ const controller = require("../controllers/bookadmincontroller");
 const covers = require('../controllers/bookcovercontroller');
 const { maxSize, contentTypes } = require('../services/bookcoveruploads');
 const { validateid } = require("../utils/validation");
-const { authenticated, admin } = require("../middleware");
+const { authenticated, admin } = require("../authmiddleware");
 const router = express.Router();
 router.use(authenticated, admin);
 router.param("bookid", validateid);

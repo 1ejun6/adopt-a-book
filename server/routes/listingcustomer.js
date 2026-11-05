@@ -1,6 +1,6 @@
 const express = require("express");
 const controller = require("../controllers/listingcustomercontroller");
-const { authenticated, customer } = require("../middleware");
+const { authenticated, customer } = require("../authmiddleware");
 const { validateid } = require("../utils/validation");
 const router = express.Router();
 router.use(authenticated, customer);

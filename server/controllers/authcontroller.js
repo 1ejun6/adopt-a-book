@@ -2,7 +2,7 @@ const { errorstatus, errormessage } = require("../utils/errors");
 const supabase = require("../supabase/supabase");
 const createauthclient = require("../supabase/supabaseauth");
 const user = require("../models/users");
-const { setauthcookies, clearauthcookies } = require("../middleware");
+const { setauthcookies, clearauthcookies } = require("../authmiddleware");
 
 function session(req, res) {
   return res.json({ user: req.user });
