@@ -56,11 +56,11 @@ function submitDrive(event) {
             <p class="text-muted-foreground"><span class="text-destructive" aria-hidden="true">*</span> Required</p>
             <Field>
                 <FieldLabel for="drive-title">Drive title <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
-                <Input class="md:text-base min-h-11" id="drive-title" v-model="draft.title" required pattern=".*\S.*" :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-title')" />
+                <Input id="drive-title" v-model="draft.title" required pattern=".*\S.*" :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-title')" />
             </Field>
             <Field>
                 <FieldLabel for="drive-location">Venue and address <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
-                <Input class="md:text-base min-h-11" id="drive-location" v-model="draft.location" required pattern=".*\S.*" :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-location')" />
+                <Input id="drive-location" v-model="draft.location" required pattern=".*\S.*" :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-location')" />
             </Field>
             <Field>
                 <FieldLabel for="drive-station">Nearest MRT station <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
@@ -74,12 +74,12 @@ function submitDrive(event) {
                 <Field>
                     <FieldLabel for="drive-date">Event date <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
                     <!--@lee-hlmilk > existing past dates may stay unchanged > new ||| changed dates must be today or later-->
-                    <Input class="md:text-base min-h-11" id="drive-date" v-model="draft.eventdate" type="date" required :min="props.drive && draft.eventdate === props.drive.eventdate ? undefined : props.today"
+                    <Input id="drive-date" v-model="draft.eventdate" type="date" required :min="props.drive && draft.eventdate === props.drive.eventdate ? undefined : props.today"
                         :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-date')" />
                 </Field>
                 <Field>
                     <FieldLabel for="drive-capacity">Maximum capacity <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
-                    <Input class="md:text-base min-h-11" id="drive-capacity" v-model="draft.maxcapacity" type="number" required :min="minimumCapacity" max="2147483647" step="1"
+                    <Input id="drive-capacity" v-model="draft.maxcapacity" type="number" required :min="minimumCapacity" max="2147483647" step="1"
                         :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-capacity')" />
                 </Field>
             </div>
@@ -90,7 +90,7 @@ function submitDrive(event) {
             </Field>
         </div>
         <template #footer>
-            <Button type="submit" class="w-full min-h-11" :disabled="props.submitting">{{ props.submitting ? 'Saving…' : props.drive ? 'Save changes' : 'Create drive' }}</Button>
+            <Button type="submit" class="w-full " :disabled="props.submitting">{{ props.submitting ? 'Saving…' : props.drive ? 'Save changes' : 'Create drive' }}</Button>
         </template>
     </AdminFormDialog>
 </template>

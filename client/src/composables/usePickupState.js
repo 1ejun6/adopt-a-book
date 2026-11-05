@@ -1,4 +1,5 @@
-import { ref, reactive, computed } from 'vue';
+import { currentTime } from '@/lib/clock';
+import { ref, reactive, computed, watch } from 'vue';
 import {
   canManagePickup,
   getApplicationStatus,
@@ -27,6 +28,7 @@ export function usePickupState(props) {
   const draft = reactive({ location: '', appointmentdate: '', timeslots: ['', '', ''] });
   const saved = ref(null);
   const today = ref(todayInSingapore());
+  watch(currentTime, value => { today.value = todayInSingapore(new Date(value)); });
   const manageable = computed(
     () => props.ready && canManagePickup(props.record, props.appointment),
   );

@@ -1,4 +1,5 @@
 <script setup>
+import { useAdminRecord } from '@/composables/useAdminRecord';
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
@@ -31,6 +32,7 @@ const bookFields = computed(() => {
     ];
 });
 const dialogOpen = ref(false);
+const { detailError, detailLoading, refreshDetail } = useAdminRecord(selectedBook, dialogOpen, '/admin/books', 'currentbook', { busy: () => saving.value || deleting.value });
 const formOpen = ref(false);
 const editingBook = ref(null);
 const saving = ref(false);
@@ -70,7 +72,7 @@ async function openBook(book) {
     //@1ejun6 > id > a number assigned to this click \ request
     //@1ejun6 > ~book.id~ > book id in database
     //@1ejun6 > ~bookrequestid~ > holds latest request number & increases whenever you click a book
-    if (loading.value || deleting.value) { return; }
+    if (loading.value || deleting.value || saving.value) { return; }
     const id = ++bookRequestId;
     const request = getBookDetails(book.id);
     try {
@@ -226,7 +228,7 @@ function formatBook(book) {
 
 //@lee-hlmilk > preserve inventory query &&& detail cache rules while sharing request/page state
 const { rows: books, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchBooks } = useServerPagination({
-    endpoint: '/admin/books', filters, selectedIds,
+    busy: () => saving.value || deleting.value, endpoint: '/admin/books', filters, selectedIds,
     query: () => ({ search: filters.search, status: filters.status === 'all' ? undefined : filters.status, subject: filters.genre === 'all' ? undefined : filters.genre }),
     read: response => response.books.map(formatBook),
     beforeLoad: () => { bookDetails.clear(); bookRequestId++; },
@@ -239,29 +241,28 @@ async function deleteBooks() {
     const bookids = targets.map(book => book.id);
     if (loading.value || deleting.value || !canSelect.value || !bookids.length) { return; }
     if (deleteBlocked.value) {
-        toast.error('Only available books can be deleted.');
+        toast.error('Only available books without adoption or pickup history can be deleted.');
         return;
     }
     const titles = targets.map(book => book.title);
     if (!await confirm(`Delete ${targets.length === 1 ? 'book' : 'books'}?`, {
-        description: `Selected books and their related applications, appointments, and watchlist entries will be permanently deleted.\n${titles.join('\n')}`,
+        description: `Only available copies without any adoption applications or appointments can be deleted. If any selected copy has protected history, nothing will be deleted. Saved entries for eligible copies will be removed.\n${titles.join('\n')}`,
         actionLabel: 'Delete', destructive: true
     })) { return; }
     if (loading.value || deleting.value || !canSelect.value) { return; }
     if (targets.some(book => books.value.find(row => row.id === book.id)?.status !== 'available')) {
-        toast.error('Only available books can be deleted. Select the books again.');
+        toast.error('Only available books without adoption or pickup history can be deleted. Select the books again.');
         return;
     }
     deleting.value = true;
     try {
         const { deletedids = [] } = await api('/admin/books', { method: 'DELETE', body: { ids: bookids } });
-        await fetchBooks();
         toast.info(`${deletedids.length} deleted`, {
             description: titles.map((title, index) => `${index + 1}. ${title}`).join('\n'),
             style: { whiteSpace: 'pre-line' }
         });
     } catch (error) { toast.error(error.message); }
-    finally { deleting.value = false; }
+    finally { await fetchBooks(); await refreshDetail(); deleting.value = false; }
 }
 
 fetchBooks();
@@ -282,14 +283,14 @@ const columns = [
 </script>
 <template>
     <!--@lee-hlmilk > list models update this view's filters &&& selection &&& page > watchers fetch the matching server page-->
-    <AdminList title="Book Inventory" description="Manage book records and track their availability."
+    <AdminList @retry="fetchBooks" title="Book Inventory" description="Manage book records and track their availability."
         v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
-        :rows="books" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="deleting" :selectable="canSelect"
+        :rows="books" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="deleting || saving" :selectable="canSelect"
         :error="loadError" searchPlaceholder="Search by Title, Author, ISBN..."
         emptyTitle="No books in this view" emptyDescription="Try another Status Tab, Genre, Search term"
         :pagination="{ itemLabel: 'books', total, pageSize, pageCount }" @openRow="openBook">
         <template #headerActions>
-            <Button class="min-h-11" :disabled="loading || deleting || saving" @click="openAddBook">Add Book</Button>
+            <Button :disabled="loading || deleting || saving" @click="openAddBook">Add Book</Button>
         </template>
         <template #filters>
             <select v-model="filters.genre" class="w-full min-w-0 rounded-lg border px-3 sm:w-auto text-base min-h-11">
@@ -298,11 +299,11 @@ const columns = [
             </select>
         </template>
         <template #selectionActions="{ onlyOne }">
-            <p v-if="deleteBlocked" class="text-sm text-muted-foreground" role="status">Only available books can be deleted.</p>
+            <p v-if="deleteBlocked" class="text-sm text-muted-foreground" role="status">Only available books without adoption or pickup history can be deleted.</p>
             <!--@lee-hlmilk > open edit dialog for selected book-->
-            <Button class="min-h-11" variant="outline" :disabled="!onlyOne || ['reserved', 'adopted'].includes(selectedRow?.status)"
+            <Button variant="outline" :disabled="!onlyOne || ['reserved', 'adopted'].includes(selectedRow?.status)"
                 @click="openEditBook(selectedRow)">Edit</Button>
-            <Button class="min-h-11" variant="destructive" :disabled="loading || deleting || deleteBlocked" @click="deleteBooks">{{ deleting ?
+            <Button variant="destructive" :disabled="loading || deleting || deleteBlocked" @click="deleteBooks">{{ deleting ?
                 'Deleting…' : 'Delete' }}</Button>
         </template>
         <template #cellBook="{ row }">
@@ -315,11 +316,11 @@ const columns = [
             <StatusBadge :status="value" />
         </template>
     </AdminList>
-    <AdminDetailsDialog v-if="selectedBook" :open="dialogOpen" title="Book details" :book="selectedBook"
+    <AdminDetailsDialog :error="detailError" :busy="saving || deleting || detailLoading" @retry="refreshDetail" v-if="selectedBook" :open="dialogOpen" title="Book details" :book="selectedBook"
         :status="selectedBook.status" :fields="bookFields" :description="selectedBook.description || 'No description recorded.'" @update:open="dialogOpen = $event">
         <template #actions>
             <!--@lee-hlmilk > reserved &&& adopted copies cannot be edited > availability follows approval &&& collection-->
-            <Button type="button" class="w-full min-h-11" :disabled="['reserved', 'adopted'].includes(selectedBook.status)" @click="openEditBook(selectedBook)">Edit</Button>
+            <Button type="button" class="w-full " :disabled="saving || deleting || detailLoading || !!detailError || ['reserved', 'adopted'].includes(selectedBook.status)" @click="openEditBook(selectedBook)">Edit</Button>
         </template>
     </AdminDetailsDialog>
 

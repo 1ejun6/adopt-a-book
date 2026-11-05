@@ -1,4 +1,5 @@
-import { todayInSingapore } from '@/lib/utils';
+import { pickupStart } from '../../../shared/pickups.mjs';
+import { currentTime } from '@/lib/clock';
 
 export const pickupTimes = Array.from({ length: 9 }, (_, index) => {
   const hour = index + 9;
@@ -6,14 +7,7 @@ export const pickupTimes = Array.from({ length: 9 }, (_, index) => {
 });
 
 export function availablePickupSlot(slot) {
-  if (!slot?.appointmentdate || !pickupTimes.includes(slot.timeslot)) return false;
-  const time = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Singapore',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).format(new Date());
-  return `${slot.appointmentdate} ${slot.timeslot.slice(0, 5)}` > `${todayInSingapore()} ${time}`;
+  return pickupStart(slot) > currentTime.value;
 }
 
 export function appointmentTimes(appointment) {

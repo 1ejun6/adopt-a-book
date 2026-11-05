@@ -52,6 +52,7 @@ onBeforeUnmount(() => { commentToasts.forEach(id => toast.dismiss(id)); });
 </script>
 
 <template>
+  <p v-if="watchlistError" role="alert">{{ watchlistError }} <button class="underline min-h-11" :disabled="watchlistLoading" @click="loadWatchlist">Refresh saved books</button></p>
   <section v-if="props.loading || props.books.length" class="grid auto-rows-fr gap-5 md:grid-cols-2 lg:grid-cols-4">
     <template v-if="props.loading">
       <CustomerBookCard v-for="index in 8" :key="index" loading />

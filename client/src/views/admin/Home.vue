@@ -1,4 +1,6 @@
 <script setup>
+import { currentTime } from '@/lib/clock';
+import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
 import { computed, reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { toast } from 'vue-sonner';
@@ -14,14 +16,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const loading = ref(false);
 const pickups = ref(null);
-const now = new Date();
-const today = todayInSingapore(now);
-const displayDate = now.toLocaleDateString('en-SG', { timeZone: 'Asia/Singapore', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const now = computed(() => new Date(currentTime.value));
+const today = computed(() => todayInSingapore(now.value));
+const displayDate = computed(() => now.value.toLocaleDateString('en-SG', { timeZone: 'Asia/Singapore', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
 const attentionQueues = reactive([
   { label: 'Overdue', action: 'View collection', view: 'overdue', count: null, rows: null, empty: 'No overdue pickups.', to: { name: 'adminAppointments', state: { view: 'overdue' } } },
-  { label: 'Pickup confirmations', action: 'Review proposal', view: 'awaiting', count: null, rows: null, empty: 'No pickups awaiting confirmation.', to: { name: 'adminAppointments', state: { view: 'awaiting' } } },
-  { label: 'Adoption requests', action: 'View requests', count: null, rows: null, empty: 'No pending adoption requests.', to: { name: 'adminApplications' } },
-  { label: 'Upcoming drive', action: 'View drives', count: null, rows: null, empty: 'No upcoming drives.', to: { name: 'adminDrives' } }
+  { label: 'Confirm pickups', action: 'Review proposal', view: 'awaiting', count: null, rows: null, empty: 'No pickups awaiting confirmation.', to: { name: 'adminAppointments', state: { view: 'awaiting' } } },
+  { label: 'Requests', action: 'View requests', count: null, rows: null, empty: 'No pending adoption requests.', to: { name: 'adminApplications' } },
+  { label: 'Next drive', action: 'View drives', count: null, rows: null, empty: 'No upcoming drives.', to: { name: 'adminDrives' } }
 ]);
 const [overdue, awaiting, requests, upcomingDrive] = attentionQueues;
 const todayQueue = reactive({ count: null, to: { name: 'adminAppointments', state: { view: 'today' } } });
@@ -75,6 +77,7 @@ async function fetchDashboard() {
     }
   } finally { loading.value = false; }
 }
+useVisibleRefresh(fetchDashboard, { interval: true });
 fetchDashboard();
 </script>
 
@@ -112,7 +115,7 @@ fetchDashboard();
         <Tabs v-model="selectedQueue">
           <TabsList aria-label="Attention queues" class="gap-0 border-b">
             <TabsTrigger v-for="(queue, index) in attentionQueues" :key="queue.label" :value="index"
-              class="min-h-11 flex-1 justify-center gap-2 px-3 text-center">
+              class="text-center">
               {{ queue.label }} <Badge variant="neutral">{{ queue.count ?? '—' }}</Badge>
             </TabsTrigger>
           </TabsList>
@@ -160,7 +163,7 @@ fetchDashboard();
                         <p v-else>Submitted {{ formatDate(record.createdat) }}</p>
                         <StatusBadge :status="record.status" />
                         <p v-if="queue.view === 'overdue'" class="text-destructive">
-                          {{ record.appointmentdate === today ? 'Collection due today and awaiting confirmation.' : 'Past collection date. Follow up with the customer.' }}
+                          {{ record.status === 'pending confirmation' ? 'No remaining pickup time, or incomplete details. Follow up with the customer.' : 'Past collection date. Follow up with the customer.' }}
                         </p>
                         <p v-else>{{ queue.view === 'awaiting' ? 'Proposed time needs confirmation' : 'Adoption request needs review' }}</p>
                         <p class="text-muted-foreground">{{ record.location || book?.collectionarea }}</p>

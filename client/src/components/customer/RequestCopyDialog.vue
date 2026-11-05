@@ -75,8 +75,8 @@ function preventClosing(event) {
         <DialogDescription>
           {{
             submitted
-              ? 'Follow the outcome in My Adoptions.'
-              : 'Review the selected copy before sending your request.'
+              ? 'Track it in My Adoptions.'
+              : 'Review this copy before sending.'
           }}
         </DialogDescription>
       </DialogHeader>
@@ -102,7 +102,7 @@ function preventClosing(event) {
             {{
               applicationStatus === 'approved'
                 ? 'Your adoption is approved. View your request to check pickup arrangements.'
-                : 'We’re reviewing your book request. You can arrange pickup after approval. Track updates in Active in My Adoptions.'
+                : 'Under review. Arrange pickup after approval.'
             }}
           </p>
           <p v-if="receiptWarning" class="text-sm text-muted-foreground" role="status">
@@ -144,7 +144,7 @@ function preventClosing(event) {
             </dl>
           </section>
           <p class="text-sm text-muted-foreground">
-            The team reviews your request. You can arrange collection after approval.
+            Arrange collection after approval.
           </p>
           <p
             v-if="error"
@@ -162,7 +162,7 @@ function preventClosing(event) {
 
               :disabled="loading"
               @click="emit('back')"
-              >Back to book details</Button
+              >Back to details</Button
             >
             <Button
               v-if="uncertain"

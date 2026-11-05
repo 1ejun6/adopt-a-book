@@ -1,9 +1,10 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { Eye, EyeOff, LockKeyhole, UserRound } from '@lucide/vue';
+import { LockKeyIcon, UserIcon } from '@hugeicons/core-free-icons';
 import { toast } from 'vue-sonner';
 import AppPage from '@/components/shared/AppPage.vue';
 import { Button } from '@/components/ui/button';
+import AppPasswordInput from '@/components/shared/AppPasswordInput.vue';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
@@ -21,7 +22,6 @@ const savingProfile = ref(false), savingPassword = ref(false);
 const profileError = ref(''), passwordError = ref('');
 const profileSaved = ref(false), passwordSaved = ref(false);
 const emailTouched = ref(false), confirmationTouched = ref(false);
-const showPassword = ref(false), showConfirmation = ref(false);
 const profileErrorElement = ref(null), passwordErrorElement = ref(null);
 const profileTab = ref(null), passwordTab = ref(null);
 const initials = computed(() => account.value?.name?.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'R');
@@ -117,8 +117,6 @@ async function savePassword() {
     if (request.signal.aborted) { return; }
     Object.assign(passwords, { password: '', confirmation: '' });
     confirmationTouched.value = false;
-    showPassword.value = false;
-    showConfirmation.value = false;
     await nextTick();
     passwordSaved.value = true;
     toast.success('Password updated');
@@ -148,7 +146,7 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
   <AppPage aria-labelledby="account-title">
     <header class="account-heading">
       <h1 id="account-title">My account</h1>
-      <p>your details &amp; sign-in settings, in one place</p>
+      <p>Profile and sign-in settings</p>
     </header>
 
     <div v-if="loading" class="loading-state" role="status" aria-busy="true">
@@ -172,11 +170,11 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
         </div>
         <div class="section-nav" role="tablist" aria-orientation="vertical" aria-label="Account sections" @keydown="navigateTabs">
           <button id="profile-tab" ref="profileTab" type="button" role="tab" :data-active="activePanel === 'profile' ? true : undefined" :aria-selected="activePanel === 'profile'" aria-controls="profile-panel" :tabindex="activePanel === 'profile' ? 0 : -1" @click="activePanel = 'profile'">
-            <UserRound aria-hidden="true" />
-            Profile details
+            <HugeiconsIcon :icon="UserIcon" class="size-4" aria-hidden="true" />
+            Profile
           </button>
           <button id="password-tab" ref="passwordTab" type="button" role="tab" :data-active="activePanel === 'password' ? true : undefined" :aria-selected="activePanel === 'password'" aria-controls="password-panel" :tabindex="activePanel === 'password' ? 0 : -1" @click="activePanel = 'password'">
-            <LockKeyhole aria-hidden="true" />
+            <HugeiconsIcon :icon="LockKeyIcon" class="size-4" aria-hidden="true" />
             Password
           </button>
         </div>
@@ -186,8 +184,8 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
         <section v-show="activePanel === 'profile'" id="profile-panel" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
           <header class="panel-heading">
             <div class="panel-title">
-              <span class="section-icon"><UserRound aria-hidden="true" /></span>
-              <h2>Profile details</h2>
+              <span class="section-icon"><HugeiconsIcon :icon="UserIcon" class="size-4" aria-hidden="true" /></span>
+              <h2>Profile</h2>
             </div>
             <p>your name &amp; the email you use to sign in</p>
           </header>
@@ -220,7 +218,7 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
             <p v-if="preferencesError" role="alert" class="form-error">{{ preferencesError }}</p>
             <p v-if="!preferredgenres.length" class="field-note">Choose at least one genre to save your preferences.</p>
             <Button type="submit" :disabled="savingPreferences || !preferredgenres.length || !preferencesChanged">
-              {{ savingPreferences ? 'Saving…' : 'Save favourite genres' }}
+              {{ savingPreferences ? 'Saving…' : 'Save genres' }}
             </Button>
           </form>
         </section>
@@ -228,10 +226,10 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
         <section v-show="activePanel === 'password'" id="password-panel" role="tabpanel" aria-labelledby="password-tab" tabindex="0">
           <header class="panel-heading">
             <div class="panel-title">
-              <span class="section-icon"><LockKeyhole aria-hidden="true" /></span>
+              <span class="section-icon"><HugeiconsIcon :icon="LockKeyIcon" class="size-4" aria-hidden="true" /></span>
               <h2>Change password</h2>
             </div>
-            <p>A fresh password for your next chapter. Choose one you don’t use elsewhere.</p>
+            <p>Use at least 8 characters.</p>
           </header>
           <form :aria-busy="savingPassword" @submit.prevent="savePassword">
             <p v-if="passwordError" ref="passwordErrorElement" class="form-error" role="alert" tabindex="-1">
@@ -239,22 +237,12 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
             </p>
             <div class="account-field">
               <label for="account-new-password">New password</label>
-              <div class="password-input">
-                <Input id="account-new-password" v-model="passwords.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" required :spellcheck="false" autocapitalize="none" :disabled="savingPassword" aria-describedby="password-hint" />
-                <button type="button" :aria-label="showPassword ? 'Hide new password' : 'Show new password'" :aria-pressed="showPassword" :disabled="savingPassword" @click="showPassword = !showPassword">
-                  <component :is="showPassword ? EyeOff : Eye" aria-hidden="true" />
-                </button>
-              </div>
+              <AppPasswordInput label="new password" id="account-new-password" v-model="passwords.password"  autocomplete="new-password" minlength="8" required :spellcheck="false" autocapitalize="none" :disabled="savingPassword" aria-describedby="password-hint" />
               <p id="password-hint" class="field-note">Use at least 8 characters.</p>
             </div>
             <div class="account-field">
               <label for="account-confirm-password">Confirm new password</label>
-              <div class="password-input">
-                <Input id="account-confirm-password" v-model="passwords.confirmation" :type="showConfirmation ? 'text' : 'password'" autocomplete="new-password" required :spellcheck="false" autocapitalize="none" :disabled="savingPassword" :aria-invalid="mismatch || undefined" aria-describedby="password-feedback" @blur="confirmationTouched = true" />
-                <button type="button" :aria-label=" showConfirmation ? 'Hide confirmation password' : 'Show confirmation password' " :aria-pressed="showConfirmation" :disabled="savingPassword" @click="showConfirmation = !showConfirmation">
-                  <component :is="showConfirmation ? EyeOff : Eye" aria-hidden="true" />
-                </button>
-              </div>
+              <AppPasswordInput label="confirmation password" id="account-confirm-password" v-model="passwords.confirmation"  autocomplete="new-password" required :spellcheck="false" autocapitalize="none" :disabled="savingPassword" :aria-invalid="mismatch || undefined" aria-describedby="password-feedback" @blur="confirmationTouched = true" />
               <p id="password-feedback" class="field-note" :class="{ 'invalid-note': mismatch }" aria-live="polite">
                 {{ mismatch ? 'Passwords don’t match.' : passwords.confirmation && canSavePassword ? 'Passwords match.' : '' }}
               </p>

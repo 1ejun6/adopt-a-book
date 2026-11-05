@@ -1,3 +1,4 @@
+import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
 import { ref, onScopeDispose } from 'vue';
 import { api } from '@/lib/api';
 import { todayInSingapore } from '@/lib/date';
@@ -46,10 +47,9 @@ export function useAdoptionDrives({ endpoint, cacheKey }) {
           //@1ejun6 > cached drives can cross midnight > update past dates using Singapore time
           drives.value = cached.map((drive) => ({
             ...drive,
-            past: drive.eventdate < todayInSingapore(),
+            past: drive.eventdate < todayInSingapore() || drive.status === 'cancelled',
           }));
-          loading.value = false;
-          return;
+
         }
       } catch {
         //@1ejun6 > browser storage unavailable \ invalid > fetch drives from server instead
@@ -85,7 +85,7 @@ export function useAdoptionDrives({ endpoint, cacheKey }) {
       if (id !== requestId) return;
       drives.value = drivelist.map((drive) => ({
         ...drive,
-        past: drive.eventdate < todayInSingapore(),
+        past: drive.eventdate < todayInSingapore() || drive.status === 'cancelled',
         bookCount: bookCounts.get(drive.mrtstationid) ?? null,
       }));
       try {
@@ -101,6 +101,7 @@ export function useAdoptionDrives({ endpoint, cacheKey }) {
     }
   }
 
+  useVisibleRefresh(() => fetchdrives(true), { interval: true, busy: () => loading.value });
   void fetchdrives();
   return { drives, loading, error, refresh: () => fetchdrives(true) };
 }

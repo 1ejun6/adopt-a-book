@@ -8,4 +8,4 @@ export { default as NavigationMenuTrigger } from './NavigationMenuTrigger.vue';
 export { default as NavigationMenuViewport } from './NavigationMenuViewport.vue';
 
 export const navigationMenuTriggerStyle = () =>
-  'washi-tape washi-tape-hover inline-flex h-9 items-center rounded-lg px-4 text-sm';
+  'washi-tape washi-tape-hover inline-flex min-h-11 items-center rounded-lg px-4 text-sm';

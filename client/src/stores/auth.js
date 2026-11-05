@@ -7,7 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
   const loginLoading = ref(false), logoutLoading = ref(false), error = ref('');
   const isLoggedIn = computed(() => !!user.value);
   const role = computed(() => user.value?.role || 'guest');
-  const homeRoute = computed(() => ({ name: role.value === 'admin' ? 'adminBooks' : role.value === 'customer' ? 'customerHome' : 'guestHome' }));
+  const homeRoute = computed(() => ({ name: role.value === 'admin' ? 'adminHome' : role.value === 'customer' ? 'customerHome' : 'guestHome' }));
   let version = 0, pending;
   function invalidate() {
     invalidateApiSession();

@@ -19,6 +19,11 @@ const groups = computed(() => ({
 }));
 const selecteddrive = ref(null);
 const dialogopen = ref(false);
+watch(drives, () => {
+  if (!selecteddrive.value) return;
+  selecteddrive.value = drives.value.find(item => item.id === selecteddrive.value.id) || null;
+  if (!selecteddrive.value) dialogopen.value = false;
+});
 
 function opendrive(drive) {
   selecteddrive.value = drive;
@@ -33,7 +38,7 @@ function opendrive(drive) {
       <Tabs v-model="tab">
         <TabsList>
           <TabsTrigger v-for="item in tabs" :key="item" :value="item" class="gap-2.5">
-            {{ item }}
+            {{ item === 'past' ? 'Past / cancelled' : item }}
             <Badge v-if="!loading" class="bg-primary tabular-nums">{{ groups[item].length }}</Badge>
           </TabsTrigger>
         </TabsList>

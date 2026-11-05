@@ -1,4 +1,5 @@
 <script setup>
+import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { toast } from 'vue-sonner';
@@ -6,7 +7,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 import { useWatchlistStore } from '@/stores/watchlist';
 import AppPage from '@/components/shared/AppPage.vue';
-import CustomerShelf from '@/components/customer/CustomerShelf.vue';
+import CustomerShelf from '@/components/books/BookShelf.vue';
 import CustomerSavedCarousel from '@/components/customer/CustomerSavedCarousel.vue';
 import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
 import { Button } from '@/components/ui/button';
@@ -105,6 +106,7 @@ onBeforeUnmount(() => {
   generation++;
   controller?.abort();
 });
+useVisibleRefresh(loadShelf, { busy: () => loading.value });
 </script>
 
 <template>
@@ -112,12 +114,12 @@ onBeforeUnmount(() => {
     <header class="intro">
       <p>Your reading corner</p>
       <h1>What will you read next?</h1>
-      <p>A little room for your next favourite story.</p>
+      <p>Find your next read.</p>
     </header>
     <section aria-labelledby="shelf-heading" class="discovery">
       <div class="section-heading">
         <div>
-          <h2 id="shelf-heading">Available on the shelf</h2>
+          <h2 id="shelf-heading">On the shelf</h2>
           <p class="shelf-note">{{ preferredgenres.length ? 'Based on your favourite genres' : 'Discover your next favourite read' }}</p>
         </div>
         <button
@@ -146,7 +148,7 @@ onBeforeUnmount(() => {
     </section>
     <section aria-labelledby="saved-heading" class="saved-section">
       <div class="section-heading">
-        <h2 id="saved-heading">Still on your mind?</h2>
+        <h2 id="saved-heading">Saved books</h2>
       </div>
       <div
         v-if="savedLoading"
@@ -168,7 +170,7 @@ onBeforeUnmount(() => {
         @remove="toggle"
       />
       <p v-else class="state">
-        Save books you love and they’ll appear here. Saving a book doesn’t reserve a copy.
+        Saved books appear here. Saving doesn’t reserve a copy.
       </p>
     </section>
     <CustomerBookDialogs
@@ -196,25 +198,16 @@ onBeforeUnmount(() => {
   gap: 0.75rem;
   padding-top: 1rem;
 }
-.intro h1 {
-  font-size: clamp(2rem, 5vw, 3rem);
-}
-.intro p {
-  font-size: 0.95rem;
-}
 .section-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
 }
-.section-heading h2 {
-  font-size: clamp(1.25rem, 3vw, 1.75rem);
-}
 .discovery {
   border: 1px solid var(--border);
-  border-radius: 1.25rem;
-  padding: clamp(1rem, 4vw, 2rem);
+  border-radius: 8px;
+  padding: 1rem;
 }
 .shelf-note {
   margin-top: 0.375rem;
@@ -233,10 +226,5 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   margin-top: 1rem;
-}
-@media (prefers-reduced-motion: reduce) {
-  .saved-loading :deep(*) {
-    animation: none;
-  }
 }
 </style>

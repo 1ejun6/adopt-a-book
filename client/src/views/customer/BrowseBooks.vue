@@ -1,4 +1,5 @@
 <script setup>
+import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
 import AppPage from '@/components/shared/AppPage.vue';
 import { getPageCount } from '@/lib/utils';
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
@@ -117,6 +118,7 @@ watch(() => [route.query.search, route.query.subject, route.query.sort, route.qu
 }, { immediate: true });
 
 onBeforeUnmount(cancelbooks);
+useVisibleRefresh(fetchBooks, { busy: () => loading.value });
 </script>
 
 <template>
@@ -139,6 +141,7 @@ onBeforeUnmount(cancelbooks);
 
     <p v-if="!loadError && !loading" class="text-sm text-muted-foreground" role="status">{{ total }} books found</p>
 
+    <p v-if="loadError" role="alert">{{ loadError }} <button class="underline min-h-11" :disabled="loading" @click="fetchBooks">Retry books</button></p>
     <CustomerBookList :books="books" :loading="loading && !loadError" />
 
     <!--@sree-sanjana06 > existing pagination component-->

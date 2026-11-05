@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
 
 const props = defineProps({
+  disabled: Boolean,
   rows: { type: Array },
   columns: { type: Array },
   compact: { type: Boolean, default: false },
@@ -36,14 +37,14 @@ const headerCheckboxState = computed(() => {
 });
 
 function toggleRowSelection(rowId) {
-  if (!props.selectable) { return; }
+  if (props.disabled || !props.selectable) { return; }
   const selectedIdsAfterToggle = rowSelected(rowId) ? props.selectedIds.filter((id) => id !== rowId) : [...props.selectedIds, rowId];
   //@1ejun6 > if row is selected remove its id > add its id
   emit('selectedRows', selectedIdsAfterToggle);
 }
 
 function toggleAllRows() {
-  if (!props.selectable) { return; }
+  if (props.disabled || !props.selectable) { return; }
   const rowIds = new Set(props.rows.map(row => row.id)); //@1ejun6 > get ids of all rows currently displayed in table
   const selectedIdsAfterToggle = headerCheckboxState.value === true ? props.selectedIds.filter(id => !rowIds.has(id)) : [...new Set([...props.selectedIds, ...rowIds])]; //@1ejun6 > new copy
   emit('selectedRows', selectedIdsAfterToggle);
@@ -51,6 +52,7 @@ function toggleAllRows() {
 
 //@lee-hlmilk > list pages open records > import results select rows > review rows leave controls to their cell slots
 function handleRowClick(row) {
+  if (props.disabled) return;
   if (props.rowAction === 'select') { toggleRowSelection(row.id); }
   else if (props.rowAction === 'open') { emit('openRow', row); }
 }
@@ -74,14 +76,14 @@ function handleRowClick(row) {
       <!-- CSS controls the layout; both views share the same selection state. -->
       <div v-if="!props.compact" class="space-y-3 lg:hidden">
         <label v-if="props.selectionColumn && props.selectable" class="flex min-h-11 items-center gap-3">
-          <Checkbox :modelValue="headerCheckboxState" aria-label="Select all visible rows"
+          <Checkbox :disabled="props.disabled" :modelValue="headerCheckboxState" aria-label="Select all visible rows"
             @update:modelValue="toggleAllRows" />
           Select all visible rows
         </label>
         <article v-for="row in rows" :key="row.id" class="space-y-3 border p-4"
           :data-state="rowSelected(row.id) ? 'selected' : undefined" :class="rowSelected(row.id) && 'bg-primary'">
           <label v-if="props.selectionColumn && props.selectable" class="flex min-h-11 items-center gap-3">
-            <Checkbox :modelValue="rowSelected(row.id)" :aria-label="`Select ${row.title || row.id}`"
+            <Checkbox :disabled="props.disabled" :modelValue="rowSelected(row.id)" :aria-label="`Select ${row.title || row.id}`"
               @update:modelValue="toggleRowSelection(row.id)" />
             Select record
           </label>
@@ -97,7 +99,7 @@ function handleRowClick(row) {
               </dd>
             </div>
           </dl>
-          <Button v-if="props.rowAction === 'open'" type="button" variant="outline" class="w-full min-h-11"
+          <Button :disabled="props.disabled" v-if="props.rowAction === 'open'" type="button" variant="outline" class="w-full "
             :aria-label="`View details for ${row.title || row.customer || row.userid?.name || row.id}`" @click="emit('openRow', row)">
             View details
             <HugeiconsIcon :icon="ArrowRight01Icon" class="ml-2 size-4" aria-hidden="true" />
@@ -111,16 +113,16 @@ function handleRowClick(row) {
           <TableHeader class="bg-primary">
             <TableRow>
               <!--@lee-hlmilk > select all visible rows-->
-              <TableHead v-if="props.selectionColumn" class="w-10 text-center" @click="toggleAllRows">
+              <TableHead v-if="props.selectionColumn" class="w-16 text-center" @click="toggleAllRows">
                 <!--@1ejun6 > stops its click from bubbling up & triggering a parent element click handler-->
-                <Checkbox v-if="props.selectable" class="mx-auto block" :modelValue="headerCheckboxState" aria-label="Select all visible rows" @click.stop
+                <Checkbox :disabled="props.disabled" v-if="props.selectable" class="mx-auto" :modelValue="headerCheckboxState" aria-label="Select all visible rows" @click.stop
                   @update:modelValue="toggleAllRows" />
               </TableHead>
               <TableHead v-for="column in columns" :key="column.key" :class="column.class">
                 <slot :name="`header${column.key[0].toUpperCase()}${column.key.slice(1)}`" :column="column">{{ column.label }}</slot>
               </TableHead>
               <!--@lee-hlmilk > row action column-->
-              <TableHead v-if="props.rowAction === 'open'" class="w-10" />
+              <TableHead v-if="props.rowAction === 'open'" class="w-16" />
             </TableRow>
           </TableHeader>
 
@@ -129,7 +131,7 @@ function handleRowClick(row) {
               :class="props.rowAction !== 'none' && 'washi-row washi-tape-hover'" @click="handleRowClick(row)">
               <TableCell v-if="props.selectionColumn" class="text-center"
                 :data-active="rowSelected(row.id) ? true : undefined" @click.stop="toggleRowSelection(row.id)">
-                <Checkbox v-if="props.selectable" class="mx-auto block" :modelValue="rowSelected(row.id)" :aria-label="`Select ${row.title || row.id}`" @click.stop
+                <Checkbox :disabled="props.disabled" v-if="props.selectable" class="mx-auto" :modelValue="rowSelected(row.id)" :aria-label="`Select ${row.title || row.id}`" @click.stop
                   @update:modelValue="toggleRowSelection(row.id)" />
               </TableCell>
 
@@ -143,8 +145,8 @@ function handleRowClick(row) {
 
               <!--@lee-hlmilk > arrow for opening row-->
               <TableCell v-if="props.rowAction === 'open'" class="text-center">
-                <button type="button" class="mx-auto block" :aria-label="`View details for ${row.title || row.customer || row.userid?.name || row.id}`" @click.stop="emit('openRow', row)">
-                  <HugeiconsIcon :icon="ArrowRight01Icon" aria-hidden="true" />
+                <button :disabled="props.disabled" type="button" class="mx-auto grid size-11 place-items-center" :aria-label="`View details for ${row.title || row.customer || row.userid?.name || row.id}`" @click.stop="emit('openRow', row)">
+                  <HugeiconsIcon :icon="ArrowRight01Icon" class="size-4" aria-hidden="true" />
                 </button>
               </TableCell>
             </TableRow>

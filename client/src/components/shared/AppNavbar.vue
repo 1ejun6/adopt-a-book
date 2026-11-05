@@ -47,7 +47,7 @@ async function logout() {
 </script>
 
 <template>
-  <header class="sticky top-0 z-40 border-b bg-background">
+  <header class="sticky top-0 z-40 border-b bg-background" style="padding-top: env(safe-area-inset-top)">
     <div class="flex items-center justify-between px-4 py-2 xl:p-5">
       <!--@1ejun6 > centers navbar horizontal > fills available width-->
       <RouterLink :to="role === 'admin' ? { name: 'adminHome' } : homeRoute" class="flex shrink-0 items-center gap-2.5 font-heading text-lg" @click="status = false">

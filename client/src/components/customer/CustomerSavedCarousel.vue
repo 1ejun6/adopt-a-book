@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { ArrowLeft01Icon, ArrowRight01Icon, Delete02Icon } from '@hugeicons/core-free-icons';
 import { Button } from '@/components/ui/button';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 const props = defineProps({
@@ -20,7 +21,7 @@ function update() {
 function move(direction) {
   track.value?.scrollBy({
     left: direction * track.value.clientWidth * 0.8,
-    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    behavior: 'instant',
   });
 }
 watch(
@@ -47,7 +48,7 @@ onBeforeUnmount(() => observer?.disconnect());
         aria-controls="saved-track"
         :disabled="atStart"
         @click="move(-1)"
-        >← Previous</Button
+        ><HugeiconsIcon :icon="ArrowLeft01Icon" class="size-4" aria-hidden="true" /></Button
       >
       <Button
         variant="outline"
@@ -55,7 +56,7 @@ onBeforeUnmount(() => observer?.disconnect());
         aria-controls="saved-track"
         :disabled="atEnd"
         @click="move(1)"
-        >Next →</Button
+        ><HugeiconsIcon :icon="ArrowRight01Icon" class="size-4" aria-hidden="true" /></Button
       >
     </div>
     <ul
@@ -91,7 +92,7 @@ onBeforeUnmount(() => observer?.disconnect());
           :disabled="busyIds.has(entry.bookid.id)"
           :aria-label="`Remove ${entry.bookid.title} from saved books`"
           @click="$emit('remove', entry.bookid)"
-          >Remove saved book</Button
+          ><HugeiconsIcon :icon="Delete02Icon" class="size-4" aria-hidden="true" /></Button
         >
       </li>
     </ul>
@@ -109,13 +110,10 @@ onBeforeUnmount(() => observer?.disconnect());
   display: flex;
   gap: 1rem;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
   padding: 0.5rem 0.25rem 1rem;
-  scroll-padding: 0.25rem;
 }
 .saved-book {
   flex: 0 0 13rem;
-  scroll-snap-align: start;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   padding: 1rem;
@@ -125,17 +123,11 @@ onBeforeUnmount(() => observer?.disconnect());
 }
 .preview {
   text-align: left;
-  cursor: pointer;
   flex: 1;
 }
 .availability {
   display: block;
   font-size: 0.75rem;
   margin-top: 0.75rem;
-}
-button:focus-visible {
-  outline: 2px solid var(--foreground);
-  outline-offset: 3px;
-  border-radius: 0.25rem;
 }
 </style>

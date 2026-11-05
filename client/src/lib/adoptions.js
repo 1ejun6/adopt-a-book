@@ -1,3 +1,5 @@
+import { pendingPickupState, pickupMatchesView } from '../../../shared/pickups.mjs';
+import { currentTime } from '@/lib/clock';
 import { formatDate, todayInSingapore } from './utils.js';
 
 export function getApplicationStatus(record, fallback = 'unknown') {
@@ -310,8 +312,9 @@ export function adoptionJourney(
     }
     if (activePickup(appointment)) {
       const confirmed = appointmentStatus === 'appointment confirmed';
+      const timing = pendingPickupState(appointment, currentTime.value);
       const overdue =
-        appointment.appointmentdate && appointment.appointmentdate < todayInSingapore();
+        pickupMatchesView(appointment, 'overdue', currentTime.value);
       return {
         ...base,
         ...pickupStatus(appointment),
@@ -327,7 +330,7 @@ export function adoptionJourney(
           : book?.status !== 'reserved'
             ? 'Needs checking'
             : overdue
-              ? 'Pickup date has passed'
+              ? (timing === 'attention' ? 'Pickup details incomplete' : 'Pickup times have passed')
               : !pickupComplete(appointment)
                 ? 'Pickup details incomplete'
                 : '',
@@ -357,8 +360,11 @@ export function adoptionJourney(
           : {}),
         ...(overdue
           ? {
-              description:
-                'The pickup date has passed, but this book hasn’t been marked as collected. Check with the team before you travel.',
+              description: confirmed
+                ? 'The pickup date has passed, but this book hasn’t been marked as collected. Check with the team before you travel.'
+                : timing === 'attention'
+                  ? 'Some pickup times are incomplete. Check the details or send new availability.'
+                  : 'All proposed pickup times have passed. Send new availability or check with the team before travelling.',
             }
           : {}),
       };
@@ -399,7 +405,7 @@ export function adoptionJourney(
     priority: 0,
     canArrange,
     action: canArrange ? 'arrange' : '',
-    actionLabel: 'Arrange pickup',
+    actionLabel: appointment ? 'Arrange another pickup' : 'Arrange pickup',
     description: canArrange
       ? appointment
         ? `${pickupStatus(appointment).label}. Your adoption is still approved. You can request another pickup.`
@@ -489,7 +495,7 @@ export function pickupGroup(appointment) {
   if (
     !activePickup(appointment) ||
     !pickupComplete(appointment) ||
-    appointment.appointmentdate < todayInSingapore()
+    pendingPickupState(appointment, currentTime.value) !== 'awaiting'
   ) {
     return 'actions';
   }

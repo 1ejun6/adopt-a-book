@@ -11,7 +11,7 @@ defineProps({
 <template>
   <TabsList aria-label="Your adoptions" class="adoption-tabs adoption-tabs-primary w-full">
     <TabsTrigger v-for="item in journeyTabs" :key="item.value" :value="item.value"
-      class="min-h-11 flex-1 gap-2.5 sm:flex-none">
+      class=" flex-1 gap-2.5 sm:flex-none">
       <span>{{ item.label }}</span>
       <Badge v-if="showCounts" variant="neutral" class="adoption-tab-count tabular-nums">
         {{ counts[item.value] }}

@@ -1,6 +1,6 @@
 <script setup>
 import { toast } from 'vue-sonner';
-import { reactive, ref } from 'vue';
+import { reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { loginDestination } from '@/router';
 import { useAuthStore } from '@/stores/auth';
@@ -9,10 +9,11 @@ const route = useRoute();
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import AppPasswordInput from '@/components/shared/AppPasswordInput.vue';
 
 const router = useRouter();
-const showPassword = ref(false);
+const fieldErrors = reactive({});
+function fieldFeedback(event) { fieldErrors[event.target.id] = event.target.validationMessage || ''; }
 const form = reactive({ email: '', password: '' });
 
 async function login() {
@@ -33,19 +34,23 @@ async function login() {
   <section class="mx-auto w-full max-w-md py-5">
     <div class="space-y-5">
       <h1>Login</h1>
-      <p>welcome back!!</p>
       <form @submit.prevent="login">
+        <p v-if="auth.error" role="alert" class="text-destructive">{{ auth.error }}</p>
+        <fieldset :disabled="auth.loginLoading" class="space-y-4">
         <Field>
           <FieldLabel for="email">Email</FieldLabel>
-          <Input id="email" v-model="form.email" type="email" autocomplete="email" placeholder="enter your email" class="md:text-base min-h-11" required />
-        </Field>
+          <Input id="email" @blur="fieldFeedback" @invalid="fieldFeedback" @input="fieldFeedback" :aria-invalid="!!fieldErrors.email || undefined" :aria-describedby="fieldErrors.email ? 'email-feedback' : undefined" v-model="form.email" type="email" autocomplete="email" placeholder="you@example.com" required />
+        <p v-if="fieldErrors.email" id="email-feedback" class="text-sm text-destructive" role="alert">{{ fieldErrors.email }}</p>
+                </Field>
         <Field>
           <FieldLabel for="password">Password</FieldLabel>
-          <Input class="md:text-base min-h-11" id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" placeholder="enter your password" required />
-        </Field>
-        <label class="flex min-h-11 items-center gap-2.5"> <Checkbox v-model="showPassword" /> show password </label>
-        <Button type="submit" class="w-full min-h-11" :disabled="auth.loginLoading">{{ auth.loginLoading ? 'Logging in…' : 'Login' }}</Button>
+          <AppPasswordInput id="password" @blur="fieldFeedback" @invalid="fieldFeedback" @input="fieldFeedback" :aria-invalid="!!fieldErrors.password || undefined" :aria-describedby="fieldErrors.password ? 'password-feedback' : undefined" :disabled="auth.loginLoading" v-model="form.password"  autocomplete="current-password"  required />
+        <p v-if="fieldErrors.password" id="password-feedback" class="text-sm text-destructive" role="alert">{{ fieldErrors.password }}</p>
+                </Field>
+        <Button type="submit" class="w-full " :disabled="auth.loginLoading">{{ auth.loginLoading ? 'Signing in…' : 'Login' }}</Button>
+        </fieldset>
       </form>
+      <RouterLink class="underline" :to="{ name: 'register', query: { redirect: route.query.redirect } }">Create an account</RouterLink>
     </div>
   </section>
 </template>

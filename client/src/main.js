@@ -1,4 +1,7 @@
 import './assets/main.css';
+import { startClock } from './lib/clock';
+const stopClock = startClock();
+if (import.meta.hot) import.meta.hot.dispose(stopClock);
 
 import { watch } from 'vue';
 import { useAuthStore } from './stores/auth';
@@ -18,7 +21,12 @@ app.use(pinia);
 const auth = useAuthStore(pinia);
 const adoptions = useAdoptionsStore(pinia);
 const watchlist = useWatchlistStore(pinia);
-registerUnauthorizedHandler(() => auth.clearSession());
+registerUnauthorizedHandler(() => {
+  const redirect = router.currentRoute.value.fullPath;
+  const wasLoggedIn = auth.isLoggedIn;
+  auth.clearSession();
+  if (wasLoggedIn) void router.replace({ name: 'login', query: { redirect } });
+});
 watch(() => auth.user?.id, () => { invalidateApiSession(); watchlist.reset(); adoptions.reset(); }, { flush: 'sync' });
 app.use(HugeiconsPlugin);
 app.use(router);

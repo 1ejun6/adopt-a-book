@@ -10,4 +10,4 @@ const colors = {
 };
 
 export const badgeVariants = ({ variant } = {}) =>
-  cn('inline-block rounded-lg p-1', colors[variant] || colors.neutral);
+  cn('inline-block rounded px-1.5 py-1 text-sm', colors[variant] || colors.neutral);

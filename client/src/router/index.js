@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { toast } from 'vue-sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 
 const router = createRouter({
@@ -58,9 +57,8 @@ router.beforeEach(async (to) => {
   const login = { name: 'login', query: { redirect: to.fullPath } };
   try {
     await auth.loadSession();
-  } catch (error) {
-    toast.error(error.message);
-    if (to.meta.roles && !to.meta.roles.includes('guest')) return login;
+  } catch {
+    // The layout renders a retryable session error before mounting private views.
     return true;
   }
   if (to.meta.roles && !to.meta.roles.includes(auth.role)) return auth.isLoggedIn ? auth.homeRoute : login;

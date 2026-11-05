@@ -1,4 +1,5 @@
 <script setup>
+import { useAdminRecord } from '@/composables/useAdminRecord';
 import { computed, reactive, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
@@ -22,6 +23,7 @@ const applicationFields = computed(() => [
 ]);
 const detailsHint = computed(() => selectedApplication.value ? decisionHint([selectedApplication.value]) : '');
 const detailsOpen = ref(false);
+const { detailError, detailLoading, refreshDetail } = useAdminRecord(selectedApplication, detailsOpen, '/admin/applications', 'adoptionapplication', { busy: () => saving.value });
 const saving = ref(false);
 const { confirm } = useConfirmation();
 const filters = reactive({ search: '', status: 'pending', sort: 'oldest' });
@@ -41,7 +43,7 @@ const columns = [
 ];
 //@lee-hlmilk > filters &&& totals come from SQL > selection stays scoped to the returned page
 const { rows: applications, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchApplications } = useServerPagination({
-    endpoint: '/admin/applications', filters, selectedIds, read: response => response.adoptionapplications
+    busy: () => saving.value, endpoint: '/admin/applications', filters, selectedIds, read: response => response.adoptionapplications
 });
 const selectedApplications = computed(() => applications.value.filter(application => selectedIds.value.includes(application.id)));
 //@lee-hlmilk > caught-up message is for a loaded pending queue > searches keep their own no-results state
@@ -64,7 +66,7 @@ function openApplication(application) {
 
 //@lee-hlmilk > backend decides one request at a time > report partial failures &&& reload auto-rejected competing requests
 async function decideApplications(status, rows = selectedApplications.value) {
-    if (loading.value || saving.value || !rows.length || decisionHint(rows)) { return; }
+    if (detailLoading.value || detailError.value || loading.value || saving.value || !rows.length || decisionHint(rows)) { return; }
     if (status === 'approved' && new Set(rows.map(application => application.bookid.id)).size !== rows.length) { return; }
     const targets = [...rows];
     if (!await confirm(`${status === 'approved' ? 'Approve' : 'Reject'} ${targets.length === 1 ? 'application' : 'applications'}?`, {
@@ -75,7 +77,6 @@ async function decideApplications(status, rows = selectedApplications.value) {
     if (loading.value || saving.value) { return; }
     const current = targets.map(target => applications.value.find(application => application.id === target.id));
     if (current.some(application => !application) || decisionHint(current)) { toast.error('These applications have changed. Select them again.'); return; }
-    detailsOpen.value = false;
     saving.value = true;
     let completed = 0;
     const failures = [];
@@ -89,6 +90,7 @@ async function decideApplications(status, rows = selectedApplications.value) {
         if (completed) { toast.success(`${completed} ${completed === 1 ? 'application' : 'applications'} ${status}`); }
         if (failures.length) { toast.error(`${failures.length} ${failures.length === 1 ? 'decision' : 'decisions'} failed`, { description: failures.join('\n'), style: { whiteSpace: 'pre-line' } }); }
         await fetchApplications();
+        await refreshDetail();
     } finally { saving.value = false; }
 }
 
@@ -97,7 +99,7 @@ fetchApplications();
 
 <template>
     <!--@lee-hlmilk > AdminList updates view-owned models > applications contains only the matching server page-->
-    <AdminList title="Adoption applications" description="Review requests for organisation copies. Approval reserves the copy for collection."
+    <AdminList @retry="fetchApplications" title="Adoption applications" description="Approval reserves a copy for collection."
         v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="applications" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="saving"
         :selectable="['all', 'pending'].includes(filters.status)"
@@ -113,8 +115,8 @@ fetchApplications();
             <p v-if="selectionHint || approvalConflict" class="text-sm text-muted-foreground" role="status">
                 {{ selectionHint || 'Choose one reader per copy to approve requests.' }}
             </p>
-            <Button class="min-h-11" :disabled="loading || saving || !!selectionHint || approvalConflict" @click="decideApplications('approved')">Approve</Button>
-            <Button class="min-h-11" variant="destructive" :disabled="loading || saving || !!selectionHint" @click="decideApplications('rejected')">Reject</Button>
+            <Button :disabled="detailLoading || !!detailError || loading || saving || !!selectionHint || approvalConflict" @click="decideApplications('approved')">Approve</Button>
+            <Button variant="destructive" :disabled="detailLoading || !!detailError || loading || saving || !!selectionHint" @click="decideApplications('rejected')">Reject</Button>
         </template>
         <template #cellApplicant="{ row }">
             <p class="break-words lg:truncate">{{ row.userid?.name || 'Unknown applicant' }}</p>
@@ -128,18 +130,18 @@ fetchApplications();
         <template #empty>
             <h2>{{ pendingEmpty ? 'No pending applications' : filters.search.trim() ? 'No matching applications' : 'No applications in this view' }}</h2>
             <p class="text-sm text-muted-foreground">{{ pendingEmpty ? 'You’re all caught up.' : filters.search.trim() ? 'Try another search term or status.' : 'New requests will appear here. Try another status or search term.' }}</p>
-            <Button v-if="pendingEmpty" variant="outline" class="mt-2.5 min-h-11" @click="filters.status = 'all'">View all applications</Button>
+            <Button v-if="pendingEmpty" variant="outline" class="mt-2.5 " @click="filters.status = 'all'">View all applications</Button>
         </template>
     </AdminList>
 
-    <AdminDetailsDialog v-if="selectedApplication" :open="detailsOpen" title="Application details"
+    <AdminDetailsDialog :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedApplication" :open="detailsOpen" title="Application details"
         :book="selectedApplication.bookid" :status="selectedApplication.status" :fields="applicationFields" @update:open="detailsOpen = $event">
         <p v-if="selectedApplication.status === 'pending' && detailsHint" class="text-muted-foreground">{{ detailsHint }}</p>
         <!--@lee-hlmilk > reviewed applications are read-only > decision actions remain available only for pending requests-->
         <template v-if="selectedApplication.status === 'pending'" #actions>
             <!--@lee-hlmilk > both flex-1 buttons share the footer width > pass one record to the same bulk-capable action-->
-            <Button type="button" variant="destructive" class="flex-1 min-h-11" :disabled="!!detailsHint" @click="decideApplications('rejected', [selectedApplication])">Reject</Button>
-            <Button type="button" class="flex-1 min-h-11" :disabled="!!detailsHint" @click="decideApplications('approved', [selectedApplication])">Approve</Button>
+            <Button type="button" variant="destructive" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="decideApplications('rejected', [selectedApplication])">Reject</Button>
+            <Button type="button" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="decideApplications('approved', [selectedApplication])">Approve</Button>
         </template>
     </AdminDetailsDialog>
 </template>

@@ -16,7 +16,7 @@ const router = useRouter();
 
 function goauth(name) {
   open.value = false;
-  router.push({ name });
+  router.push({ name, query: { redirect: `/customer/drives?drive=${props.drive.id}` } });
 }
 
 //@1ejun6 > rsvp needs an account > keep auth choices visible until clicked \ dismissed

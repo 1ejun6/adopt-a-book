@@ -8,7 +8,7 @@ const props = defineProps({ class: { type: null, default: null } });
 
 <template>
     <PopoverPortal>
-        <PopoverContent v-bind="$attrs" :sideOffset="5" :class="cn('z-50 rounded-lg border bg-background text-foreground shadow-md', props.class)">
+        <PopoverContent v-bind="$attrs" :sideOffset="5" :class="cn('z-50 rounded-lg border bg-background text-foreground ', props.class)">
             <slot />
         </PopoverContent>
     </PopoverPortal>

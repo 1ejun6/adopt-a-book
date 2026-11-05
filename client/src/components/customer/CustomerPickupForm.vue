@@ -58,7 +58,7 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
         "
       />
       <p id="pickup-location-help" class="text-xs text-muted-foreground">
-        The collection area is a suggested meeting point. You can suggest a different location.
+        Choose a meeting point.
       </p>
       <p v-if="errors.location" id="pickup-location-error" class="text-xs text-destructive">
         {{ errors.location }}
@@ -84,7 +84,7 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
       <fieldset class="space-y-2" :disabled="saving" aria-describedby="pickup-time-help">
         <legend class="text-sm">Three times you’re available (SGT)</legend>
         <p id="pickup-time-help" class="text-xs text-muted-foreground">
-          Choose three different times on this date. The team will pick one and confirm it.
+          Choose three times. The team will confirm one.
         </p>
         <div v-for="(_, index) in draft.timeslots" :key="index" class="space-y-1">
           <label :for="index === 0 ? 'pickup-timeslot' : `pickup-timeslot-${index}`" class="text-sm"

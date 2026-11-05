@@ -16,7 +16,7 @@ const props = defineProps({
   busy: { type: Boolean, default: false },
 });
 const open = defineModel('open', { type: Boolean, default: false });
-const emit = defineEmits(['save']);
+const emit = defineEmits(['save', 'retry']);
 
 function cleanDescription(description) {
   if (typeof description !== 'string') return '';
@@ -41,7 +41,7 @@ const fields = computed(() => [
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent v-if="props.book">
+    <DialogContent v-if="props.book || props.error || props.loading">
       <DialogHeader>
         <DialogTitle>Book details</DialogTitle>
         <DialogDescription>details for the selected book</DialogDescription>
@@ -61,6 +61,7 @@ const fields = computed(() => [
           </div>
         </div>
 
+        <div v-else-if="props.error" role="alert" class="space-y-3"><p>{{ props.error }}</p><button type="button" class="underline min-h-11" @click="emit('retry')">Retry book details</button></div>
         <div v-else-if="!props.error" class="space-y-2.5">
           <div class="flex items-center gap-2.5">
             <AppBookIdentity :title="props.book.title" :author="props.book.authors?.join(', ') || 'author not listed'"

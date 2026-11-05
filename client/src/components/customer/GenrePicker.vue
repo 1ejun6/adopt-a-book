@@ -23,7 +23,6 @@ defineProps({ disabled: Boolean });
 
 <style scoped>
 .genre-picker { min-width: 0; margin-block: 1.25rem; }
-legend { font-weight: 500; }
 .genre-help, .genre-count { font-size: 0.75rem; color: var(--muted-foreground); }
 .genre-help { margin: 0.375rem 0 0.75rem; }
 .genre-count { margin-top: 0.625rem; }
@@ -34,10 +33,10 @@ legend { font-weight: 500; }
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  min-height: 34px;
+  min-height: 44px;
   padding: 0.375rem 0.625rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 8px;
   font-size: 0.75rem;
   line-height: 1.3;
 }

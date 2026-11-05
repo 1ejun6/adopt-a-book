@@ -31,7 +31,7 @@ export const useWatchlistStore = defineStore('watchlist', () => {
   }
   function fetchWatchlist({ force = false } = {}) {
     if (fetchPromise) return fetchPromise;
-    if (loaded.value && !force) return Promise.resolve(entries.value);
+    if (loaded.value && !loadError.value && !force) return Promise.resolve(entries.value);
     // Avoid a refresh overwriting mutations that are already in flight.
     if (pendingOperations.value.size) return Promise.reject(new Error('Please wait for your saved books to finish updating'));
     const current = generation, controller = new AbortController();
@@ -69,7 +69,14 @@ export const useWatchlistStore = defineStore('watchlist', () => {
     try {
       const response = await api(endpoint, { ...options, signal: controller.signal });
       if (current !== generation) throw new Error('Session changed; please try again');
-      return commit(response);
+      const receipt = commit(response);
+      // Commit the acknowledgement before refreshing. A read failure cannot undo a save.
+      pendingOperations.value.delete(bookId);
+      if (!pendingOperations.value.size) {
+        try { await fetchWatchlist({ force: true }); } catch { /* Inline refresh error remains available. */ }
+      }
+      if (current !== generation) throw new Error('Session changed; please try again');
+      return receipt;
     } finally {
       controllers.delete(controller);
       if (current === generation) pendingOperations.value.delete(bookId);

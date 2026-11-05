@@ -17,7 +17,7 @@ const deleting = computed(() => new Set(store.entries.filter(entry => store.pend
 const dialogs = ref(null);
 const noteToasts = new Set();
 async function loadWatchlist() {
-  try { await store.fetchWatchlist(); } catch { /* Render the store's load error and retry button. */ }
+  try { await store.fetchWatchlist({ force: true }); } catch { /* Render the store's load error and retry button. */ }
 }
 
 //@sree-sanjana06 > open edit popup with existing private note

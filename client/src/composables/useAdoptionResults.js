@@ -34,12 +34,12 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
   const overdueCount = computed(
     () =>
       paged.value.filter(
-        (entry) => entry.kind === 'request' && entry.record.warning === 'Pickup date has passed',
+        (entry) => entry.kind === 'request' && entry.record.warning === 'Pickup times have passed',
       ).length,
   );
   function entryTask(entry) {
     if (entry.kind === 'unlinked') return 'unlinked';
-    if (entry.record.warning === 'Pickup date has passed') return 'past';
+    if (entry.record.warning === 'Pickup times have passed') return 'past';
     if (actionPriority(entry.record) === 0) return 'check';
     if (entry.record.canArrange) return 'arrange';
     if (entry.record.code === 'pickup confirmed') return 'confirmed';
@@ -61,7 +61,7 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
         {
           key: 'past',
           title: 'Check your pickup',
-          description: 'These dates have passed. Check with the team before travelling.',
+          description: 'These pickup times have passed. Check with the team before travelling.',
         },
         {
           key: 'check',

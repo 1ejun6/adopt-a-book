@@ -1,5 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+const route = useRoute();
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
 import { useAdoptionDrives } from '@/composables/useAdoptionDrives';
@@ -17,7 +19,7 @@ const tab = ref('mine');
 const tabs = [
   { value: 'mine', label: 'my drives' },
   { value: 'upcoming', label: 'upcoming' },
-  { value: 'past', label: 'past' },
+  { value: 'past', label: 'Past / cancelled' },
 ];
 const groups = computed(() => ({
   mine: drives.value.filter(drive => !drive.past && drive.registered),
@@ -27,20 +29,26 @@ const groups = computed(() => ({
 const saving = ref(false);
 const selecteddrive = ref(null);
 const dialogopen = ref(false);
+watch(drives, () => {
+  if (!selecteddrive.value && typeof route.query.drive === 'string') {
+    selecteddrive.value = drives.value.find(item => item.id === route.query.drive) || null;
+    dialogopen.value = !!selecteddrive.value;
+  }
+  if (!selecteddrive.value) return;
+  selecteddrive.value = drives.value.find(item => item.id === selecteddrive.value.id) || null;
+  if (!selecteddrive.value) dialogopen.value = false;
+});
 
 async function togglersvp() {
   const drive = selecteddrive.value;
   if (!drive || saving.value) return;
   saving.value = true;
   try {
-    await api(`/drives/${drive.id}/rsvp`, { method: drive.registered ? 'DELETE' : 'POST' });
-    const registered = !drive.registered;
-    const delta = registered ? -1 : 1;
-    Object.assign(drive, { registered, spotsleft: Math.max(0, drive.spotsleft + delta) });
+    const response = await api(`/drives/${drive.id}/rsvp`, { method: drive.registered ? 'DELETE' : 'POST' });
+    const registered = response.registered;
+    Object.assign(drive, { registered, ...response.drive });
     toast.success(!registered ? 'registration cancelled' : 'registered for adoption drive');
     await fetchdrives();
-    selecteddrive.value = drives.value.find(item => item.id === drive.id) || null;
-    if (!selecteddrive.value) dialogopen.value = false;
   } catch (error) {
     toast.error(error.message);
   } finally {
@@ -49,6 +57,7 @@ async function togglersvp() {
 }
 
 function opendrive(drive) {
+  if (saving.value) return;
   selecteddrive.value = drive;
   dialogopen.value = true;
 }
@@ -80,7 +89,7 @@ function opendrive(drive) {
         @click="togglersvp">
         {{ saving ? 'saving...' : 'rsvp' }}
       </Button>
-      <p v-else role="status" class="text-sm">{{ drive.registered ? 'you registered for this drive' : drive.past ? 'this drive has ended' : drive.status === 'cancelled' ? 'this drive has been cancelled' : drive.spotsleft === 0 ? 'this drive is full' : 'registration has closed' }}</p>
+      <p v-else role="status" class="text-sm">{{ drive.status === 'cancelled' ? 'This drive was cancelled' : drive.registered ? 'You registered for this drive' : drive.past ? 'This drive has ended' : drive.spotsleft === 0 ? 'this drive is full' : 'registration has closed' }}</p>
     </template>
   </AppAdoptionDriveDialog>
 </template>

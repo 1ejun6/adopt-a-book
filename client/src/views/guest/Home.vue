@@ -2,14 +2,17 @@
 import { onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
-import BookShelf from '@/components/guest/BookShelf.vue';
+import BookShelf from '@/components/books/BookShelf.vue';
 
+import AppBookPreviewDialog from '@/components/shared/AppBookPreviewDialog.vue';
+const selectedbook = ref(null), dialogopen = ref(false);
 const cachekey = 'guest-bookshelf';
 const books = ref([]);
 const loading = ref(true);
 const loaderror = ref(false);
 
 async function loadbooks(refresh = false) {
+    if (loading.value && books.value.length && refresh) return;
     loading.value = true;
     loaderror.value = false;
 
@@ -18,8 +21,7 @@ async function loadbooks(refresh = false) {
             const cached = JSON.parse(localStorage.getItem(cachekey));
             if (Array.isArray(cached) && cached.every(book => book && typeof book.id === 'string' && typeof book.title === 'string')) {
                 books.value = cached;
-                loading.value = false;
-                return;
+
             }
         } catch {
             //@1ejun6 > storage can be unavailable or contain invalid data > fetch books instead
@@ -59,12 +61,14 @@ onMounted(loadbooks);
         <div class="space-y-5 text-center">
             <div class="grid gap-2.5">
                 <p class="text-sm">from our shelves to yours</p>
-                <h1 class="text-6xl">Different shelves<br>Shared stories</h1>
+                <h1 class="text-4xl sm:text-5xl">Different shelves<br>Shared stories</h1>
                 <p class="text-sm">which one feels like your next chapter?</p>
             </div>
             <div v-if="!loaderror || books.length">
-                <BookShelf :books="books" :isLoading="loading" />
+                <BookShelf :books="books" :loading="loading && !books.length" @select="selectedbook = $event; dialogopen = true" />
             </div>
+            <p v-if="loaderror" role="alert">Could not refresh books. <button class="underline min-h-11" :disabled="loading" @click="loadbooks(true)">Retry</button></p>
         </div>
+        <AppBookPreviewDialog v-model:open="dialogopen" :book="selectedbook" />
     </section>
 </template>

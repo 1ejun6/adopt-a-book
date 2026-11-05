@@ -180,6 +180,10 @@ export const useAdoptionsStore = defineStore('adoptions', () => {
             throw new Error('This book is no longer available for requests.');
           sent = true;
         },
+        (response) => {
+          const application = response.adoptionapplication;
+          if (recordId(application)) applications.value = [...applications.value.filter(item => recordId(item) !== recordId(application)), application];
+        },
       );
     } catch (error) {
       if (sent && current === generation) uncertainBooks.value.add(id);

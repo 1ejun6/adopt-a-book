@@ -23,7 +23,7 @@ const warning = computed(
     props.record.warning ||
     (!props.verified && props.record.appointment ? 'Pickup status unavailable' : ''),
 );
-const overdue = computed(() => warning.value === 'Pickup date has passed');
+const overdue = computed(() => warning.value === 'Pickup times have passed');
 const pickupOutcome = computed(() =>
   !props.record.history &&
   ['cancelled', 'rejected'].includes(getApplicationStatus(props.record.appointment))
@@ -49,7 +49,7 @@ function openRecord() {
 <template>
   <CustomerAdoptionRow
     :id="`adoption-${record.id}`"
-    :label="`${actionLabel} for ${title}${overdue ? '. Pickup date has passed' : ''}`"
+    :label="`${actionLabel} for ${title}${overdue ? '. Pickup times have passed' : ''}`"
     @open="openRecord"
   >
     <template #book>
@@ -77,7 +77,7 @@ function openRecord() {
         <p
           class="adoption-row__date"
           :class="{ 'adoption-row__date--past': overdue }"
-          :title="overdue ? 'Pickup date has passed' : undefined"
+          :title="overdue ? 'Pickup times have passed' : undefined"
         >
           <HugeiconsIcon
             v-if="overdue"

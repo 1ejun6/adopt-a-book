@@ -290,7 +290,7 @@ defineExpose({ openBookDetails, closeBookDetails });
 </script>
 
 <template>
-  <AppBookPreviewDialog v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError"
+  <AppBookPreviewDialog @retry="openBookDetails(dialogBook, { viewOnly, onReturn: returnToAdoption })" v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError"
     :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)"
     @save="emit('save', $event)">
     <template v-if="$slots['book-action']" #book-action>

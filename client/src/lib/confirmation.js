@@ -25,8 +25,8 @@ export function useConfirmation() {
         h('p', title),
         description && h('p', { class: 'max-h-48 overflow-y-auto whitespace-pre-line text-muted-foreground' }, description),
         h('div', { class: 'flex flex-wrap gap-2.5' }, [
-          h(Button, { type: 'button', variant: 'outline', class: 'min-h-11 flex-1', onClick: () => settle(false) }, () => cancelLabel),
-          h(Button, { type: 'button', variant: destructive ? 'destructive' : 'default', class: 'min-h-11 flex-1', onClick: () => settle(true) }, () => actionLabel)
+          h(Button, { type: 'button', variant: 'outline', class: 'flex-1', onClick: () => settle(false) }, () => cancelLabel),
+          h(Button, { type: 'button', variant: destructive ? 'destructive' : 'default', class: 'flex-1', onClick: () => settle(true) }, () => actionLabel)
         ])
       ]));
       const id = toast.message(content, { duration: Infinity, dismissible: false, closeButton: false });

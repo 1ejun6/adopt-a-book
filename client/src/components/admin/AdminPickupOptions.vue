@@ -5,7 +5,7 @@ import { availablePickupSlot } from '@/lib/pickupTimes';
 import { displayDate } from '@/lib/adoptions';
 import { Button } from '@/components/ui/button';
 
-const props = defineProps({ appointment: { type: Object, required: true } });
+const props = defineProps({ disabled: Boolean, appointment: { type: Object, required: true } });
 const saving = defineModel('saving', { type: Boolean });
 const emit = defineEmits(['updated']);
 const selected = ref('');
@@ -31,7 +31,7 @@ async function checkStatus() {
   }
 }
 async function confirmTime() {
-  if (saving.value || uncertain.value || selected.value === '') return;
+  if (props.disabled || saving.value || uncertain.value || selected.value === '') return;
   error.value = '';
   const slot = Number(selected.value);
   if (!availablePickupSlot(props.appointment.pickupoptions[slot])) {
@@ -51,6 +51,10 @@ async function confirmTime() {
   } catch (failure) {
     uncertain.value = true;
     error.value = `${failure.message} Check the latest status before trying again.`;
+    try {
+      const { appointment } = await api(`/admin/appointments/${props.appointment.id}`);
+      emit('updated', appointment);
+    } catch { /* Keep actions locked until an explicit successful status check. */ }
   } finally {
     saving.value = false;
   }
@@ -59,8 +63,8 @@ async function confirmTime() {
 
 <template>
   <form class="space-y-3 rounded-lg border p-4" @submit.prevent="confirmTime">
-    <fieldset :disabled="saving || uncertain" class="space-y-3">
-      <legend class="text-lg">Choose a customer’s available time</legend>
+    <fieldset :disabled="disabled || saving || uncertain" class="space-y-3">
+      <legend class="text-lg">Confirm a time</legend>
       <p class="text-sm text-muted-foreground">
         The customer is available at these three times. Select one to confirm pickup at
         {{ appointment.location }}.
@@ -89,11 +93,11 @@ async function confirmTime() {
     <Button v-if="uncertain" type="button" :disabled="saving" @click="checkStatus"
       >Check latest status</Button
     >
-    <Button v-else type="submit" :disabled="saving || selected === ''">{{
+    <Button v-else type="submit" :disabled="disabled || saving || selected === '' || !availablePickupSlot(appointment.pickupoptions[Number(selected)])">{{
       saving ? 'Confirming…' : 'Confirm selected time'
     }}</Button>
     <p class="text-xs text-muted-foreground">
-      If none work, reject the pickup request so the customer can propose a new date and times.
+      Reject to request new availability.
     </p>
   </form>
 </template>
