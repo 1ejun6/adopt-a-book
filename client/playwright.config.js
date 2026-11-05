@@ -61,15 +61,28 @@ export default defineConfig({
       testMatch: 'guest/**/*.spec.js',
       use: { ...devices['Desktop Chrome'] },
     },
+    //@ChitanyaBharathi > reset runs first &&& undoes whatever a half-finished run left on the shared account
+    {
+      name: 'customer reset',
+      testMatch: 'customer/reset.setup.js',
+      use: { ...devices['Desktop Chrome'] },
+    },
     {
       name: 'customer',
       testMatch: 'customer/**/*.spec.js',
+      dependencies: ['customer reset'],
       workers: 1,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'admin reset',
+      testMatch: 'admin/reset.setup.js',
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'admin',
       testMatch: 'admin/**/*.spec.js',
+      dependencies: ['admin reset'],
       workers: 1,
       use: { ...devices['Desktop Chrome'] },
     },

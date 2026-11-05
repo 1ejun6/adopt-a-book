@@ -15,7 +15,19 @@ test.beforeEach(async ({ page }) => {
 test('customer cancels a pickup and arranges a new one', async ({ page }) => {
   await page.getByRole('banner').getByRole('link', { name: 'My Adoptions' }).click()
   await page.getByRole('tab', { name: /^All/ }).click()
-
+await page.goto('http://localhost:5174/');
+await page.getByRole('link', { name: 'Login' }).click();
+await page.getByRole('textbox', { name: 'Email' }).click();
+await page.getByRole('textbox', { name: 'Email' }).fill('customer@gmail.com');
+await page.getByRole('textbox', { name: 'Password' }).click();
+await page.getByRole('textbox', { name: 'Password' }).fill('1234567890');
+await page.getByRole('textbox', { name: 'Password' }).press('Enter');
+await page.getByRole('link', { name: 'Browse Books' }).click();
+await page.getByRole('link', { name: 'Saved books' }).click();
+await page.getByRole('link', { name: 'My Adoptions' }).click();
+await page.getByRole('link', { name: 'Adoption Drives' }).click();
+await page.getByRole('button', { name: 'Logout' }).click();
+await page.getByRole('button', { name: 'Logout' }).click();
   // cancel one of their pickups so the book needs a new pickup
   const row = page.locator('button.adoption-row').filter({ hasText: 'View pickup request' }).first()
   const title = (await row.locator('strong').textContent()).trim()

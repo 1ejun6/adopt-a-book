@@ -40,6 +40,8 @@ test('customer goes to the next page of books', async ({ page }) => {
   await page.getByRole('banner').getByRole('link', { name: 'Browse Books' }).click()
   await expect(page.getByText(/books found/)).toBeVisible()
 
+  // "My genres" only has a few books > "Other genres" has enough for a second page
+  await page.getByRole('tab', { name: 'Other genres' }).click()
   await page.getByRole('button', { name: 'Next Page' }).click()
   await expect(page).toHaveURL(/page=2/)
   await expect(page.getByText(/^Page 2 of \d+$/)).toBeVisible()
