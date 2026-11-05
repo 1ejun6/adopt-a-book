@@ -22,7 +22,7 @@ const router = createRouter({
       children: [
         { path: '', name: 'customerHome', component: () => import('../views/customer/Home.vue'), meta: { roles: ['customer'] } },
         { path: 'books', name: 'customerBooks', component: () => import('../views/customer/BrowseBooks.vue'), label: 'Browse Books', meta: { roles: ['customer'] } },
-        { path: 'watchlist', name: 'customerWatchlist', component: () => import('../views/customer/Watchlist.vue'), label: 'Saved books', meta: { roles: ['customer'] } },
+        { path: 'watchlist', name: 'customerWatchlist', component: () => import('../views/customer/Watchlist.vue'), label: 'Watchlist', meta: { roles: ['customer'] } },
         { path: 'adoptions', name: 'customerAdoptions', component: () => import('../views/customer/MyAdoptions.vue'), label: 'My Adoptions', meta: { roles: ['customer'] } },
         { path: 'drives', name: 'customerDrives', component: () => import('../views/customer/AdoptionDrives.vue'), label: 'Adoption Drives', meta: { roles: ['customer'] } },
         { path: 'account', name: 'customerAccount', component: () => import('../views/customer/Account.vue'), label: 'Account', meta: { roles: ['customer'] }, end: true },

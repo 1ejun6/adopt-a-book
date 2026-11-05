@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { ref, computed } from 'vue';
 import { Calendar03Icon } from '@hugeicons/core-free-icons';
 import { Button } from '@/components/ui/button';
@@ -17,8 +18,8 @@ function download() { downloadCalendar(props.event); open.value = false; }
       </Button>
     </PopoverTrigger>
     <PopoverContent align="start" class="grid w-64 gap-2 p-3" aria-label="Calendar options">
-      <Button asChild variant="outline"><a :href="googleUrl" target="_blank" rel="noopener noreferrer" @click="open = false">Google Calendar</a></Button>
-      <Button type="button" variant="outline" @click="download">Download calendar file</Button>
+      <Button asChild variant="outline"><a :href="googleUrl" target="_blank" rel="noopener noreferrer" @click="open = false"><AppIcon name="calendar" />Google Calendar</a></Button>
+      <Button type="button" variant="outline" @click="download"><AppIcon name="calendar" />Download calendar file</Button>
     </PopoverContent>
   </Popover>
 </template>

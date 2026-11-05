@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { Button } from '@/components/ui/button';
 import { computed } from 'vue';
 import { pickupTimeText } from '@/lib/pickupTimes';
@@ -30,7 +31,7 @@ const attempts = computed(() =>
             class="min-h-11 "
             :aria-label="`View pickup record ${recordId(attempt)}`"
             @click="emit('pickup-record', attempt)"
-          >
+          ><AppIcon name="request" />
             View pickup record
           </Button>
         </li>

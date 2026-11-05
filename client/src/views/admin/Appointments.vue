@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import AppCalendarButton from '@/components/shared/AppCalendarButton.vue';
 import { pickupEvent } from '@/lib/calendar';
 import { useAdminRecord } from '@/composables/useAdminRecord';
@@ -37,6 +38,7 @@ const detailsHint = computed(() => selectedAppointment.value ? actionHint([selec
 const detailsOpen = ref(false);
 const { detailError, detailLoading, refreshDetail } = useAdminRecord(selectedAppointment, detailsOpen, '/admin/appointments', 'appointment', { busy: () => saving.value });
 const saving = ref(false);
+const savingAction = ref('');
 const { confirm } = useConfirmation();
 
 const viewTabs = [
@@ -139,6 +141,7 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
     //@lee-hlmilk > a dashboard link can load details outside this page > retain that record for confirmation checks
     const current = targets.map(target => appointments.value.find(appointment => appointment.id === target.id) || (selectedAppointment.value?.id === target.id ? selectedAppointment.value : null));
     if (current.some(appointment => !appointment) || actionHint(current, status)) { toast.error('These appointments have changed. Select them again.'); return; }
+    savingAction.value = status;
     saving.value = true;
     let completed = 0;
     const failures = [];
@@ -153,7 +156,7 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
         if (failures.length) { toast.error(`${failures.length} ${failures.length === 1 ? 'update' : 'updates'} failed`, { description: failures.join('\n'), style: { whiteSpace: 'pre-line' } }); }
         await fetchAppointments();
         await refreshDetail();
-    } finally { saving.value = false; }
+    } finally { saving.value = false; savingAction.value = ''; }
 }
 
 watch(() => filters.view, () => {
@@ -204,8 +207,8 @@ fetchAppointments().then(loadAppointmentLink);
             <p v-if="confirmHint && collectHint" class="text-sm text-muted-foreground" role="status">
                 {{ selectionHint }}
             </p>
-            <Button :disabled="detailLoading || !!detailError || loading || saving || !!confirmHint" @click="updateAppointments('appointment confirmed')">Confirm</Button>
-            <Button variant="outline" :disabled="detailLoading || !!detailError || loading || saving || !!collectHint" @click="updateAppointments('collected')">Mark collected</Button>
+            <Button :disabled="detailLoading || !!detailError || loading || saving || !!confirmHint" @click="updateAppointments('appointment confirmed')" :loading="saving && savingAction === 'appointment confirmed'"><AppIcon name="success" />Confirm</Button>
+            <Button variant="outline" :disabled="detailLoading || !!detailError || loading || saving || !!collectHint" @click="updateAppointments('collected')" :loading="saving && savingAction === 'collected'"><AppIcon name="success" />Mark collected</Button>
         </template>
         <template #cellCustomer="{ row }">
             <p class="break-words lg:truncate">{{ row.customer }}</p>
@@ -225,7 +228,7 @@ fetchAppointments().then(loadAppointmentLink);
         </template>
     </AdminList>
 
-    <AdminDetailsDialog :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedAppointment" :open="detailsOpen" title="Appointment details"
+    <AdminDetailsDialog :loading="detailLoading" :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedAppointment" :open="detailsOpen" title="Appointment details"
         :book="{ ...selectedAppointment.book, title: selectedAppointment.booktitle }" :status="selectedAppointment.status"
         :fields="appointmentFields" @update:open="!saving && (detailsOpen = $event)">
         <!--@lee-hlmilk > completed ||| inactive appointments are read-only > active pickups show the next step-->
@@ -237,10 +240,10 @@ fetchAppointments().then(loadAppointmentLink);
             :disabled="detailLoading || !!detailError" :key="selectedAppointment.id" :appointment="selectedAppointment" v-model:saving="saving" @updated="pickupOptionsUpdated" />
         <template v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" #actions>
             <template v-if="selectedAppointment.status === 'pending confirmation'">
-                <Button type="button" variant="destructive" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])">Reject</Button>
-                <Button v-if="!selectedAppointment.pickupoptions?.length" type="button" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])">Confirm</Button>
+                <Button type="button" variant="destructive" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" />Reject</Button>
+                <Button v-if="!selectedAppointment.pickupoptions?.length" type="button" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])" :loading="saving && savingAction === 'appointment confirmed'"><AppIcon name="success" />Confirm</Button>
             </template>
-            <Button v-else type="button" class="w-full " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('collected', [selectedAppointment])">Mark collected</Button>
+            <Button v-else type="button" class="w-full " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('collected', [selectedAppointment])" :loading="saving && savingAction === 'collected'"><AppIcon name="success" />Mark collected</Button>
         </template>
     </AdminDetailsDialog>
 </template>

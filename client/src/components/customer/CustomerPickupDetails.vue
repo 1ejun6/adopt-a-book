@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import AppCalendarButton from '@/components/shared/AppCalendarButton.vue';
 import { pickupTimeText } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
@@ -67,22 +68,22 @@ const emit = defineEmits(['pickup-record', 'cancel', 'edit', 'back']);
         variant="destructive"
         :disabled="saving || uncertain || !manageable"
         @click="emit('cancel')"
-      >
+       :loading="saving"><AppIcon name="cancel" />
         {{ saving ? 'Cancelling…' : 'Cancel pickup' }}
       </Button>
-      <Button type="button" variant="outline" :disabled="saving" @click="confirming = false">
+      <Button type="button" variant="outline" :disabled="saving" @click="confirming = false"><AppIcon name="success" />
         Keep pickup
       </Button>
     </div>
   </section>
   <div v-else class="adoption-actions adoption-actions-wrap">
     <template v-if="manageable && !uncertain">
-      <Button type="button" variant="destructive" :disabled="saving" @click="confirming = true">
+      <Button type="button" variant="destructive" :disabled="saving" @click="confirming = true"><AppIcon name="cancel" />
         Cancel pickup
       </Button>
-      <Button type="button" :disabled="saving" @click="emit('edit')">{{ editLabel }}</Button>
+      <Button type="button" :disabled="saving" @click="emit('edit')"><AppIcon name="edit" />{{ editLabel }}</Button>
     </template>
-    <Button v-else type="button" variant="outline" :disabled="saving" @click="emit('back')">
+    <Button v-else type="button" variant="outline" :disabled="saving" @click="emit('back')"><AppIcon name="back" />
       Back
     </Button>
   </div>

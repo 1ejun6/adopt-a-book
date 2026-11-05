@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { Button } from '@/components/ui/button';
 import { RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
@@ -9,6 +10,6 @@ const auth = useAuthStore();
 <template>
   <AppPage class="space-y-4 text-center">
     <h1 class="text-4xl">Page not found</h1>
-    <Button asChild variant="outline"><RouterLink :to="auth.homeRoute" class="">Return home</RouterLink></Button>
+    <Button asChild variant="outline"><RouterLink :to="auth.homeRoute" class=""><AppIcon name="home" />Return home</RouterLink></Button>
   </AppPage>
 </template>

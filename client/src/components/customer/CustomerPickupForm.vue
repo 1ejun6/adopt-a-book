@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { computed } from 'vue';
 import { pickupTimes as timeSlots, availablePickupSlot, availablePickupTimes } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
@@ -64,13 +65,13 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
           :aria-invalid="!!errors.appointmentdate || undefined"
           :aria-describedby="errors.appointmentdate ? 'pickup-date-error' : undefined"
         />
-        <p v-if="errors.appointmentdate" id="pickup-date-error" class="text-xs text-destructive">
+        <p v-if="errors.appointmentdate" id="pickup-date-error" class="text-sm text-destructive">
           {{ errors.appointmentdate }}
         </p>
       </Field>
       <fieldset class="space-y-2" :disabled="saving" aria-describedby="pickup-time-help">
         <legend class="text-sm">Two times you’re available (SGT)</legend>
-        <p id="pickup-time-help" class="text-xs text-muted-foreground">
+        <p id="pickup-time-help" class="text-sm text-muted-foreground">
           Choose two different hourly times on the same date. The team will confirm one.
         </p>
         <div v-for="(_, index) in draft.timeslots" :key="index" class="space-y-1">
@@ -99,12 +100,12 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
             </option>
           </select>
         </div>
-        <p v-if="errors.timeslot" id="pickup-time-error" class="text-xs text-destructive">
+        <p v-if="errors.timeslot" id="pickup-time-error" class="text-sm text-destructive">
           {{ errors.timeslot }}
         </p>
       </fieldset>
     </div>
-    <p class="text-xs text-muted-foreground">All times are in Singapore time (SGT).</p>
+    <p class="text-sm text-muted-foreground">All times are in Singapore time (SGT).</p>
     <div class="adoption-actions">
       <Button
         type="button"
@@ -112,9 +113,9 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
         class="flex-1"
         :disabled="saving"
         @click="emit('back')"
-        >Back</Button
+        ><AppIcon name="back" />Back</Button
       >
-      <Button type="submit" class="flex-1" :disabled="saving || uncertain || !eligible || insufficientTimes">
+      <Button type="submit" class="flex-1" :disabled="saving || uncertain || !eligible || insufficientTimes"><AppIcon name="next" />
         Review pickup request
       </Button>
     </div>

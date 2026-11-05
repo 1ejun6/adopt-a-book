@@ -61,7 +61,7 @@ function handleInteractOutside(event) {
         <slot />
 
         <DialogClose class="absolute top-3 right-3 grid size-11 place-items-center">
-          <HugeiconsIcon :icon="Cancel01Icon" class="size-6" aria-hidden="true" />
+          <HugeiconsIcon :icon="Cancel01Icon" class="size-4" aria-hidden="true" />
           <span class="sr-only">Close</span>
         </DialogClose>
       </DialogContent>

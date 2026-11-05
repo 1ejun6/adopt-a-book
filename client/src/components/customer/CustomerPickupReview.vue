@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -39,13 +40,13 @@ const emit = defineEmits(['change-field', 'back', 'submit']);
           :aria-label="`Change ${field.label.toLowerCase()}`"
           :disabled="saving"
           @click="emit('change-field', field.key)"
-        >
-          Change
+         ><AppIcon name="edit" />
+          <span class="sr-only">Change</span>
         </Button>
       </dd>
     </div>
   </dl>
-  <p class="text-xs text-muted-foreground">Singapore time (SGT)</p>
+  <p class="text-sm text-muted-foreground">Singapore time (SGT)</p>
   <section
     v-if="confirmed && appointment"
     class="space-y-1 rounded-lg border p-3 text-sm"
@@ -64,9 +65,9 @@ const emit = defineEmits(['change-field', 'back', 'submit']);
   </p>
   <div class="adoption-actions">
     <Button type="button" variant="outline" :disabled="saving" @click="emit('back')"
-      >Edit details</Button
+      ><AppIcon name="edit" />Edit details</Button
     >
-    <Button type="button" :disabled="saving || uncertain || !eligible" @click="emit('submit')">
+    <Button type="button" :disabled="saving || uncertain || !eligible" @click="emit('submit')" :loading="saving"><AppIcon name="success" />
       {{ saving ? 'Sending…' : submitLabel }}
     </Button>
   </div>

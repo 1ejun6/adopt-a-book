@@ -1,7 +1,7 @@
 <script setup>
 import { Toaster } from 'vue-sonner';
 import { HugeiconsIcon } from '@hugeicons/vue';
-import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading03Icon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon } from '@hugeicons/core-free-icons';
 </script>
 
 <template>
@@ -17,10 +17,6 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
     </template>
     <template #close-icon>
       <HugeiconsIcon :icon="Cancel01Icon" :size="20" />
-    </template>
-    <!--@1ejun6 > toast.promise uses loading while pending > success when resolved ||| error when rejected-->
-    <template #loading-icon>
-      <HugeiconsIcon :icon="Loading03Icon" :size="20" />
     </template>
   </Toaster>
 </template>

@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { Button } from '@/components/ui/button';
 import { computed, useSlots } from 'vue';
 import AppFilters from '@/components/shared/AppFilters.vue';
@@ -63,7 +64,7 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
       </template>
     </AppFilters>
     </fieldset>
-    <div v-if="props.error" role="alert" class="rounded-lg border p-5 space-y-3"><p>{{ props.error }}</p><Button variant="outline" type="button" class="min-h-11" :disabled="props.loading || props.disabled" @click="emit('retry')">Retry</Button></div>
+    <div v-if="props.error" role="alert" class="rounded-lg border p-5 space-y-3"><p>{{ props.error }}</p><Button variant="outline" type="button" class="min-h-11" :disabled="props.loading || props.disabled" @click="emit('retry')" :loading="props.loading"><AppIcon name="refresh" /><span class="sr-only">Retry</span></Button></div>
 
     <AdminTable v-if="!props.error" :rows="props.rows" :columns="props.columns" :selectedIds="selectedIds"
       :disabled="props.disabled || props.loading" :isLoading="props.loading" :selectable="props.selectable" :emptyTitle="props.emptyTitle" :emptyDescription="props.emptyDescription"
@@ -75,7 +76,7 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
     </AdminTable>
 
     <!--@lee-hlmilk > pagination is optional > views without paged data can omit it-->
-    <AppPagination v-if="!props.error && props.pagination && props.pagination.total > 0" v-model:page="page"
+    <AppPagination v-if="!props.error && props.pagination" v-model:page="page"
       v-bind="props.pagination" :visibleCount="props.rows.length" :loading="props.loading" :disabled="props.loading || props.disabled" />
   </section>
 </template>

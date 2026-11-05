@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import CustomerPickupDetails from './CustomerPickupDetails.vue';
 import CustomerPickupReceipt from './CustomerPickupReceipt.vue';
 import CustomerPickupReview from './CustomerPickupReview.vue';
@@ -100,7 +101,7 @@ watchEffect(() =>
       variant="outline"
       :disabled="saving"
       @click="checkStatus"
-      >Check status again</Button
+       :loading="saving"><AppIcon name="refresh" /><span class="sr-only">Check status again</span></Button
     >
     <p v-if="refreshWarning" role="status" class="text-sm">{{ refreshWarning }}</p>
     <p v-if="!ready && !saving && step !== 'success'" class="text-sm" role="alert">
@@ -115,8 +116,8 @@ watchEffect(() =>
         Your current confirmed pickup will stay unchanged.
       </p>
       <div class="adoption-actions">
-        <Button type="button" @click="keepEditing">Keep editing</Button>
-        <Button type="button" variant="outline" @click="discardChanges">Discard changes</Button>
+        <Button type="button" @click="keepEditing"><AppIcon name="success" />Keep editing</Button>
+        <Button type="button" variant="outline" @click="discardChanges"><AppIcon name="cancel" />Discard changes</Button>
       </div>
     </section>
     <CustomerPickupForm

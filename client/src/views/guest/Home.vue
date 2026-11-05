@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { onMounted, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { toast } from 'vue-sonner';
@@ -29,7 +30,6 @@ async function loadbooks(refresh = false) {
         }
     }
 
-    const toastid = toast.loading('loading books');
     try {
         const response = await api('/books', { query: { limit: 5, status: 'available' } });
         if (!Array.isArray(response.books)) throw new Error('could not load books > please try again');
@@ -48,7 +48,6 @@ async function loadbooks(refresh = false) {
             action: { label: 'retry', onClick: () => loadbooks(true) },
         });
     } finally {
-        toast.dismiss(toastid);
         loading.value = false;
     }
 }
@@ -66,9 +65,9 @@ onMounted(loadbooks);
                 <p class="text-sm">which one feels like your next chapter?</p>
             </div>
             <div v-if="!loaderror || books.length">
-                <BookShelf :books="books" :loading="loading && !books.length" @select="selectedbook = $event; dialogopen = true" />
+                <BookShelf :books="books" :loading="loading" @select="selectedbook = $event; dialogopen = true" />
             </div>
-            <p v-if="loaderror" role="alert">Could not refresh books. <Button variant="outline" class="min-h-11" :disabled="loading" @click="loadbooks(true)">Retry</Button></p>
+            <p v-if="loaderror" role="alert">Could not refresh books. <Button variant="outline" class="min-h-11" :disabled="loading" @click="loadbooks(true)" :loading="loading"><AppIcon name="refresh" /><span class="sr-only">Retry</span></Button></p>
         </div>
         <AppBookPreviewDialog v-model:open="dialogopen" :book="selectedbook" />
     </section>

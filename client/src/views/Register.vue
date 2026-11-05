@@ -51,7 +51,7 @@ async function register() {
 }
 </script>
 <template>
-    <section class="mx-auto w-full max-w-md py-5 md:max-w-5xl md:py-8">
+    <section class="m-auto w-full max-w-md py-5 md:max-w-5xl md:py-8">
         <div class="space-y-5">
             <h1>Create account</h1>
             <form @submit.prevent="register">
@@ -75,9 +75,9 @@ async function register() {
                 </Field>
                 <p class="text-sm">Use at least 8 characters.</p>
                 </div>
-                <GenrePicker ref="genrePicker" v-model="form.preferredgenres" class="register-genres" required :error="genreError" :disabled="form.loading" />
+                <GenrePicker :showCount="false" ref="genrePicker" v-model="form.preferredgenres" class="register-genres" required :error="genreError" :disabled="form.loading" />
                 <div class="md:col-span-2 md:border-t md:pt-5">
-                    <Button type="submit" class="w-full" :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
+                    <Button type="submit" class="w-full" :disabled="form.loading" :loading="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
                 </div>
                 </fieldset>
             </form>

@@ -22,7 +22,7 @@ async function transaction(work) {
 }
 
 async function runsql(filename) {
-  if (!['base.sql', 'clear.sql', 'seed.sql'].includes(filename)) throw new Error('unsupported maintenance script');
+  if (!['base.sql', 'clear.sql', 'seed.sql', 'fix-customer-books.sql'].includes(filename)) throw new Error('unsupported maintenance script');
   const sql = await readFile(path.resolve(__dirname, '../../sql', filename), 'utf8');
   return transaction(async client => {
     const results = await client.query(sql);

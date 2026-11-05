@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 const route = useRoute();
@@ -19,7 +20,7 @@ const tab = ref('mine');
 const tabs = [
   { value: 'mine', label: 'my drives' },
   { value: 'upcoming', label: 'upcoming' },
-  { value: 'past', label: 'Past / cancelled' },
+  { value: 'past', label: 'History/Cancelled' },
 ];
 const groups = computed(() => ({
   mine: drives.value.filter(drive => !drive.past && drive.registered),
@@ -64,9 +65,10 @@ function opendrive(drive) {
 </script>
 
 <template>
-  <AppAdoptionDriveList :drives="groups[tab]" :loading="loading" :loaderror="loaderror"
+  <AppAdoptionDriveList emptyToast :drives="groups[tab]" :loading="loading" :loaderror="loaderror"
+    :history="tab === 'past'"
     :showRegistration="tab !== 'mine'"
-    :emptyTitle="tab === 'mine' ? 'no registered adoption drives' : `no ${tab} adoption drives`"
+    :emptyTitle="tab === 'mine' ? 'no registered adoption drives' : tab === 'past' ? 'no past or cancelled adoption drives' : 'no upcoming adoption drives'"
     :emptyDescription="tab === 'mine' ? 'browse upcoming drives to register for an event' : 'check back for future community events'"
     @open="opendrive" @retry="fetchdrives()">
     <template #tabs>
@@ -82,11 +84,11 @@ function opendrive(drive) {
   </AppAdoptionDriveList>
   <AppAdoptionDriveDialog v-model:open="dialogopen" :drive="selecteddrive">
     <template #actions="{ drive }">
-      <Button v-if="drive.registered && !drive.past" variant="outline" :disabled="saving" @click="togglersvp">
+      <Button v-if="drive.registered && !drive.past" variant="outline" :disabled="saving" @click="togglersvp" :loading="saving"><AppIcon name="cancel" />
         {{ saving ? 'saving...' : 'cancel registration' }}
       </Button>
       <Button v-else-if="drive.status === 'open' && !drive.past && drive.spotsleft > 0" :disabled="saving"
-        @click="togglersvp">
+        @click="togglersvp" :loading="saving"><AppIcon name="community" />
         {{ saving ? 'saving...' : 'rsvp' }}
       </Button>
       <p v-else role="status" class="text-sm">{{ drive.status === 'cancelled' ? 'This drive was cancelled' : drive.registered ? 'You registered for this drive' : drive.past ? 'This drive has ended' : drive.spotsleft === 0 ? 'this drive is full' : 'registration has closed' }}</p>

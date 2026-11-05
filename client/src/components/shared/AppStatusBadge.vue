@@ -1,9 +1,10 @@
 <script setup>
 import { computed } from 'vue';
-import { Badge } from '@/components/ui/badge';
+import AppStatusDot from '@/components/shared/AppStatusDot.vue';
 
 const props = defineProps({
-  status: { type: String, required: true }
+  status: { type: String, required: true },
+  dot: { type: Boolean, default: false },
 });
 
 //@lee-hlmilk > shorten appointment labels for display > keep API statuses unchanged
@@ -12,18 +13,18 @@ const statusLabel = computed(() => ({ 'pending confirmation': 'pending', 'appoin
 //@lee-hlmilk > match lowercase statuses to badge colors
 const badgeColour = computed(() => {
   const status = props.status.toLowerCase().trim();
-  if (['available', 'approved', 'pickup confirmed', 'appointment confirmed', 'confirmed', 'open'].includes(status)) { return 'green'; }
-  if (['rejected', 'cancelled'].includes(status)) { return 'purple'; }
-  if (['adopted', 'closed', 'collected'].includes(status)) { return 'neutral'; }
+  if (['available', 'approved', 'pickup confirmed', 'appointment confirmed', 'confirmed', 'open', 'registered'].includes(status)) { return 'green'; }
+  if (['rejected', 'cancelled', 'closed'].includes(status)) { return 'red'; }
+  if (['adopted', 'collected', 'ended'].includes(status)) { return 'neutral'; }
 
   return 'amber';
 });
 </script>
 
 <template>
-  <!--@lee-hlmilk > automated status styling-->
-  <Badge :variant="badgeColour" :data-status="status">
-    <!--@lee-hlmilk > supplied slot content replaces the label, eg. tab counts > colour &&& data-status still use the record status-->
-    <slot>{{ statusLabel }}</slot>
-  </Badge>
+  <span class="inline-flex items-center gap-2 text-sm text-foreground" :data-status="status">
+    <AppStatusDot :tone="badgeColour" />
+    <span v-if="dot" class="sr-only">{{ statusLabel }}</span>
+    <slot v-else>{{ statusLabel }}</slot>
+  </span>
 </template>

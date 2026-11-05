@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { pickupTimeText } from '@/lib/pickupTimes';
 import { computed, nextTick, ref, watch, watchEffect } from 'vue';
 import { useAdoptionsStore } from '@/stores/adoptions';
@@ -125,19 +126,19 @@ watchEffect(() => {
     <p v-if="error" ref="errorNode" tabindex="-1" role="alert" class="text-sm text-destructive">
       {{ error }}
     </p>
-    <Button v-if="uncertain" type="button" variant="outline" :disabled="saving" @click="checkStatus">Check status
-      again</Button>
+    <Button v-if="uncertain" type="button" variant="outline" :disabled="saving" @click="checkStatus" :loading="saving"><AppIcon name="refresh" /><span class="sr-only">Check status
+      again</span></Button>
     <p v-if="refreshWarning" role="status" class="text-sm">{{ refreshWarning }}</p>
     <section v-if="withdrawn" class="space-y-4" role="status">
       <p>Your request has been withdrawn and moved to History.</p>
-      <Button type="button" :disabled="saving" @click="emit('history')">View in History</Button>
+      <Button type="button" :disabled="saving" @click="emit('history')"><AppIcon name="request" />View in History</Button>
     </section>
     <section v-else-if="confirming" class="space-y-3 rounded-lg bg-badge-purple/40 p-4" aria-label="Confirm withdrawal">
       <p class="text-sm">You can request this book again if it is still available.</p>
       <div class="adoption-actions">
         <Button type="button" variant="destructive" :disabled="saving || uncertain || !ready || !record.canWithdraw"
-          @click="withdraw">{{ saving ? 'Withdrawing…' : 'Withdraw request' }}</Button>
-        <Button type="button" variant="outline" :disabled="saving" @click="confirming = false">Keep request</Button>
+          @click="withdraw" :loading="saving"><AppIcon name="cancel" />{{ saving ? 'Withdrawing…' : 'Withdraw request' }}</Button>
+        <Button type="button" variant="outline" :disabled="saving" @click="confirming = false"><AppIcon name="success" />Keep request</Button>
       </div>
     </section>
     <template v-else>
@@ -170,12 +171,12 @@ watchEffect(() => {
       <CustomerAdoptionInformation :record="record" :appointment="currentPickup"
         @pickup-record="emit('pickup-record', $event)" />
       <div class="adoption-actions">
-        <Button type="button" variant="outline" :disabled="saving" @click="open = false">Back to my adoptions</Button>
+        <Button type="button" variant="outline" :disabled="saving" @click="open = false"><AppIcon name="back" />Back to my adoptions</Button>
         <Button v-if="record.action" :disabled="!ready || saving" type="button" @click="emit('pickup', record)">{{
           record.actionLabel }}</Button>
       </div>
       <Button variant="destructive" v-if="record.canWithdraw && !uncertain" :disabled="!ready || saving" type="button"
-        class="min-h-11 text-sm text-destructive " @click="confirming = true">
+        class="min-h-11 text-sm text-destructive " @click="confirming = true"><AppIcon name="cancel" />
         Withdraw request
       </Button>
     </template>

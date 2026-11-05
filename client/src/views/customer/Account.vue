@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { LockKeyIcon, UserIcon } from '@hugeicons/core-free-icons';
 import { toast } from 'vue-sonner';
@@ -159,7 +160,7 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
     <div v-else-if="loadError" class="error-state" role="alert">
       <h2>We couldn’t load your details</h2>
       <p>{{ loadError }}</p>
-      <Button @click="loadAccount">Try again</Button>
+      <Button @click="loadAccount" :loading="loading"><AppIcon name="refresh" /><span class="sr-only">Try again</span></Button>
     </div>
     <div v-else-if="account" class="account-workspace">
       <aside class="account-rail" aria-label="Account navigation">
@@ -210,7 +211,7 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
               <p role="status" :class="{ saved: profileSaved }">
                 {{ savingProfile ? 'Saving your details…' : profileSaved ? 'Profile saved' : changed ? 'You have unsaved changes' : 'No unsaved changes' }}
               </p>
-              <Button type="submit" :disabled="!canSaveProfile">
+              <Button type="submit" :disabled="!canSaveProfile" :loading="savingProfile"><AppIcon name="save" />
                 {{ savingProfile ? 'Updating…' : 'Update' }}
               </Button>
             </footer>
@@ -219,7 +220,7 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
             <GenrePicker v-model="preferredgenres" :disabled="savingPreferences" />
             <p v-if="preferencesError" role="alert" class="form-error">{{ preferencesError }}</p>
             <p v-if="!preferredgenres.length" class="field-note">Choose at least one genre to save your preferences.</p>
-            <Button type="submit" :disabled="savingPreferences || !preferredgenres.length || !preferencesChanged">
+            <Button type="submit" :disabled="savingPreferences || !preferredgenres.length || !preferencesChanged" :loading="savingPreferences"><AppIcon name="save" />
               {{ savingPreferences ? 'Saving…' : 'Save genres' }}
             </Button>
           </form>
@@ -253,7 +254,7 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
               <p role="status" :class="{ saved: passwordSaved }">
                 {{ savingPassword ? 'Updating your password…' : passwordSaved ? 'Password updated' : canSavePassword ? 'Ready to update your password' : 'Enter and confirm a new password' }}
               </p>
-              <Button type="submit" :disabled="!canSavePassword">
+              <Button type="submit" :disabled="!canSavePassword" :loading="savingPassword"><AppIcon name="save" />
                 {{ savingPassword ? 'Updating…' : 'Update' }}
               </Button>
             </footer>

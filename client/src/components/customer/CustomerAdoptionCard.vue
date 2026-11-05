@@ -64,11 +64,11 @@ function openRecord() {
       />
     </template>
     <template #status>
-      <Badge :variant="record.variant" class="text-xs font-normal">{{ record.label }}</Badge>
+      <Badge :variant="record.variant" class="text-sm font-normal">{{ record.label }}</Badge>
       <p v-if="warning && !(groupedOverdueWarning && overdue)" class="adoption-row__warning">
         {{ warning }}
       </p>
-      <p v-else-if="pickupOutcome" class="mt-1 text-xs text-muted-foreground">
+      <p v-else-if="pickupOutcome" class="mt-1 text-sm text-muted-foreground">
         {{ pickupOutcome }}
       </p>
     </template>

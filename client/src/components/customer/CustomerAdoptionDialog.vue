@@ -154,7 +154,7 @@ defineExpose({ canNavigate });
             :editingPickup="editingPickup"
           />
           <div class="space-y-2">
-            <p v-if="unlinked" class="text-xs text-muted-foreground">Unlinked pickup record</p>
+            <p v-if="unlinked" class="text-sm text-muted-foreground">Unlinked pickup record</p>
             <Badge :variant="status.variant">{{ status.label }}</Badge>
             <Badge v-if="record?.warning || unlinked" variant="amber" class="ml-2">{{
               record?.warning || 'Needs checking'

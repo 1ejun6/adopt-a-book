@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { Button } from '@/components/ui/button';
 import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useSavedBookActions } from '@/composables/useSavedBookActions';
@@ -17,7 +18,7 @@ const props = defineProps({
 const dialogs = ref(null);
 const store = useWatchlistStore();
 const { savedIds, loading: watchlistLoading, loadError: watchlistError } = storeToRefs(store);
-const { busyIds, toggleBook } = useSavedBookActions();
+const { busyIds, savingIds, toggleBook } = useSavedBookActions();
 const canSave = computed(() => store.loaded && !watchlistLoading.value && !watchlistError.value);
 const commentToasts = new Set();
 
@@ -55,17 +56,17 @@ onBeforeUnmount(() => { commentToasts.forEach(id => toast.dismiss(id)); });
 </script>
 
 <template>
-  <p v-if="watchlistError" role="alert">{{ watchlistError }} <Button variant="outline" class="min-h-11" :disabled="watchlistLoading" @click="loadWatchlist">Refresh saved books</Button></p>
-  <section v-if="props.loading || props.books.length" class="grid auto-rows-fr gap-5 md:grid-cols-2 lg:grid-cols-4">
-    <template v-if="props.loading">
+  <p v-if="watchlistError" role="alert">{{ watchlistError }} <Button variant="outline" class="min-h-11" :disabled="watchlistLoading" @click="loadWatchlist" :loading="watchlistLoading"><AppIcon name="refresh" /><span class="sr-only">Refresh saved books</span></Button></p>
+  <section :aria-busy="props.loading" v-if="props.loading || props.books.length" class="grid auto-rows-fr gap-5 md:grid-cols-2 lg:grid-cols-4">
+    <template v-if="props.loading && !props.books.length">
       <CustomerBookCard v-for="index in 8" :key="index" loading />
     </template>
     <template v-else>
       <CustomerBookCard v-for="book in props.books" :key="book.id" :book="book" :saved="savedIds.has(book.id)"
-        :busy="!canSave || busyIds.has(book.id)" @preview="dialogs?.openBookDetails($event)" @save="toggleSave"
+        :saving="savingIds.has(book.id)" :busy="!canSave || busyIds.has(book.id)" @preview="dialogs?.openBookDetails($event)" @save="toggleSave"
         @unsave="toggleSave" />
     </template>
   </section>
   <!--@sree-sanjana06 > shared book details popup; request workflow handled separately-->
-  <CustomerBookDialogs ref="dialogs" :savedIds="savedIds" :canSave="canSave" :busyIds="busyIds" @save="toggleSave" />
+  <CustomerBookDialogs ref="dialogs" :savedIds="savedIds" :canSave="canSave" :busyIds="busyIds" :savingIds="savingIds" @save="toggleSave" />
 </template>

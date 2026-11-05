@@ -2,7 +2,7 @@
 import { ref, useId } from 'vue';
 import genres from '../../../../shared/genres.json';
 const selected = defineModel({ type: Array, default: () => [] });
-defineProps({ disabled: Boolean, required: Boolean, error: { type: String, default: '' } });
+defineProps({ disabled: Boolean, required: Boolean, showCount: { type: Boolean, default: true }, error: { type: String, default: '' } });
 const fieldset = ref(null);
 const id = useId();
 defineExpose({ focus: () => fieldset.value?.querySelector('input')?.focus() });
@@ -23,7 +23,7 @@ defineExpose({ focus: () => fieldset.value?.querySelector('input')?.focus() });
       </label>
     </div>
     <p v-if="error" :id="`${id}-error`" role="alert" class="text-sm text-destructive">{{ error }}</p>
-    <p class="genre-count" role="status">{{ selected.length }} selected</p>
+    <p v-if="showCount" class="genre-count" role="status">{{ selected.length }} selected</p>
   </fieldset>
 </template>
 

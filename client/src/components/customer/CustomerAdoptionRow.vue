@@ -11,7 +11,7 @@ const emit = defineEmits(['open']);
 <template>
   <button
     type="button"
-    class="adoption-row adoption-columns washi-tape-hover"
+    class="adoption-row adoption-columns hover:bg-primary data-[active]:bg-primary"
     :aria-label="label"
     @click="emit('open')"
   >

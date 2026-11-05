@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { watch, onScopeDispose } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useAdoptionsStore } from '@/stores/adoptions';
@@ -29,15 +30,32 @@ onScopeDispose(() => document.removeEventListener('visibilitychange', visible));
 </script>
 
 <template>
-  <div class="flex min-h-dvh flex-col" style="padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right)"> <!--@1ejun6 > as tall as browser screen > navbar on top & main below-->
+  <div class="app-layout flex flex-col" style="padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right)">
     <AppNavbar />
-    <main class="flex min-w-0 flex-1 p-4 sm:p-5" style="padding-bottom: max(1rem, env(safe-area-inset-bottom))"> <!--@1ejun6 > empty space left after navbar-->
+    <main class="app-main min-w-0 p-4 sm:p-5" style="padding-bottom: max(1rem, env(safe-area-inset-bottom))">
       <section v-if="!auth.ready" role="alert" class="mx-auto w-full max-w-md space-y-5">
         <h1>Connection unavailable</h1>
         <p>{{ auth.error }}</p>
-        <Button :disabled="auth.sessionLoading" @click="retrySession">{{ auth.sessionLoading ? 'Checking…' : 'Retry' }}</Button>
+        <Button :disabled="auth.sessionLoading" @click="retrySession" :loading="auth.sessionLoading"><AppIcon name="refresh" /><span class="sr-only">{{ auth.sessionLoading ? 'Checking…' : 'Retry' }}</span></Button>
       </section>
       <RouterView v-else-if="!route.meta.roles || route.meta.roles.includes(auth.role)" />
     </main>
   </div>
 </template>
+
+<style>
+/* Every paginated page fills the viewport; only the path to its footer grows. */
+.app-layout:has([data-slot='app-pagination']) {
+  min-height: 100dvh;
+}
+.app-main:has([data-slot='app-pagination']),
+.app-main :is(section, div):has([data-slot='app-pagination']) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.app-main [data-slot='app-pagination'] {
+  flex-shrink: 0;
+  margin-block-start: auto;
+}
+</style>

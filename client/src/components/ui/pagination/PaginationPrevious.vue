@@ -14,8 +14,8 @@ const forwarded = useForwardProps(delegatedProps);
 </script>
 
 <template>
-  <PaginationPrev data-slot="pagination-previous"
-    class="washi-tape-hover grid min-h-11 min-w-11 place-items-center rounded-lg p-2" :class="props.class"
+  <PaginationPrev aria-label="Previous page" data-slot="pagination-previous"
+    class="hover:bg-primary data-[active]:bg-primary grid min-h-11 min-w-11 place-items-center rounded-lg p-2" :class="props.class"
     v-bind="forwarded">
     <slot>
       <HugeiconsIcon :icon="ArrowLeft01Icon" class="size-4" aria-hidden="true" />

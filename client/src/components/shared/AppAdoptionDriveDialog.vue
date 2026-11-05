@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { computed } from 'vue';
 import AppCalendarButton from './AppCalendarButton.vue';
 import { driveEvent } from '@/lib/calendar';
@@ -7,7 +8,7 @@ import { driveTimeLabel, driveHasEnded } from '../../../../shared/drives.mjs';
 import { useRouter } from 'vue-router';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import AppStatusBadge from '@/components/shared/AppStatusBadge.vue';
 import AppAdoptionDriveBooks from '@/components/shared/AppAdoptionDriveBooks.vue';
 import { toast } from 'vue-sonner';
 import { formatDate } from '@/lib/utils';
@@ -35,7 +36,6 @@ function requestrsvp() {
 }
 
 const ended = computed(() => driveHasEnded(props.drive, currentTime.value) && props.drive.status !== 'cancelled');
-const statuscolor = computed(() => ended.value ? 'neutral' : ({ open: 'green', closed: 'purple', cancelled: 'neutral' })[props.drive.status]);
 const canRsvp = computed(() => props.drive.status === 'open' && !driveHasEnded(props.drive, currentTime.value));
 
 const actionMessage = computed(() => {
@@ -66,7 +66,7 @@ const spots = computed(() => Number.isInteger(props.drive.spotsleft) ? `${props.
       <DialogHeader>
         <div class="flex items-start gap-2.5">
           <DialogTitle class="min-w-0 flex-1">{{ drive.title }}</DialogTitle>
-          <Badge :variant="statuscolor" class="shrink-0">{{ ended ? 'ended' : drive.status }}</Badge>
+          <AppStatusBadge :status="ended ? 'ended' : drive.status" class="shrink-0" />
         </div>
         <DialogDescription>details for the selected adoption drive</DialogDescription>
       </DialogHeader>
@@ -78,10 +78,9 @@ const spots = computed(() => Number.isInteger(props.drive.spotsleft) ? `${props.
               <dt class="text-muted-foreground">{{ field.label }}</dt>
               <dd>
                 <template v-if="field.value && field.label === 'venue'">
-                <p class="break-words">{{ field.value }}</p>
-                <Button asChild variant="outline"><a
+                <a
                   :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(/singapore/i.test(drive.location) ? drive.location : `${drive.location}, Singapore`)}`"
-                  target="_blank" rel="noopener noreferrer" class="">View on map</a></Button>
+                  target="_blank" rel="noopener noreferrer" class="break-words underline underline-offset-4">{{ field.value }}</a>
                 </template>
                 <template v-else>{{ field.value || 'not provided' }}</template>
               </dd>
@@ -98,7 +97,7 @@ const spots = computed(() => Number.isInteger(props.drive.spotsleft) ? `${props.
 
         <DialogFooter class="flex-col text-center">
           <slot name="actions" :drive="drive">
-            <Button v-if="canRsvp" @click="requestrsvp">rsvp</Button>
+            <Button v-if="canRsvp" @click="requestrsvp"><AppIcon name="community" />rsvp</Button>
             <p v-else class="grid min-h-9 place-items-center text-sm">{{ actionMessage }}</p>
           </slot>
         </DialogFooter>

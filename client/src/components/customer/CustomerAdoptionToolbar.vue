@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { Button } from '@/components/ui/button';
 import CustomerAdoptionStageTabs from './CustomerAdoptionStageTabs.vue';
 import AppSearchInput from '@/components/shared/AppSearchInput.vue';
@@ -29,8 +30,8 @@ const search = defineModel('search', { type: String });
       class="w-full"
     />
   </div>
-  <div v-if="searching" class="text-xs text-muted-foreground">
-    <Button variant="outline" type="button" class="min-h-11 " @click="search = ''">
+  <div v-if="searching" class="text-sm text-muted-foreground">
+    <Button variant="outline" type="button" class="min-h-11 " @click="search = ''"><AppIcon name="back" />
       Back to {{ tab === 'active' ? 'Active' : 'History' }}
     </Button>
   </div>

@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { watch } from 'vue';
 import { useConfirmation } from '@/lib/confirmation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -55,12 +56,12 @@ async function handleOpenChange(nextOpen) {
           <DialogFooter class="flex-col sm:flex-row" :class="!props.showFooterSeparator && 'border-0 pt-0'">
             <!--@lee-hlmilk > footer replaces default buttons > extraActions adds buttons while retaining the defaults-->
             <slot name="footer">
-              <Button type="button" variant="outline" :disabled="submitting" @click="handleOpenChange(false)">
+              <Button type="button" variant="outline" :disabled="submitting" @click="handleOpenChange(false)"><AppIcon name="cancel" />
                 Cancel
               </Button>
               <!--@lee-hlmilk > extra footer actions > eg. add &&& continue-->
               <slot name="extraActions" />
-              <Button type="submit" class="flex-1 " :disabled="submitting">
+              <Button type="submit" class="flex-1 " :disabled="submitting" :loading="submitting"><AppIcon name="save" />
                 {{ submitting ? submittingLabel : submitLabel }}
               </Button>
             </slot>

@@ -43,7 +43,7 @@ const emit = defineEmits(['appointment', 'details', 'pickup', 'refresh']);
     :is="!searching && tab === 'active' ? TabsContent : 'section'"
     :value="!searching && tab === 'active' ? stage : undefined"
     :aria-labelledby="searching || tab === 'history' ? 'adoption-list-title' : undefined"
-    class="space-y-4 pb-6"
+    class="space-y-4"
     :aria-busy="loading"
   >
     <component
@@ -127,14 +127,7 @@ const emit = defineEmits(['appointment', 'details', 'pickup', 'refresh']);
               </div>
             </CustomerAdoptionTaskGroup>
           </div>
-          <AppPagination
-            v-if="filtered.length > pageSize"
-            v-model:page="page"
-            :total="filtered.length"
-            :pageSize="pageSize"
-            :visibleCount="paged.length"
-            :itemLabel="hasUnlinked ? 'records' : 'books'"
-          />
+
         </template>
         <CustomerAdoptionEmpty
           v-else
@@ -148,6 +141,15 @@ const emit = defineEmits(['appointment', 'details', 'pickup', 'refresh']);
           :pickupError="pickupError"
           :tab="tab"
           @refresh="emit('refresh')"
+        />
+        <AppPagination
+          v-model:page="page"
+          :total="filtered.length"
+          :pageSize="pageSize"
+          :visibleCount="paged.length"
+          :loading="loading"
+          :disabled="loading"
+          :itemLabel="hasUnlinked ? 'records' : 'books'"
         />
       </component>
     </component>

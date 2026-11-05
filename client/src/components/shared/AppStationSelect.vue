@@ -8,11 +8,11 @@ const emit = defineEmits(['change']);
 const listId = useId();
 const input = ref(null), query = ref('');
 const label = station => `${station.name}${station.codes?.length ? ` (${station.codes.join(' / ')})` : ''}`;
-function validity() { input.value?.$el?.setCustomValidity(query.value && !model.value ? 'Choose an MRT station from the suggestions.' : ''); }
+function validity() { input.value?.input?.setCustomValidity(query.value && !model.value ? 'Choose an MRT station from the suggestions.' : ''); }
 watch([model, () => props.stations], () => {
   const station = props.stations.find(station => station.id === model.value);
   if (station) query.value = label(station);
-  else if (!model.value && !input.value?.$el?.matches(':focus')) query.value = '';
+  else if (!model.value && !input.value?.input?.matches(':focus')) query.value = '';
   nextTick(validity);
 }, { immediate: true });
 function choose(value) {
@@ -24,6 +24,6 @@ function choose(value) {
 }
 </script>
 <template>
-  <Input ref="input" v-bind="$attrs" :modelValue="query" :list="listId" autocomplete="off" placeholder="Search MRT stations" :disabled="disabled" @update:modelValue="choose" />
+  <Input ref="input" class="bg-transparent" v-bind="$attrs" :modelValue="query" :list="listId" autocomplete="off" placeholder="Search MRT stations" :disabled="disabled" @update:modelValue="choose" />
   <datalist :id="listId"><option v-for="station in stations" :key="station.id" :value="label(station)" /></datalist>
 </template>

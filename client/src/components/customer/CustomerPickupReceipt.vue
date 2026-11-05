@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { pickupTimeText } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
 
@@ -52,8 +53,8 @@ const emit = defineEmits(['edit', 'leave']);
       variant="outline"
       :disabled="saving"
       @click="emit('edit')"
-      >Continue editing request</Button
+      ><AppIcon name="next" />Continue editing request</Button
     >
-    <Button type="button" :disabled="saving" @click="emit('leave')"> Back to my adoptions </Button>
+    <Button type="button" :disabled="saving" @click="emit('leave')"><AppIcon name="back" /> Back to my adoptions </Button>
   </div>
 </template>

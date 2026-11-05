@@ -1,4 +1,6 @@
 <script setup>
+import AppTextarea from '@/components/shared/AppTextarea.vue';
+import AppIcon from '@/components/shared/AppIcon.vue';
 import AppStationSelect from '@/components/shared/AppStationSelect.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
@@ -98,11 +100,11 @@ function submitDrive(event) {
             <p v-if="props.drive" class="text-muted-foreground">{{ props.drive.userids?.length || 0 }} registered. Capacity cannot be lower than this count.</p>
             <Field>
                 <FieldLabel for="drive-description">Description</FieldLabel>
-                <textarea id="drive-description" v-model="draft.description" rows="3" :disabled="props.submitting" class="rounded-lg border p-2.5 text-base" />
+                <AppTextarea id="drive-description" v-model="draft.description" rows="3" :disabled="props.submitting" class="rounded-lg border p-2.5 text-base" />
             </Field>
         </div>
         <template #footer>
-            <Button type="submit" class="w-full " :disabled="props.submitting">{{ props.submitting ? 'Saving…' : props.drive ? 'Save changes' : 'Create drive' }}</Button>
+            <Button type="submit" class="w-full " :disabled="props.submitting" :loading="props.submitting"><AppIcon name="save" />{{ props.submitting ? 'Saving…' : props.drive ? 'Save changes' : 'Create drive' }}</Button>
         </template>
     </AdminFormDialog>
 </template>

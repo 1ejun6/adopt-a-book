@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { onBeforeUnmount, ref, watch } from 'vue';
 import { api } from '@/lib/api';
 import { toast } from 'vue-sonner';
@@ -76,7 +77,7 @@ watch(() => props.stationId, fetchBooks, { immediate: true });
 
     <div v-else-if="bookError" class="space-y-2.5" role="alert">
       <p class="text-sm">{{ bookError }}</p>
-      <Button type="button" variant="outline" size="sm" @click="fetchBooks">retry book list</Button>
+      <Button type="button" variant="outline" size="sm" @click="fetchBooks" :loading="loadingBooks"><AppIcon name="refresh" /><span class="sr-only">retry book list</span></Button>
     </div>
     <p v-else-if="!books.length" class="text-sm">no available books at this station yet</p>
     <template v-else-if="!bookError">

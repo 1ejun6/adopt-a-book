@@ -51,7 +51,7 @@ function handleInteractOutside(event) {
       <slot />
 
       <DialogClose v-if="showCloseButton" data-slot="dialog-close" class="absolute top-3 right-3 flex min-h-11 min-w-11 items-center justify-center">
-        <HugeiconsIcon :icon="Cancel01Icon" class="size-6" aria-hidden="true" />
+        <HugeiconsIcon :icon="Cancel01Icon" class="size-4" aria-hidden="true" />
         <span class="sr-only">Close</span>
       </DialogClose>
     </DialogContent>

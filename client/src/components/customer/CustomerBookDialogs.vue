@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { ref, computed, nextTick, watch, onBeforeUnmount } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { api } from '@/lib/api';
@@ -18,6 +19,7 @@ const props = defineProps({
   savedIds: { type: Set, default: () => new Set() },
   canSave: { type: Boolean, default: false },
   busyIds: { type: Set, default: () => new Set() },
+  savingIds: { type: Set, default: () => new Set() },
 });
 const emit = defineEmits(['save']);
 const route = useRoute();
@@ -327,9 +329,9 @@ defineExpose({ openBookDetails, closeBookDetails });
 </script>
 
 <template>
-  <p v-if="targetError" role="alert">{{ targetError }} <Button asChild variant="outline"><RouterLink class="min-h-11 inline-flex items-center" :to="{ query: { ...route.query, book: undefined } }">Browse available books</RouterLink></Button></p>
+  <p v-if="targetError" role="alert">{{ targetError }} <Button asChild variant="outline"><RouterLink class="min-h-11 inline-flex items-center" :to="{ query: { ...route.query, book: undefined } }"><AppIcon name="book" />Browse available books</RouterLink></Button></p>
   <AppBookPreviewDialog @close-auto-focus="restoreRequestFocus" @retry="openBookDetails(dialogBook, { viewOnly, onReturn: returnToAdoption })" v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError"
-    :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)"
+    :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)" :saving="props.savingIds.has(dialogBook?.id)"
     @save="emit('save', $event)">
     <template v-if="$slots['book-action']" #book-action>
       <slot name="book-action" :book="dialogBook" />
@@ -338,7 +340,7 @@ defineExpose({ openBookDetails, closeBookDetails });
       <slot name="details" :book="dialogBook" />
     </template>
     <template v-if="viewOnly && returnToAdoption" #actions>
-      <Button type="button" variant="outline" @click="dialogOpen = false">Back to adoption details</Button>
+      <Button type="button" variant="outline" @click="dialogOpen = false"><AppIcon name="back" />Back to adoption details</Button>
     </template>
     <template v-else-if="!viewOnly" #actions>
       <div class="w-full space-y-3">
@@ -346,28 +348,17 @@ defineExpose({ openBookDetails, closeBookDetails });
         <p v-else-if="applicationsError" class="text-sm text-destructive" role="alert">
           Could not check your existing requests. Retry before submitting.
         </p>
-        <template v-else>
-          <p class="text-sm">
-            {{
-              dialogBook?.status === 'available'
-                ? 'Available to request'
-                : 'Unavailable for new requests'
-            }}
-          </p>
-          <p v-if="dialogBook?.status === 'available'" class="text-sm text-muted-foreground">
-            Your request needs approval. If approved, you can arrange collection.
-          </p>
-        </template>
+        <p v-else-if="dialogBook?.status !== 'available'" class="text-sm">Unavailable for new requests</p>
         <Button v-if="hasExistingRequest" asChild class="w-full">
-          <RouterLink :to="requestLink">View my request</RouterLink>
+          <RouterLink :to="requestLink"><AppIcon name="view" />My request</RouterLink>
         </Button>
         <Button v-else class="w-full" :disabled="!canRequestBook" @click="openRequestDialog">
           {{ requestButtonLabel }}
         </Button>
-        <Button variant="outline" v-if="applicationsError" type="button" class="min-h-11 text-sm "
-          @click="openBookDetails(dialogBook)">
+        <Button variant="outline" v-if="applicationsError" type="button" class="min-h-11 text-sm"
+          @click="openBookDetails(dialogBook)" :loading="detailsLoading || applicationsLoading"><AppIcon name="refresh" /><span class="sr-only">
           Retry request check
-        </Button>
+        </span></Button>
       </div>
     </template>
   </AppBookPreviewDialog>

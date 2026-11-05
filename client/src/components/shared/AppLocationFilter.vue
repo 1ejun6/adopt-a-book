@@ -1,13 +1,13 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { onBeforeUnmount, ref, useId, watch, computed } from 'vue';
-import { Location08Icon, Search01Icon } from '@hugeicons/core-free-icons';
 import { api } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Field, FieldLabel } from '@/components/ui/field';
 
-const props = defineProps({ selection: { type: Object, default: null }, defaultRadius: { type: Number, default: 3 }, placeholder: { type: String, default: 'Postcode or address' } });
+const props = defineProps({ active: { type: Boolean, default: false }, selection: { type: Object, default: null }, defaultRadius: { type: Number, default: 3 }, placeholder: { type: String, default: 'Postcode or address' } });
 const stationIds = defineModel('stationIds', { type: String, default: '' });
 const emit = defineEmits(['change']);
 const inputId = useId();
@@ -85,15 +85,19 @@ defineExpose({ clear });
     <Field>
       <FieldLabel :for="inputId" class="sr-only">Location</FieldLabel>
       <div class="flex gap-2.5">
-        <button type="button" class="location-icon-button grid size-11 shrink-0 place-items-center rounded-lg border" :disabled="loading" @click="nearMe">
-          <HugeiconsIcon :icon="Location08Icon" :size="20" :stroke-width="1.5" aria-hidden="true" />
+        <Button variant="outline" :loading="loading" type="button" class="location-icon-button bg-transparent size-11 shrink-0 p-0" :disabled="loading" @click="nearMe">
+          <AppIcon name="location" :size="20" :stroke-width="1.5" />
           <span class="sr-only">Use current location</span>
-        </button>
-        <Input :id="inputId" v-model="query" type="search" :placeholder="props.placeholder" class="min-w-0 flex-1" :aria-describedby="error ? `${inputId}-error` : undefined" />
-        <button type="submit" class="location-icon-button grid size-11 shrink-0 place-items-center rounded-lg border" :disabled="loading || !query.trim()">
-          <HugeiconsIcon :icon="Search01Icon" :size="20" :stroke-width="1.5" aria-hidden="true" />
+        </Button>
+        <Input :id="inputId" v-model="query" type="search" :placeholder="props.placeholder" class="min-w-0 flex-1 bg-transparent" :aria-describedby="error ? `${inputId}-error` : undefined" />
+        <Button variant="outline" :loading="loading" type="submit" class="location-icon-button bg-transparent size-11 shrink-0 p-0" :disabled="loading || !query.trim()">
+          <AppIcon name="search" :size="20" :stroke-width="1.5" />
           <span class="sr-only">Search</span>
-        </button>
+        </Button>
+        <Button v-if="props.active || query.trim() || location || stationIds" variant="outline" type="button" class="location-icon-button bg-transparent size-11 shrink-0 p-0" @click="clear">
+          <AppIcon name="close" :size="20" :stroke-width="1.5" />
+          <span class="sr-only">Clear location filter</span>
+        </Button>
       </div>
     </Field>
     <Field v-if="query.trim() || location" class="flex-row items-center">
@@ -102,11 +106,12 @@ defineExpose({ clear });
     </Field>
     <p v-if="loading" role="status" class="text-sm text-muted-foreground">Finding address…</p>
     <div v-if="error" :id="`${inputId}-error`" role="alert" class="space-y-2 text-sm">
-      <p>{{ error }}</p><Button type="button" variant="outline" :disabled="loading" @click="retry">Retry location</Button>
+      <p>{{ error }}</p><Button type="button" variant="outline" class="bg-transparent" :disabled="loading" @click="retry" :loading="loading"><AppIcon name="refresh" /><span class="sr-only">Retry location</span></Button>
     </div>
   </form>
 </template>
 
 <style scoped>
+.location-icon-button :deep(svg) { width: 20px; height: 20px; }
 .location-icon-button:disabled { opacity: 1; cursor: not-allowed; }
 </style>

@@ -39,7 +39,7 @@
 }
 .identity-email {
   margin-top: 3px;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
 }
 .section-nav {
@@ -80,7 +80,7 @@
   font-size: 0.875rem;
 }
 .field-note {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.5;
   color: var(--muted-foreground);
 }
@@ -98,7 +98,7 @@
   border-top: 1px solid var(--border);
 }
 .form-footer p {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--muted-foreground);
 }
 .form-footer .saved {

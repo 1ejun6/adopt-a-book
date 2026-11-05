@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { cn } from '@/lib/utils';
 import { DialogClose } from "reka-ui";
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ const props = defineProps({
     ">
     <slot />
     <DialogClose v-if="showCloseButton" asChild>
-      <Button variant="outline"> Close </Button>
+      <Button variant="outline"><AppIcon name="close" /><span class="sr-only">Close</span></Button>
     </DialogClose>
   </div>
 </template>

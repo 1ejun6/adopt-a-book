@@ -27,7 +27,7 @@ const emit = defineEmits(['update:modelValue']);
         <CalendarGrid v-for="month in grid" :key="month.value.toString()" class="mt-2.5 w-full text-sm">
             <CalendarGridHead>
                 <CalendarGridRow>
-                    <CalendarHeadCell v-for="day in weekDays" :key="day" class="h-11 text-xs font-normal text-muted-foreground">{{ day }}</CalendarHeadCell>
+                    <CalendarHeadCell v-for="day in weekDays" :key="day" class="h-11 text-sm font-normal text-muted-foreground">{{ day }}</CalendarHeadCell>
                 </CalendarGridRow>
             </CalendarGridHead>
             <CalendarGridBody>

@@ -66,10 +66,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer components {
-  .washi-tape-hover:hover,
-  .washi-tape-hover[data-active],
-  .washi-row[data-state='selected'] { background: var(--primary); }
-
   [role='tablist'] {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
