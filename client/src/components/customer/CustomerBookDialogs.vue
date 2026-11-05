@@ -341,7 +341,6 @@ defineExpose({ openBookDetails, closeBookDetails });
       <Button type="button" variant="outline" @click="dialogOpen = false">Back to adoption details</Button>
     </template>
     <template v-else-if="!viewOnly" #actions>
-      <slot name="extra-actions" :book="dialogBook" />
       <div class="w-full space-y-3">
         <p v-if="hasExistingRequest" class="text-sm">You already have a request for this book.</p>
         <p v-else-if="applicationsError" class="text-sm text-destructive" role="alert">

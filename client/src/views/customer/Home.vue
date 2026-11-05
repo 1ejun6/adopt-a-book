@@ -159,7 +159,7 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
       <p class="sr-only" role="status" aria-live="polite">{{ announcement }}</p>
     </section>
     <section aria-labelledby="saved-heading" class="saved-section">
-      <div class="section-heading">
+      <div v-if="savedLoading || savedError || !entries.length" class="section-heading">
         <h2 id="saved-heading">Saved books</h2>
       </div>
       <div
@@ -181,7 +181,11 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
         :request-ids="adoptions.existingRequestIds"
         @select="dialogs?.openBookDetails($event)"
         @remove="toggle"
-      />
+      >
+        <template #heading>
+          <h2 id="saved-heading">Saved books</h2>
+        </template>
+      </CustomerSavedCarousel>
       <p v-else class="state">
         Saved books appear here. Saving doesn’t reserve a copy.
       </p>

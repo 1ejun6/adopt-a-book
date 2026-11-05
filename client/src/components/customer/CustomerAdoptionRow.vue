@@ -1,7 +1,10 @@
 <script setup>
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
 
-defineProps({ label: { type: String, required: true } });
+defineProps({
+  label: { type: String, required: true },
+  action: { type: String, default: '' },
+});
 const emit = defineEmits(['open']);
 </script>
 
@@ -18,10 +21,12 @@ const emit = defineEmits(['open']);
       <span class="adoption-row__mobile-label" aria-hidden="true">Pickup · SGT</span>
       <span class="min-w-0"><slot name="pickup" /></span>
     </span>
-    <HugeiconsIcon
-      :icon="ArrowRight01Icon"
-      class="adoption-row__arrow size-5 shrink-0"
-      aria-hidden="true"
-    />
+    <span class="adoption-row__action" aria-hidden="true">
+      <span v-if="action" class="adoption-row__action-label">{{ action }}</span>
+      <HugeiconsIcon
+        :icon="ArrowRight01Icon"
+        class="size-4 shrink-0"
+      />
+    </span>
   </button>
 </template>

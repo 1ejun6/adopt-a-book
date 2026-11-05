@@ -14,7 +14,7 @@ defineProps({
     <div class="adoption-task-rows">
       <div class="adoption-columns adoption-column-headings" aria-hidden="true">
         <span>Book</span><span>Status</span><span>Pickup · SGT</span
-        ><span class="sr-only">Open</span>
+        ><span class="text-right">Action</span>
       </div>
       <slot />
     </div>
