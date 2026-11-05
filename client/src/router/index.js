@@ -11,7 +11,6 @@ const router = createRouter({
       component: AppLayout,
       children: [
         { path: '/:pathMatch(.*)*', name: 'notFound', component: () => import('../views/NotFound.vue') },
-        { path: 'sample', name: 'adoptionSample', component: () => import('../views/AdoptionSample.vue'), meta: { preview: true } },
         { path: '', name: 'guestHome', component: () => import('../views/guest/Home.vue'), label: 'Browse Books', meta: { roles: ['guest'] } },
         { path: 'drives', name: 'guestDrives', component: () => import('../views/guest/AdoptionDrives.vue'), label: 'Adoption Drives', meta: { roles: ['guest'] } },
         { path: 'login', name: 'login', component: () => import('../views/Login.vue'), label: 'Login', meta: { roles: ['guest'] }, end: true },
@@ -55,7 +54,6 @@ export function loginDestination(target, auth = useAuthStore()) {
 }
 
 router.beforeEach(async (to) => {
-  if (to.meta.preview) return true;
   const auth = useAuthStore();
   const login = { name: 'login', query: { redirect: to.fullPath } };
   try {

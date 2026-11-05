@@ -19,6 +19,7 @@ export const useAdoptionsStore = defineStore('adoptions', () => {
   const applicationsError = ref(''),
     appointmentsError = ref('');
   const pendingWrites = ref(new Set());
+  const uncertainBooks = ref(new Set());
   let generation = 0;
   const controllers = new Set(),
     pending = new Map();
@@ -60,6 +61,7 @@ export const useAdoptionsStore = defineStore('adoptions', () => {
     controllers.clear();
     pending.clear();
     pendingWrites.value = new Set();
+    uncertainBooks.value = new Set();
     for (const resource of Object.values(resources)) {
       resource.data.value = [];
       resource.loading.value = resource.loaded.value = false;
@@ -142,20 +144,47 @@ export const useAdoptionsStore = defineStore('adoptions', () => {
     if (!(await refresh()))
       throw new Error('Check the latest adoption and pickup details before making changes');
   }
-  function submitApplication(id) {
-    return mutate(
-      [`book:${id}`],
-      '/applications',
-      { method: 'POST', body: { bookid: id } },
-      async () => {
-        await fetchApplications({ force: true });
-        if (applicationsForBook.value(id).some(hasExistingAdoption)) {
-          throw new Error(
-            'You already have a request for this book. View your request in My Adoptions.',
-          );
-        }
-      },
-    );
+  async function reconcileApplication(id) {
+    const current = generation;
+    const controller = new AbortController();
+    controllers.add(controller);
+    try {
+      await fetchApplications({ force: true });
+      if (current !== generation) throw new Error('Session changed; please try again');
+      const response = await api(`/books/${id}`, { signal: controller.signal });
+      if (current !== generation) throw new Error('Session changed; please try again');
+      if (!response.book?.id) throw new Error('Could not check book availability');
+      uncertainBooks.value.delete(id);
+      return response.book;
+    } finally {
+      controllers.delete(controller);
+    }
+  }
+  async function submitApplication(id) {
+    // Reconciliation is required even after the originating dialog has closed.
+    let sent = false;
+    const current = generation;
+    try {
+      return await mutate(
+        [`book:${id}`],
+        '/applications',
+        { method: 'POST', body: { bookid: id } },
+        async () => {
+          const book = await reconcileApplication(id);
+          if (applicationsForBook.value(id).some(hasExistingAdoption)) {
+            throw new Error(
+              'You already have a request for this book. View your request in My Adoptions.',
+            );
+          }
+          if (book.status !== 'available')
+            throw new Error('This book is no longer available for requests.');
+          sent = true;
+        },
+      );
+    } catch (error) {
+      if (sent && current === generation) uncertainBooks.value.add(id);
+      throw error;
+    }
   }
   function withdrawApplication(id) {
     const item = applications.value.find((item) => recordId(item) === id);
@@ -237,6 +266,8 @@ export const useAdoptionsStore = defineStore('adoptions', () => {
     journeys,
     applicationsForBook,
     pendingWrites,
+    uncertainBooks,
+    reconcileApplication,
     fetchApplications,
     fetchAppointments,
     refresh,

@@ -145,11 +145,11 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
           </div>
         </div>
         <div class="section-nav" role="tablist" aria-label="Account sections" @keydown="navigateTabs">
-          <button id="profile-tab" ref="profileTab" type="button" role="tab" class="washi-tape-hover" :data-active="activePanel === 'profile' ? true : undefined" :aria-selected="activePanel === 'profile'" aria-controls="profile-panel" :tabindex="activePanel === 'profile' ? 0 : -1" @click="activePanel = 'profile'">
+          <button id="profile-tab" ref="profileTab" type="button" role="tab" :data-active="activePanel === 'profile' ? true : undefined" :aria-selected="activePanel === 'profile'" aria-controls="profile-panel" :tabindex="activePanel === 'profile' ? 0 : -1" @click="activePanel = 'profile'">
             <UserRound aria-hidden="true" />
             Profile details
           </button>
-          <button id="password-tab" ref="passwordTab" type="button" role="tab" class="washi-tape-hover" :data-active="activePanel === 'password' ? true : undefined" :aria-selected="activePanel === 'password'" aria-controls="password-panel" :tabindex="activePanel === 'password' ? 0 : -1" @click="activePanel = 'password'">
+          <button id="password-tab" ref="passwordTab" type="button" role="tab" :data-active="activePanel === 'password' ? true : undefined" :aria-selected="activePanel === 'password'" aria-controls="password-panel" :tabindex="activePanel === 'password' ? 0 : -1" @click="activePanel = 'password'">
             <LockKeyhole aria-hidden="true" />
             Password
           </button>

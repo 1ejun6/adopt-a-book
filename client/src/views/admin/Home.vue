@@ -112,7 +112,7 @@ fetchDashboard();
         <Tabs v-model="selectedQueue">
           <TabsList aria-label="Attention queues" class="gap-0 border-b">
             <TabsTrigger v-for="(queue, index) in attentionQueues" :key="queue.label" :value="index"
-              class="min-h-11 flex-1 justify-center gap-2 rounded-none border-b-2 border-transparent bg-background px-3 text-center text-muted-foreground hover:bg-badge-neutral data-[state=active]:border-foreground data-[state=active]:text-foreground">
+              class="min-h-11 flex-1 justify-center gap-2 px-3 text-center">
               {{ queue.label }} <Badge variant="neutral">{{ queue.count ?? '—' }}</Badge>
             </TabsTrigger>
           </TabsList>

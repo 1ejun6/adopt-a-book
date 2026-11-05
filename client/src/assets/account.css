@@ -6,8 +6,8 @@
 .identity-details { min-width: 0; overflow-wrap: anywhere; }
 .identity-name { font-family: var(--font-heading); font-size: 1.25rem; }
 .identity-email { margin-top: 3px; font-size: 0.75rem; color: var(--muted-foreground); }
-.section-nav { display: grid; gap: 10px; }
-.section-nav button { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border-radius: 8px; text-align: left; font-size: 0.875rem; }
+.section-nav { display: flex; gap: 4px; }
+.section-nav button { display: flex; align-items: center; text-align: center; }
 .account-content { min-width: 0; }
 .panel-title { display: flex; align-items: center; gap: 10px; }
 .section-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: var(--primary); }
@@ -29,5 +29,5 @@
   .account-workspace { display: block; }
   .identity { display: none; }
   .section-nav { display: flex; margin-bottom: 24px; }
-  .section-nav button { flex: 1; justify-content: center; padding: 10px 8px; }
+
 }

@@ -69,6 +69,7 @@ const canRequestBook = computed(
     !requestSubmitted.value &&
     !requestUncertain.value &&
     !hasExistingRequest.value &&
+    !adoptions.pendingWrites.has(`book:${dialogBook.value?.id}`) &&
     dialogBook.value?.status === 'available',
 );
 const requestButtonLabel = computed(() => {
@@ -179,8 +180,9 @@ async function checkRequestStatus() {
   const book = dialogBook.value;
   actionLoading.value = true;
   try {
-    await getapplications();
+    const freshBook = await adoptions.reconcileApplication(book.id);
     if (id !== loadid) return;
+    dialogBook.value = freshBook;
     if (hasExistingRequest.value) {
       submittedApplication.value = existingApplication.value;
       requestSubmitted.value = true;
@@ -272,6 +274,12 @@ watch(
   },
   { flush: 'sync' },
 );
+watch(() => auth.user?.id, () => {
+  cancelload();
+  dialogOpen.value = false;
+  requestDialogOpen.value = false;
+  dialogBook.value = null;
+});
 onBeforeUnmount(cancelload);
 function closeBookDetails(book) {
   if (!book || dialogBook.value?.id === book.id) {

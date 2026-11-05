@@ -1,0 +1,141 @@
+<script setup>
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { Button } from '@/components/ui/button';
+import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
+const props = defineProps({
+  entries: { type: Array, default: () => [] },
+  busyIds: { type: Set, default: () => new Set() },
+});
+defineEmits(['select', 'remove']);
+const track = ref(null),
+  atStart = ref(true),
+  atEnd = ref(true);
+let observer;
+function update() {
+  const el = track.value;
+  if (!el) return;
+  atStart.value = el.scrollLeft <= 1;
+  atEnd.value = el.scrollLeft + el.clientWidth >= el.scrollWidth - 2;
+}
+function move(direction) {
+  track.value?.scrollBy({
+    left: direction * track.value.clientWidth * 0.8,
+    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+  });
+}
+watch(
+  () => props.entries.map((entry) => entry.id),
+  async () => {
+    await nextTick();
+    update();
+  },
+);
+onMounted(() => {
+  observer = new ResizeObserver(update);
+  observer.observe(track.value);
+  update();
+});
+onBeforeUnmount(() => observer?.disconnect());
+</script>
+
+<template>
+  <div class="saved-carousel">
+    <div class="controls">
+      <Button
+        variant="outline"
+        aria-label="Previous saved books"
+        aria-controls="saved-track"
+        :disabled="atStart"
+        @click="move(-1)"
+        >← Previous</Button
+      >
+      <Button
+        variant="outline"
+        aria-label="Next saved books"
+        aria-controls="saved-track"
+        :disabled="atEnd"
+        @click="move(1)"
+        >Next →</Button
+      >
+    </div>
+    <ul
+      id="saved-track"
+      ref="track"
+      class="track"
+      aria-label="Saved books"
+      @scroll.passive="update"
+    >
+      <li v-for="entry in entries" :key="entry.id" class="saved-book">
+        <button
+          class="preview"
+          type="button"
+          aria-haspopup="dialog"
+          @click="$emit('select', entry.bookid)"
+        >
+          <AppBookIdentity
+            :title="entry.bookid.title"
+            :author="(entry.bookid.authors || []).join(', ')"
+            :cover="entry.bookid.thumbnailurl || entry.bookid.coverurl"
+            cover-class="h-36 w-full"
+            vertical
+            wrap
+          />
+          <span class="availability">{{
+            entry.bookid.status === 'available'
+              ? 'Available to request'
+              : 'Unavailable for new requests'
+          }}</span>
+        </button>
+        <Button
+          variant="ghost"
+          :disabled="busyIds.has(entry.bookid.id)"
+          :aria-label="`Remove ${entry.bookid.title} from saved books`"
+          @click="$emit('remove', entry.bookid)"
+          >Remove saved book</Button
+        >
+      </li>
+    </ul>
+  </div>
+</template>
+
+<style scoped>
+.controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.track {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0.5rem 0.25rem 1rem;
+  scroll-padding: 0.25rem;
+}
+.saved-book {
+  flex: 0 0 13rem;
+  scroll-snap-align: start;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.preview {
+  text-align: left;
+  cursor: pointer;
+  flex: 1;
+}
+.availability {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.75rem;
+}
+button:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+</style>

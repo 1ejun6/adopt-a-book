@@ -4,6 +4,8 @@ import { todayInSingapore } from '@/lib/date';
 import { validPickupDate } from '@/lib/adoptions';
 
 export function useAdoptionDrives({ endpoint, cacheKey }) {
+  // Only public drive data may be persisted in browser storage.
+  if (endpoint !== '/drives') cacheKey = undefined;
   const drives = ref([]);
   const loading = ref(true);
   const error = ref('');
@@ -32,6 +34,8 @@ export function useAdoptionDrives({ endpoint, cacheKey }) {
               drive &&
               typeof drive.id === 'string' &&
               typeof drive.title === 'string' &&
+              typeof drive.location === 'string' &&
+              ['open', 'closed', 'cancelled'].includes(drive.status) &&
               validPickupDate(drive.eventdate) &&
               Number.isInteger(drive.spotsleft) &&
               drive.spotsleft >= 0 &&
@@ -69,7 +73,7 @@ export function useAdoptionDrives({ endpoint, cacheKey }) {
                 signal: request.signal,
                 query: { mrtstationids: id, status: 'available', limit: 1 },
               });
-              return [id, books.total ?? 0];
+              return [id, Number.isInteger(books.total) && books.total >= 0 ? books.total : null];
             } catch (error) {
               if (request.signal.aborted) throw error;
               return [id, null];
