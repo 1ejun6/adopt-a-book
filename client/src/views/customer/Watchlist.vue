@@ -27,16 +27,21 @@ const deleting = computed(() => new Set(store.entries.filter(entry => busyIds.va
 const page = ref(1);
 const pageSize = 16;
 const search = ref('');
+const availability = ref('all');
 const filteredEntries = computed(() => {
   const query = search.value.trim().toLowerCase();
-  if (!query) return watchlist.value;
-  return watchlist.value.filter(({ bookid: book }) =>
-    [book?.title, ...(book?.authors || []), book?.isbn].some(value => String(value ?? '').toLowerCase().includes(query)),
-  );
+  return watchlist.value.filter(({ bookid: book }) => {
+    const status = adoptions.existingRequestIds.has(book?.id)
+      ? 'requested'
+      : book?.status === 'available' ? 'available' : 'unavailable';
+    return (availability.value === 'all' || availability.value === status)
+      && (!query || [book?.title, ...(book?.authors || []), book?.isbn]
+        .some(value => String(value ?? '').toLowerCase().includes(query)));
+  });
 });
 const pageCount = computed(() => getPageCount(filteredEntries.value.length, pageSize));
 const visibleEntries = computed(() => filteredEntries.value.slice((page.value - 1) * pageSize, page.value * pageSize));
-watch(search, () => { page.value = 1; });
+watch([search, availability], () => { page.value = 1; });
 watch(pageCount, count => { page.value = Math.min(page.value, count); });
 const dialogs = ref(null);
 const noteToasts = new Set();
@@ -95,8 +100,19 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
     </header>
 
     <div class="flex flex-1 flex-col gap-5">
-    <AppSearchInput v-model="search" id="watchlist-search" aria-label="Search watchlist"
-      placeholder="Search by title, author or ISBN..." :disabled="loading && !watchlist.length" />
+    <div class="flex flex-col gap-2.5 sm:flex-row">
+      <AppSearchInput v-model="search" id="watchlist-search" aria-label="Search watchlist" class="min-w-0 flex-1"
+        placeholder="Search by title, author or ISBN..." :disabled="loading && !watchlist.length" />
+      <label for="watchlist-availability" class="sr-only">Book availability</label>
+      <select id="watchlist-availability" v-model="availability"
+        class="min-h-11 w-full rounded-lg border bg-transparent p-2.5 text-sm sm:w-52"
+        :disabled="loading && !watchlist.length">
+        <option value="all">All statuses</option>
+        <option value="available">Available</option>
+        <option value="unavailable">Unavailable</option>
+        <option value="requested">Requested</option>
+      </select>
+    </div>
     <section v-if="loading && !watchlist.length" class="grid shrink-0 auto-rows-fr gap-5 md:grid-cols-2 lg:grid-cols-4" aria-busy="true">
       <CustomerBookCard v-for="index in 8" :key="index" loading />
     </section>
@@ -112,7 +128,7 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
       <Button asChild><RouterLink :to="{ name: 'customerBooks' }"><AppIcon name="book" />Browse books</RouterLink></Button>
     </div>
     <p v-else-if="!filteredEntries.length" class="text-sm text-muted-foreground" role="status">
-      no matching books in your watchlist. try another search or clear the search field.
+      no matching books in your watchlist. try another search or change the availability filter.
     </p>
     <!--@sree-sanjana06 > each card emits actions handled by this page-->
     <!--@sree-sanjana06 > display saved books using shared customer card-->
@@ -136,16 +152,15 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
           <span class="sr-only">Remove from saved books</span>
         </Button>
       </template>
+      <template #secondary-action="{ book }">
+        <Button type="button" variant="outline" class="min-w-0 w-full" aria-label="Edit note"
+          :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="editPreviewNote(book)">
+          <HugeiconsIcon :icon="PencilEdit02Icon" class="size-4" aria-hidden="true" />
+        </Button>
+      </template>
       <template #details="{ book }">
-        <section class="space-y-2 border-t pt-4">
-          <div class="flex items-center justify-between gap-2.5">
-            <h3>Your private note</h3>
-            <Button type="button" variant="outline" size="sm"
-              :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="editPreviewNote(book)">
-              <HugeiconsIcon :icon="PencilEdit02Icon" class="size-4" aria-hidden="true" />
-              <span class="sr-only">Edit note</span>
-            </Button>
-          </div>
+        <section class="space-y-1.5 border-y py-5">
+          <h3>Your private note</h3>
           <p class="text-sm text-muted-foreground break-words">{{ notes.get(book?.id) || 'no note added yet' }}</p>
         </section>
       </template>

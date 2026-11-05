@@ -1,7 +1,7 @@
 <script setup>
 import AppIcon from '@/components/shared/AppIcon.vue';
 import { ref, computed, nextTick, watch, onBeforeUnmount } from 'vue';
-import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { RouterLink, useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
 import { api } from '@/lib/api';
 import { storeToRefs } from 'pinia';
 import { useAdoptionsStore } from '@/stores/adoptions';
@@ -14,6 +14,7 @@ import { toast } from 'vue-sonner';
 import { Button } from '@/components/ui/button';
 import AppBookPreviewDialog from '@/components/shared/AppBookPreviewDialog.vue';
 import RequestCopyDialog from '@/components/customer/RequestCopyDialog.vue';
+import CustomerAdoptionDialog from '@/components/customer/CustomerAdoptionDialog.vue';
 
 const props = defineProps({
   savedIds: { type: Set, default: () => new Set() },
@@ -57,13 +58,38 @@ const existingApplication = computed(() => {
 const applicationId = computed(() =>
   recordId(submittedApplication.value || existingApplication.value),
 );
-const requestLink = computed(() => {
-  const query = {};
-  if (applicationId.value) {
-    query.request = applicationId.value;
-  }
-  return { name: 'customerAdoptions', query };
-});
+const requestDetailsOpen = ref(false);
+const requestDetailsDialog = ref(null);
+const selectedRequestId = ref('');
+const selectedPickupId = ref('');
+const selectedRequest = computed(() => adoptions.journeys.find(record => record.id === selectedRequestId.value) || null);
+const selectedPickup = computed(() => adoptions.appointments.find(item => recordId(item) === selectedPickupId.value) || null);
+async function openExistingRequest() {
+  const application = existingApplication.value || matchingApplications.value[0];
+  if (!application) return;
+  selectedRequestId.value = recordId(application);
+  selectedPickupId.value = recordId(selectedRequest.value?.appointment);
+  requestDetailsOpen.value = true;
+  dialogOpen.value = false;
+  if (!await adoptions.refresh()) toast.error('Could not refresh your request. Please try again.');
+}
+async function reconcilePickup() {
+  const ready = await adoptions.refresh();
+  return { ready, record: selectedRequest.value, appointments: adoptions.appointments };
+}
+async function pickupChanged(appointment, reload = true) {
+  if (recordId(appointment)) selectedPickupId.value = recordId(appointment);
+  return reload ? adoptions.refresh() : adoptions.ready;
+}
+async function requestWithdrawn(_id, reload = true) {
+  return reload ? adoptions.refresh() : adoptions.ready;
+}
+async function backFromRequest() {
+  requestDetailsOpen.value = false;
+  await nextTick();
+  await backToBook();
+}
+onBeforeRouteLeave(() => requestDetailsDialog.value?.canNavigate() ?? true);
 const canRequestBook = computed(
   () =>
     !viewOnly.value &&
@@ -80,12 +106,12 @@ const canRequestBook = computed(
 );
 const requestButtonLabel = computed(() => {
   if (applicationsLoading.value) {
-    return 'Checking requests…';
+    return 'checking requests…';
   }
   if (applicationsError.value) {
-    return 'Request status unavailable';
+    return 'request status unavailable';
   }
-  return dialogBook.value?.status === 'available' ? 'Request this book' : 'Book unavailable';
+  return dialogBook.value?.status === 'available' ? 'request' : 'book unavailable';
 });
 function showerror(error, retry) {
   toast.error(error.message || 'Could not load book information.', {
@@ -174,7 +200,7 @@ async function backToBook() {
   dialogTrigger = trigger;
 }
 function restoreRequestFocus(event) {
-  if (requestDialogOpen.value || dialogOpen.value) return;
+  if (requestDialogOpen.value || requestDetailsOpen.value || dialogOpen.value) return;
   event.preventDefault();
   if (dialogTrigger?.isConnected && dialogTrigger !== document.body) {
     dialogTrigger.focus({ preventScroll: true });
@@ -317,6 +343,7 @@ watch(() => auth.user?.id, () => {
   cancelload();
   dialogOpen.value = false;
   requestDialogOpen.value = false;
+  requestDetailsOpen.value = false;
   dialogBook.value = null;
 });
 onBeforeUnmount(cancelload);
@@ -344,17 +371,19 @@ defineExpose({ openBookDetails, closeBookDetails });
     </template>
     <template v-else-if="!viewOnly" #actions>
       <div class="w-full space-y-3">
-        <p v-if="hasExistingRequest" class="text-sm">You already have a request for this book.</p>
-        <p v-else-if="applicationsError" class="text-sm text-destructive" role="alert">
+        <p v-if="applicationsError" class="text-sm text-destructive" role="alert">
           Could not check your existing requests. Retry before submitting.
         </p>
-        <p v-else-if="dialogBook?.status !== 'available'" class="text-sm">Unavailable for new requests</p>
-        <Button v-if="hasExistingRequest" asChild class="w-full">
-          <RouterLink :to="requestLink"><AppIcon name="view" />My request</RouterLink>
-        </Button>
-        <Button v-else class="w-full" :disabled="!canRequestBook" @click="openRequestDialog">
-          {{ requestButtonLabel }}
-        </Button>
+        <p v-else-if="!hasExistingRequest && dialogBook?.status !== 'available'" class="text-sm">Unavailable for new requests</p>
+        <div class="grid items-center gap-2.5" :class="$slots['secondary-action'] ? 'grid-cols-2' : 'grid-cols-1'">
+          <slot name="secondary-action" :book="dialogBook" />
+          <Button v-if="hasExistingRequest" type="button" variant="outline" class="min-w-0 w-full hover:bg-primary" aria-label="view request" @click="openExistingRequest">
+            <AppIcon name="view" />
+          </Button>
+          <Button v-else class="min-w-0 w-full" :disabled="!canRequestBook" @click="openRequestDialog">
+            {{ requestButtonLabel }}
+          </Button>
+        </div>
         <Button variant="outline" v-if="applicationsError" type="button" class="min-h-11 text-sm"
           @click="openBookDetails(dialogBook)" :loading="detailsLoading || applicationsLoading"><AppIcon name="refresh" /><span class="sr-only">
           Retry request check
@@ -362,6 +391,11 @@ defineExpose({ openBookDetails, closeBookDetails });
       </div>
     </template>
   </AppBookPreviewDialog>
+  <CustomerAdoptionDialog embedded v-if="selectedRequest" ref="requestDetailsDialog" v-model:open="requestDetailsOpen"
+    :record="selectedRequest" :appointment="selectedPickup" :ready="adoptions.ready"
+    :requestsReady="adoptions.applicationsLoaded && !applicationsLoading && !applicationsError"
+    :reconcile="reconcilePickup" :refresh="adoptions.refresh" :complete="pickupChanged" :withdrawn="requestWithdrawn"
+    @appointment="selectedPickupId = recordId($event)" @history="backFromRequest" @restore-focus="restoreRequestFocus" />
   <RequestCopyDialog v-model:open="requestDialogOpen" :book="dialogBook" :reader="auth.user" :loading="actionLoading"
     :submitted="requestSubmitted" :existing="hasExistingRequest" :disabled="!!applicationsError || requestUncertain"
     :uncertain="requestUncertain" :applicationStatus="getApplicationStatus(submittedApplication || existingApplication)"

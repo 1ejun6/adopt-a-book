@@ -110,7 +110,7 @@ const fields = computed(() => [
 
         <slot v-if="!props.loading && !props.error" name="details" :book="props.book" />
 
-        <DialogFooter v-if="!props.loading && !props.error && $slots.actions">
+        <DialogFooter v-if="!props.loading && !props.error && $slots.actions" :class="{ 'border-t-0 pt-0': $slots.details }">
           <slot name="actions" />
         </DialogFooter>
       </div>

@@ -151,12 +151,13 @@ function preventClosing(event) {
             <Button
               v-else-if="!existing"
               type="button"
-
+              variant="outline"
+              class="border-success-foreground bg-transparent text-success-foreground hover:bg-badge-green"
               :disabled="loading || disabled"
               :aria-busy="loading"
-              :aria-label="loading ? 'Sending adoption request' : 'Send adoption request'"
+              :aria-label="loading ? 'Sending adoption request' : 'Confirm adoption request'"
               @click="emit('submit')"
-             :loading="loading"><AppIcon name="send" />Request
+             :loading="loading">confirm
             </Button>
           </div>
         </template>

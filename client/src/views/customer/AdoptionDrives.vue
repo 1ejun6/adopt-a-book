@@ -48,7 +48,7 @@ async function togglersvp() {
     const response = await api(`/drives/${drive.id}/rsvp`, { method: drive.registered ? 'DELETE' : 'POST' });
     const registered = response.registered;
     Object.assign(drive, { registered, ...response.drive });
-    toast.success(!registered ? 'registration cancelled' : 'registered for adoption drive');
+    toast.success(!registered ? 'registration withdrawn' : 'registered for adoption drive');
     await fetchdrives();
   } catch (error) {
     toast.error(error.message);
@@ -85,7 +85,7 @@ function opendrive(drive) {
   <AppAdoptionDriveDialog v-model:open="dialogopen" :drive="selecteddrive">
     <template #actions="{ drive }">
       <Button v-if="drive.registered && !drive.past" variant="outline" :disabled="saving" @click="togglersvp" :loading="saving"><AppIcon name="cancel" />
-        {{ saving ? 'saving...' : 'cancel registration' }}
+        {{ saving ? 'Withdrawing…' : 'Withdraw' }}
       </Button>
       <Button v-else-if="drive.status === 'open' && !drive.past && drive.spotsleft > 0" :disabled="saving"
         @click="togglersvp" :loading="saving"><AppIcon name="community" />

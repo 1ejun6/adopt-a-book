@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 
 const props = defineProps({
+  embedded: { type: Boolean, default: false },
   record: { type: Object, default: null },
   appointment: { type: Object, default: null },
   initialMode: { type: String, default: 'adoption' },
@@ -174,6 +175,7 @@ defineExpose({ canNavigate });
           ref="detailsBody"
           v-model:open="open"
           :record="record"
+          :embedded="embedded"
           :ready="requestsReady"
           :reconcile="refresh"
           :complete="withdrawn"

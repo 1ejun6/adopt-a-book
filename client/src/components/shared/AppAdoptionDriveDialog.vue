@@ -95,7 +95,7 @@ const spots = computed(() => Number.isInteger(props.drive.spotsleft) ? `${props.
           <AppAdoptionDriveBooks v-if="open && drive.mrtstationid" :stationId="drive.mrtstationid" />
         </div>
 
-        <DialogFooter class="flex-col text-center">
+        <DialogFooter class="flex-col text-center" :class="{ 'border-t-0': drive.mrtstationid }">
           <slot name="actions" :drive="drive">
             <Button v-if="canRsvp" @click="requestrsvp"><AppIcon name="community" />rsvp</Button>
             <p v-else class="grid min-h-9 place-items-center text-sm">{{ actionMessage }}</p>

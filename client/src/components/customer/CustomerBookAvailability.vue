@@ -9,9 +9,9 @@ const props = defineProps({
   dot: { type: Boolean, default: false },
 });
 const statuses = [
-  { key: 'available', label: 'Available to request', tone: 'green' },
+  { key: 'available', label: 'Available', tone: 'green' },
   { key: 'unavailable', label: 'Unavailable', tone: 'red' },
-  { key: 'requested', label: 'Request sent', tone: 'purple' },
+  { key: 'requested', label: 'Requested', tone: 'purple' },
 ];
 const current = computed(() => statuses.find(status => status.key === (
   props.requestId ? 'requested' : props.status === 'available' ? 'available' : 'unavailable'

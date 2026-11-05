@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/utils';
 import CustomerAdoptionInformation from './CustomerAdoptionInformation.vue';
 import { Button } from '@/components/ui/button';
 const props = defineProps({
+  embedded: { type: Boolean, default: false },
   record: { type: Object, default: null },
   ready: { type: Boolean, default: true },
   reconcile: { type: Function, required: true },
@@ -131,13 +132,13 @@ watchEffect(() => {
     <p v-if="refreshWarning" role="status" class="text-sm">{{ refreshWarning }}</p>
     <section v-if="withdrawn" class="space-y-4" role="status">
       <p>Your request has been withdrawn and moved to History.</p>
-      <Button type="button" :disabled="saving" @click="emit('history')"><AppIcon name="request" />View in History</Button>
+      <Button v-if="!embedded" type="button" :disabled="saving" @click="emit('history')"><AppIcon name="request" />View in History</Button>
     </section>
     <section v-else-if="confirming" class="space-y-3 rounded-lg bg-badge-purple/40 p-4" aria-label="Confirm withdrawal">
       <p class="text-sm">You can request this book again if it is still available.</p>
       <div class="adoption-actions">
-        <Button type="button" variant="destructive" :disabled="saving || uncertain || !ready || !record.canWithdraw"
-          @click="withdraw" :loading="saving"><AppIcon name="cancel" />{{ saving ? 'Withdrawing…' : 'Withdraw request' }}</Button>
+        <Button type="button" variant="outline" class="withdraw-button" :disabled="saving || uncertain || !ready || !record.canWithdraw"
+          @click="withdraw">{{ saving ? 'withdrawing…' : 'withdraw' }}</Button>
         <Button type="button" variant="outline" :disabled="saving" @click="confirming = false"><AppIcon name="success" />Keep request</Button>
       </div>
     </section>
@@ -170,15 +171,25 @@ watchEffect(() => {
       </section>
       <CustomerAdoptionInformation :record="record" :appointment="currentPickup"
         @pickup-record="emit('pickup-record', $event)" />
-      <div class="adoption-actions">
-        <Button type="button" variant="outline" :disabled="saving" @click="open = false"><AppIcon name="back" />Back to my adoptions</Button>
+      <div v-if="record.action && !record.canWithdraw" class="adoption-actions">
         <Button v-if="record.action" :disabled="!ready || saving" type="button" @click="emit('pickup', record)">{{
           record.actionLabel }}</Button>
       </div>
-      <Button variant="destructive" v-if="record.canWithdraw && !uncertain" :disabled="!ready || saving" type="button"
-        class="min-h-11 text-sm text-destructive " @click="confirming = true"><AppIcon name="cancel" />
-        Withdraw request
+      <Button v-if="record.canWithdraw && !uncertain" :disabled="!ready || saving" type="button" variant="outline"
+        class="withdraw-button w-full" @click="confirming = true">
+        withdraw
       </Button>
     </template>
   </div>
 </template>
+
+<style scoped>
+.withdraw-button {
+  border: 1px solid var(--destructive);
+  color: var(--destructive);
+  background: transparent;
+}
+.withdraw-button:hover {
+  background: color-mix(in srgb, var(--destructive) 10%, transparent);
+}
+</style>

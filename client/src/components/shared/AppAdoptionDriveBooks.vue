@@ -66,8 +66,8 @@ watch(() => props.stationId, fetchBooks, { immediate: true });
 </script>
 
 <template>
-  <section class="space-y-2.5">
-    <h3>book list</h3>
+  <section class="space-y-2.5 border-b pb-4">
+    <h3 class="border-b pb-4">book list</h3>
 
     <ul v-if="loadingBooks" class="space-y-2.5">
       <li v-for="i in 3" :key="i">
@@ -79,7 +79,7 @@ watch(() => props.stationId, fetchBooks, { immediate: true });
       <p class="text-sm">{{ bookError }}</p>
       <Button type="button" variant="outline" size="sm" @click="fetchBooks" :loading="loadingBooks"><AppIcon name="refresh" /><span class="sr-only">retry book list</span></Button>
     </div>
-    <p v-else-if="!books.length" class="text-sm">no available books at this station yet</p>
+    <p v-else-if="!books.length" class="py-3 text-center text-sm">no available books at this station yet</p>
     <template v-else-if="!bookError">
       <ul class="space-y-2.5">
         <li v-for="book in books" :key="book.id">
