@@ -8,7 +8,7 @@ const dotenv = require("dotenv");
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const supabase = require("./supabase/supabase");
-const { loadcurrentuser } = require("./middleware");
+const { loadcurrentuser } = require("./authmiddleware");
 const { configuredorigin, mutationorigin } = require("./utils/security");
 const { errorstatus } = require("./utils/errors");
 const { normalizeresponse } = require("./utils/response");

@@ -1,6 +1,6 @@
 const express = require("express");
 const adoptiondrivecustomercontroller = require("../controllers/adoptiondrivecustomercontroller");
-const { authenticated, customer } = require("../middleware");
+const { authenticated, customer } = require("../authmiddleware");
 
 const router = express.Router();
 

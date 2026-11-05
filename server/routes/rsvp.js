@@ -1,7 +1,7 @@
 const express = require("express");
 const controller = require("../controllers/rsvpcontroller");
 const { validateid } = require("../utils/validation");
-const { authenticated, customer } = require("../middleware");
+const { authenticated, customer } = require("../authmiddleware");
 const router = express.Router();
 router.param("id", validateid);
 router.post("/drives/:id/rsvp", authenticated, customer, controller.rsvpsingle);

@@ -1,6 +1,6 @@
 const express = require("express");
 const controller = require("../controllers/usercustomercontroller");
-const { authenticated, customer } = require("../middleware");
+const { authenticated, customer } = require("../authmiddleware");
 const router = express.Router();
 router.use(authenticated, customer);
 router.get("/", controller.home);
