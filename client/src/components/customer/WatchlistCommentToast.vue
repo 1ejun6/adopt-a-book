@@ -4,7 +4,8 @@ import { FocusScope } from 'reka-ui';
 import { toast } from 'vue-sonner';
 import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/vue';
-import { api } from '@/lib/api';
+import { useWatchlistStore } from '@/stores/watchlist';
+const store = useWatchlistStore();
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -35,7 +36,7 @@ async function saveComment() {
   busy.value = true;
   error.value = '';
   try {
-    await api(`/watchlist/${props.entry.id}`, { method: 'PATCH', body: { comments: comment.value.trim() } });
+    await store.updateComment(props.entry.id, comment.value.trim());
     emit('saved', { id: props.entry.id, comments: comment.value.trim() });
     dismiss();
     toast.success('comment saved', { duration: 1000, style: { pointerEvents: 'auto' } });

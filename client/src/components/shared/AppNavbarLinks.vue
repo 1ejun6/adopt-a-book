@@ -1,6 +1,7 @@
 <script setup>
 import { RouterLink, useRoute } from 'vue-router'
-import { auth } from '@/lib/auth'
+import { useAuthStore } from '@/stores/auth'
+const auth = useAuthStore()
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu'
 
 defineProps({

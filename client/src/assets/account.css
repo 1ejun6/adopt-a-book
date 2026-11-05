@@ -1,0 +1,33 @@
+.account-heading { margin-bottom: 24px; text-align: center; }
+.account-heading > p { margin-top: 8px; font-size: 0.875rem; color: var(--muted-foreground); }
+.account-workspace { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; align-items: start; }
+.identity { display: flex; align-items: center; gap: 12px; margin: 4px 0 24px; }
+.avatar { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; background: var(--primary); font: 24px var(--font-heading); }
+.identity-details { min-width: 0; overflow-wrap: anywhere; }
+.identity-name { font-family: var(--font-heading); font-size: 1.25rem; }
+.identity-email { margin-top: 3px; font-size: 0.75rem; color: var(--muted-foreground); }
+.section-nav { display: grid; gap: 10px; }
+.section-nav button { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border-radius: 8px; text-align: left; font-size: 0.875rem; }
+.account-content { min-width: 0; }
+.panel-title { display: flex; align-items: center; gap: 10px; }
+.section-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: var(--primary); }
+.panel-heading > p { margin-top: 8px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
+.account-field { display: grid; gap: 8px; }
+.account-field label { font-size: 0.875rem; }
+.field-note { font-size: 0.75rem; line-height: 1.5; color: var(--muted-foreground); }
+.invalid-note { color: var(--destructive); }
+.password-input { position: relative; }
+.password-input :deep(input) { padding-right: 36px; }
+.password-input button { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 36px; height: 36px; }
+.form-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.form-footer p { font-size: 0.75rem; color: var(--muted-foreground); }
+.form-footer .saved { color: var(--success-foreground); }
+.form-error { padding: 12px; border-radius: 8px; background: var(--badge-rose); color: var(--destructive); font-size: 0.875rem; }
+.loading-state { display: grid; gap: 24px; }
+.error-state { display: grid; justify-items: start; gap: 16px; font-size: 0.875rem; }
+@media (max-width: 700px) {
+  .account-workspace { display: block; }
+  .identity { display: none; }
+  .section-nav { display: flex; margin-bottom: 24px; }
+  .section-nav button { flex: 1; justify-content: center; padding: 10px 8px; }
+}

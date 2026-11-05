@@ -1,7 +1,8 @@
 <script setup>
-import { computed, h, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
-import { api } from '@/lib/api';
+import { useWatchlistStore } from '@/stores/watchlist';
+import { storeToRefs } from 'pinia';
 import CustomerBookCard from '@/components/customer/CustomerBookCard.vue';
 import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
 import WatchlistCommentToast from '@/components/customer/WatchlistCommentToast.vue';
@@ -12,24 +13,11 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
 });
 const dialogs = ref(null);
-const watchlist = ref([]);
-const watchlistLoading = ref(true);
-const watchlistError = ref(false);
-const saving = reactive(new Map());
-const busyIds = computed(() => new Set(saving.keys()));
-const canSave = computed(() => !watchlistLoading.value && !watchlistError.value);
-let watchlistcontroller;
+const store = useWatchlistStore();
+const { savedIds, loading: watchlistLoading, loadError: watchlistError } = storeToRefs(store);
+const busyIds = computed(() => new Set(store.pendingOperations.keys()));
+const canSave = computed(() => store.loaded && !watchlistLoading.value && !watchlistError.value);
 const commentToasts = new Set();
-
-//@sree-sanjana06 > saved-book lookup
-const savedIds = computed(() => {
-  const ids = new Set(watchlist.value.map(entry => entry.bookid?.id).filter(Boolean));
-  for (const [id, saved] of saving) {
-    if (saved) ids.add(id);
-    else ids.delete(id);
-  }
-  return ids;
-});
 
 function showSavedToast(entry, trigger) {
   const id = `watchlist-comment-${entry.bookid.id}`;
@@ -41,53 +29,26 @@ function showSavedToast(entry, trigger) {
 
 //@sree-sanjana06 > fetch saved books to identify existing watchlist entries
 async function loadWatchlist() {
-  watchlistcontroller?.abort();
-  const request = new AbortController();
-  watchlistcontroller = request;
-  watchlistLoading.value = true;
-  watchlistError.value = false;
-  try {
-    const response = await api('/watchlist', { method: 'GET', signal: request.signal });
-    watchlist.value = response.watchlist || [];
-  } catch (error) {
-    if (request.signal.aborted) return;
-    watchlistError.value = true;
+  try { await store.fetchWatchlist(); }
+  catch (error) {
     toast.error(error.message, { duration: Infinity, closeButton: true, action: { label: 'retry', onClick: loadWatchlist } });
-  } finally {
-    if (watchlistcontroller === request) watchlistLoading.value = false;
   }
 }
 
-//@1ejun6 > change bookmark immediately > clearing pending state restores saved value if request fails
 async function toggleSave(book) {
-  if (watchlistLoading.value || watchlistError.value || saving.has(book.id)) return;
+  if (!canSave.value || busyIds.value.has(book.id)) return;
   const trigger = document.activeElement;
-  const entry = watchlist.value.find(item => item.bookid?.id === book.id);
-  saving.set(book.id, !entry);
   try {
-    if (entry) {
-      await api(`/watchlist/${entry.id}`, { method: 'DELETE' });
-      watchlist.value = watchlist.value.filter(item => item.id !== entry.id);
+    const result = await store.toggleBook(book);
+    if (result.removed) {
       toast.dismiss(`watchlist-comment-${book.id}`);
       toast.success('removed from watchlist');
-    } else {
-      const response = await api('/watchlist', { method: 'POST', body: { bookid: book.id, comments: '' } });
-      const savedEntry = { ...response.entry, bookid: book };
-      watchlist.value.push(savedEntry);
-      showSavedToast(savedEntry, trigger);
-    }
-  } catch (error) {
-    toast.error(error.message);
-  } finally {
-    saving.delete(book.id);
-  }
+    } else showSavedToast(result.entry, trigger);
+  } catch (error) { toast.error(error.message); }
 }
 
 onMounted(loadWatchlist);
-onBeforeUnmount(() => {
-  watchlistcontroller?.abort();
-  commentToasts.forEach(id => toast.dismiss(id));
-});
+onBeforeUnmount(() => { commentToasts.forEach(id => toast.dismiss(id)); });
 </script>
 
 <template>

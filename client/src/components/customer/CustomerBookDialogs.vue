@@ -3,7 +3,8 @@ import { ref, computed, nextTick, watch, onBeforeUnmount } from 'vue';
 import { RouterLink } from 'vue-router';
 import { api } from '@/lib/api';
 import { bookId, getApplicationStatus, recordId } from '@/lib/adoptions';
-import { auth } from '@/lib/auth';
+import { useAuthStore } from '@/stores/auth'
+const auth = useAuthStore();
 import { toast } from 'vue-sonner';
 import { Button } from '@/components/ui/button';
 import AppBookPreviewDialog from '@/components/shared/AppBookPreviewDialog.vue';
@@ -165,21 +166,21 @@ async function openBookDetails(book, options = {}) {
   const requests = viewOnly.value
     ? Promise.resolve()
     : getapplications(request.signal)
-        .then(records => {
-          if (current()) {
-            applications.value = records;
-          }
-        })
-        .catch(error => {
-          if (current()) {
-            applicationsError.value = error.message;
-          }
-        })
-        .finally(() => {
-          if (current()) {
-            applicationsLoading.value = false;
-          }
-        });
+      .then(records => {
+        if (current()) {
+          applications.value = records;
+        }
+      })
+      .catch(error => {
+        if (current()) {
+          applicationsError.value = error.message;
+        }
+      })
+      .finally(() => {
+        if (current()) {
+          applicationsLoading.value = false;
+        }
+      });
   await Promise.all([details, requests]);
 }
 async function openRequestDialog() {
@@ -340,15 +341,17 @@ defineExpose({ openBookDetails, closeBookDetails });
 </script>
 
 <template>
-  <AppBookPreviewDialog v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading"
-    :error="detailsError" :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave"
-    :busy="props.busyIds.has(dialogBook?.id)" @save="emit('save', $event)">
+  <AppBookPreviewDialog v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError"
+    :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)"
+    @save="emit('save', $event)">
     <template v-if="$slots['book-action']" #book-action>
       <slot name="book-action" :book="dialogBook" />
     </template>
-    <template v-if="$slots.details" #details><slot name="details" :book="dialogBook" /></template>
+    <template v-if="$slots.details" #details>
+      <slot name="details" :book="dialogBook" />
+    </template>
     <template v-if="viewOnly && returnToAdoption" #actions>
-      <Button type="button" variant="outline"  @click="dialogOpen = false">Back to adoption details</Button>
+      <Button type="button" variant="outline" @click="dialogOpen = false">Back to adoption details</Button>
     </template>
     <template v-else-if="!viewOnly" #actions>
       <slot name="extra-actions" :book="dialogBook" />
@@ -372,20 +375,19 @@ defineExpose({ openBookDetails, closeBookDetails });
         <Button v-if="hasExistingRequest" asChild class="w-full">
           <RouterLink :to="requestLink">View my request</RouterLink>
         </Button>
-        <Button v-else class="w-full" :disabled="!canRequestBook"
-          @click="openRequestDialog">
+        <Button v-else class="w-full" :disabled="!canRequestBook" @click="openRequestDialog">
           {{ requestButtonLabel }}
         </Button>
-        <button v-if="applicationsError" type="button"
-          class="min-h-11 text-sm underline underline-offset-4" @click="openBookDetails(dialogBook)">
+        <button v-if="applicationsError" type="button" class="min-h-11 text-sm underline underline-offset-4"
+          @click="openBookDetails(dialogBook)">
           Retry request check
         </button>
       </div>
     </template>
   </AppBookPreviewDialog>
-  <RequestCopyDialog v-model:open="requestDialogOpen" :book="dialogBook" :reader="auth.user"
-    :loading="actionLoading" :submitted="requestSubmitted" :existing="hasExistingRequest"
-    :disabled="!!applicationsError || requestUncertain" :uncertain="requestUncertain" :applicationStatus="getApplicationStatus(submittedApplication || existingApplication)" :error="requestError" :receiptWarning="receiptWarning"
-    :applicationId="applicationId" @submit="requestCopy" @check="checkRequestStatus" @back="backToBook"
-    @restore-focus="restoreRequestFocus" />
+  <RequestCopyDialog v-model:open="requestDialogOpen" :book="dialogBook" :reader="auth.user" :loading="actionLoading"
+    :submitted="requestSubmitted" :existing="hasExistingRequest" :disabled="!!applicationsError || requestUncertain"
+    :uncertain="requestUncertain" :applicationStatus="getApplicationStatus(submittedApplication || existingApplication)"
+    :error="requestError" :receiptWarning="receiptWarning" :applicationId="applicationId" @submit="requestCopy"
+    @check="checkRequestStatus" @back="backToBook" @restore-focus="restoreRequestFocus" />
 </template>

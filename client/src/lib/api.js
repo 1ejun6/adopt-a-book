@@ -1,7 +1,11 @@
 import axios from 'axios';
-import { auth } from '@/lib/auth';
+let onUnauthorized;
+let authRevision = 0;
+export function registerUnauthorizedHandler(callback) { onUnauthorized = callback; }
+export function invalidateApiSession() { authRevision++; }
 
 export async function api(endpoint, options = {}) {
+  const revision = authRevision;
   try {
     const response = await axios({
       baseURL: import.meta.env.VITE_SERVER_URL,
@@ -11,7 +15,7 @@ export async function api(endpoint, options = {}) {
       params: options.query, //@1ejun6 > url filters
       headers: options.headers, //@lee-hlmilk > image uploads send the File with its content type
       signal: options.signal,
-      withCredentials: true //@1ejun6 > send login cookies
+      withCredentials: true, //@1ejun6 > send login cookies
     });
 
     if (response.status === 204) { return null; }
@@ -25,11 +29,10 @@ export async function api(endpoint, options = {}) {
       error.status = error.response.status;
       //@1ejun6 > a failed login does not mean an existing session has expired
 
-      if (error.status === 401 && endpoint !== '/login' && endpoint !== '/register') {
-        auth.user = null;
-        auth.ready = true;
-      }
-    } else { error.message = 'could not connect to the server > please try again'; }
+      if (error.status === 401 && endpoint !== '/login' && endpoint !== '/register' && endpoint !== '/session' && revision === authRevision) { onUnauthorized?.(); }
+    } else {
+      error.message = 'could not connect to the server > please try again';
+    }
     throw error;
   }
 }

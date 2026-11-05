@@ -1,8 +1,9 @@
 <script setup>
 import AppPage from '@/components/shared/AppPage.vue';
-import { h, ref, computed, reactive, onBeforeUnmount, onMounted } from 'vue';
+import { h, ref, computed, onBeforeUnmount, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
-import { api } from '@/lib/api';
+import { useWatchlistStore } from '@/stores/watchlist';
+import { storeToRefs } from 'pinia';
 import { RouterLink } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { Delete02Icon, PencilEdit02Icon } from '@hugeicons/core-free-icons';
@@ -10,35 +11,13 @@ import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
 import CustomerBookCard from '@/components/customer/CustomerBookCard.vue';
 import WatchlistCommentToast from '@/components/customer/WatchlistCommentToast.vue';
 
-const watchlist = ref([]);
-const savedIds = computed(() => new Set(watchlist.value.map(entry => entry.bookid?.id).filter(Boolean)));
-const notes = computed(() => new Map(watchlist.value.map(entry => [entry.bookid?.id, entry.comments])));
-const entriesByBook = computed(() => new Map(watchlist.value.map(entry => [entry.bookid?.id, entry])));
-const loading = ref(true);
-const error = ref('');
+const store = useWatchlistStore();
+const { entries: watchlist, savedIds, commentsByBook: notes, entriesByBook, loading, loadError: error } = storeToRefs(store);
+const deleting = computed(() => new Set(store.entries.filter(entry => store.pendingOperations.has(entry.bookid?.id)).map(entry => entry.id)));
 const dialogs = ref(null);
 const noteToasts = new Set();
-const deleting = reactive(new Set());
-let controller;
-
-//@sree-sanjana06 > load saved books belonging to logged-in customer
 async function loadWatchlist() {
-  controller?.abort();
-  const request = new AbortController();
-  controller = request;
-  loading.value = true;
-  error.value = '';
-  try {
-    const result = await api('/watchlist', { method: 'GET', signal: request.signal });
-    if (request.signal.aborted) return;
-    if (!Array.isArray(result.watchlist)) throw new Error('could not load your saved books > please try again');
-    watchlist.value = result.watchlist;
-  } catch (err) {
-    if (request.signal.aborted) return;
-    error.value = err.message;
-  } finally {
-    if (controller === request) loading.value = false;
-  }
+  try { await store.fetchWatchlist(); } catch { /* Render the store's load error and retry button. */ }
 }
 
 //@sree-sanjana06 > open edit popup with existing private note
@@ -48,19 +27,14 @@ function openEntry(entry) {
   const trigger = document.activeElement;
   noteToasts.add(id);
   toast.custom(() => h(WatchlistCommentToast, {
-    entry, toastId: id, trigger, editing: true, onSaved: updateNote,
+    entry, toastId: id, trigger, editing: true,
   }), { id, duration: Infinity, style: { pointerEvents: 'auto' } });
 }
 
 function editPreviewNote(book) {
   const entry = entriesByBook.value.get(book?.id);
-  if (!entry || deleting.has(entry.id)) return;
+  if (!entry || deleting.value.has(entry.id)) return;
   openEntry(entry);
-}
-
-//@sree-sanjana06 > update displayed note without reloading the page
-function updateNote({ id, comments }) {
-  watchlist.value = watchlist.value.map(entry => entry.id === id ? { ...entry, comments } : entry);
 }
 
 function removePreviewBook(book) {
@@ -69,25 +43,19 @@ function removePreviewBook(book) {
 }
 
 async function removeEntry(entry, closePreview = false) {
-  if (deleting.has(entry.id)) return;
-  deleting.add(entry.id);
+  if (deleting.value.has(entry.id)) return;
   try {
-    await api(`/watchlist/${entry.id}`, { method: 'DELETE' });
-    watchlist.value = watchlist.value.filter(item => item.id !== entry.id);
+    await store.removeEntry(entry.id);
     toast.success('removed from watchlist');
     if (closePreview) dialogs.value?.closeBookDetails(entry.bookid);
   } catch (failure) {
     toast.error(failure.message);
-  } finally {
-    deleting.delete(entry.id);
+
   }
 }
 
 onMounted(loadWatchlist);
-onBeforeUnmount(() => {
-  controller?.abort();
-  noteToasts.forEach(id => toast.dismiss(id));
-});
+onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
 </script>
 
 <template>

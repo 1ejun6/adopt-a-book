@@ -7,103 +7,54 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
-import { auth } from '@/lib/auth';
+import { useAuthStore } from '@/stores/auth';
+const auth = useAuthStore();
 
-const account = ref(null);
-const loading = ref(true);
-const loadError = ref('');
+const account = ref(null), loading = ref(true), loadError = ref('');
 const activePanel = ref('profile');
 const draft = reactive({ name: '', email: '' });
 const passwords = reactive({ password: '', confirmation: '' });
-const savingProfile = ref(false);
-const savingPassword = ref(false);
-const profileError = ref('');
-const passwordError = ref('');
-const profileSaved = ref(false);
-const passwordSaved = ref(false);
-const emailTouched = ref(false);
-const confirmationTouched = ref(false);
-const showPassword = ref(false);
-const showConfirmation = ref(false);
-const profileErrorElement = ref(null);
-const passwordErrorElement = ref(null);
-const profileTab = ref(null);
-const passwordTab = ref(null);
-const initials = computed(
-  () =>
-    account.value?.name
-      ?.trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map(part => part[0])
-      .join('')
-      .toUpperCase() || 'R',
-);
-const changed = computed(
-  () =>
-    account.value &&
-    (draft.name.trim() !== account.value.name ||
-      draft.email.trim().toLowerCase() !== account.value.email),
-);
-const emailInvalid = computed(
-  () => emailTouched.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim()),
-);
-const mismatch = computed(
-  () => confirmationTouched.value && passwords.password !== passwords.confirmation,
-);
-const canSaveProfile = computed(
-  () => changed.value && draft.name.trim() && draft.email.trim() && !savingProfile.value,
-);
-const canSavePassword = computed(
-  () =>
-    passwords.password.length >= 8 &&
-    !!passwords.password.trim() &&
-    passwords.password === passwords.confirmation &&
-    !savingPassword.value,
-);
+const savingProfile = ref(false), savingPassword = ref(false);
+const profileError = ref(''), passwordError = ref('');
+const profileSaved = ref(false), passwordSaved = ref(false);
+const emailTouched = ref(false), confirmationTouched = ref(false);
+const showPassword = ref(false), showConfirmation = ref(false);
+const profileErrorElement = ref(null), passwordErrorElement = ref(null);
+const profileTab = ref(null), passwordTab = ref(null);
+const initials = computed(() => account.value?.name?.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'R');
+const changed = computed(() => account.value && (draft.name.trim() !== account.value.name || draft.email.trim().toLowerCase() !== account.value.email));
+const emailInvalid = computed(() => emailTouched.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim()));
+const mismatch = computed(() => confirmationTouched.value && passwords.password !== passwords.confirmation);
+const canSaveProfile = computed(() => changed.value && draft.name.trim() && draft.email.trim() && !savingProfile.value);
+const canSavePassword = computed(() => passwords.password.length >= 8 && !!passwords.password.trim() && passwords.password === passwords.confirmation && !savingPassword.value);
 let controller;
+let requestId = 0;
 const saveControllers = new Set();
 
 async function loadAccount() {
   controller?.abort();
+  const id = ++requestId;
   const request = new AbortController();
   controller = request;
   loading.value = true;
   loadError.value = '';
   try {
-    const response = await api('/customer/profile', { signal: request.signal });
-    if (request.signal.aborted) {
-      return;
-    }
-    if (!response.account) {
-      throw new Error('could not load your account');
-    }
+    const response = await api('/customer/profile', { method: 'GET', signal: request.signal });
+    if (id !== requestId || request.signal.aborted) return;
+    if (!response.account) throw new Error('could not load your account > please try again');
     account.value = response.account;
     Object.assign(draft, { name: response.account.name, email: response.account.email });
   } catch (error) {
-    if (!request.signal.aborted) {
-      loadError.value = error.message;
-    }
-  } finally {
-    if (controller === request) {
-      loading.value = false;
-    }
-  }
+    if (id !== requestId || request.signal.aborted) return;
+    loadError.value = error.message;
+  } finally { if (id === requestId) loading.value = false; }
 }
 
-watch(draft, () => {
-  profileError.value = '';
-  profileSaved.value = false;
-});
-watch(passwords, () => {
-  passwordError.value = '';
-  passwordSaved.value = false;
-});
+watch(draft, () => { profileError.value = ''; profileSaved.value = false; });
+watch(passwords, () => { passwordError.value = ''; passwordSaved.value = false; });
 
 async function saveProfile() {
-  if (!canSaveProfile.value) {
-    return;
-  }
+  if (!canSaveProfile.value) { return; }
   const details = { name: draft.name.trim(), email: draft.email.trim().toLowerCase() };
   const request = new AbortController();
   saveControllers.add(request);
@@ -111,21 +62,15 @@ async function saveProfile() {
   profileError.value = '';
   try {
     await api('/customer/profile', { method: 'PATCH', body: details, signal: request.signal });
-    if (request.signal.aborted) {
-      return;
-    }
+    if (request.signal.aborted) { return; }
     account.value = { ...account.value, ...details };
-    if (auth.user) {
-      Object.assign(auth.user, details);
-    }
+    if (auth.user) { auth.updateUser(details); }
     Object.assign(draft, details);
     await nextTick();
     profileSaved.value = true;
     toast.success('Profile saved');
   } catch (error) {
-    if (request.signal.aborted) {
-      return;
-    }
+    if (request.signal.aborted) { return; }
     profileError.value = error.message;
     await nextTick();
     profileErrorElement.value?.focus();
@@ -136,22 +81,14 @@ async function saveProfile() {
 }
 
 async function savePassword() {
-  if (!canSavePassword.value) {
-    return;
-  }
+  if (!canSavePassword.value) { return; }
   const request = new AbortController();
   saveControllers.add(request);
   savingPassword.value = true;
   passwordError.value = '';
   try {
-    await api('/customer/password', {
-      method: 'PATCH',
-      body: { password: passwords.password },
-      signal: request.signal,
-    });
-    if (request.signal.aborted) {
-      return;
-    }
+    await api('/customer/password', { method: 'PATCH', body: { password: passwords.password }, signal: request.signal });
+    if (request.signal.aborted) { return; }
     Object.assign(passwords, { password: '', confirmation: '' });
     confirmationTouched.value = false;
     showPassword.value = false;
@@ -160,9 +97,7 @@ async function savePassword() {
     passwordSaved.value = true;
     toast.success('Password updated');
   } catch (error) {
-    if (request.signal.aborted) {
-      return;
-    }
+    if (request.signal.aborted) { return; }
     passwordError.value = error.message;
     await nextTick();
     passwordErrorElement.value?.focus();
@@ -173,28 +108,14 @@ async function savePassword() {
 }
 
 function navigateTabs(event) {
-  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
-    return;
-  }
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) { return; }
   event.preventDefault();
-  activePanel.value =
-    event.key === 'Home'
-      ? 'profile'
-      : event.key === 'End'
-        ? 'password'
-        : activePanel.value === 'profile'
-          ? 'password'
-          : 'profile';
+  activePanel.value = event.key === 'Home' ? 'profile' : event.key === 'End' ? 'password' : activePanel.value === 'profile' ? 'password' : 'profile';
   (activePanel.value === 'profile' ? profileTab.value : passwordTab.value)?.focus();
 }
 
 onMounted(loadAccount);
-onBeforeUnmount(() => {
-  controller?.abort();
-  for (const request of saveControllers) {
-    request.abort();
-  }
-});
+onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of saveControllers) request.abort(); });
 </script>
 
 <template>
@@ -223,19 +144,12 @@ onBeforeUnmount(() => {
             <p class="identity-email">{{ account.email }}</p>
           </div>
         </div>
-        <div class="section-nav" role="tablist" aria-label="Account sections"
-          @keydown="navigateTabs">
-          <button id="profile-tab" ref="profileTab" type="button" role="tab"
-            class="washi-tape-hover" :data-active="activePanel === 'profile' ? true : undefined"
-            :aria-selected="activePanel === 'profile'" aria-controls="profile-panel"
-            :tabindex="activePanel === 'profile' ? 0 : -1" @click="activePanel = 'profile'">
+        <div class="section-nav" role="tablist" aria-label="Account sections" @keydown="navigateTabs">
+          <button id="profile-tab" ref="profileTab" type="button" role="tab" class="washi-tape-hover" :data-active="activePanel === 'profile' ? true : undefined" :aria-selected="activePanel === 'profile'" aria-controls="profile-panel" :tabindex="activePanel === 'profile' ? 0 : -1" @click="activePanel = 'profile'">
             <UserRound aria-hidden="true" />
             Profile details
           </button>
-          <button id="password-tab" ref="passwordTab" type="button" role="tab"
-            class="washi-tape-hover" :data-active="activePanel === 'password' ? true : undefined"
-            :aria-selected="activePanel === 'password'" aria-controls="password-panel"
-            :tabindex="activePanel === 'password' ? 0 : -1" @click="activePanel = 'password'">
+          <button id="password-tab" ref="passwordTab" type="button" role="tab" class="washi-tape-hover" :data-active="activePanel === 'password' ? true : undefined" :aria-selected="activePanel === 'password'" aria-controls="password-panel" :tabindex="activePanel === 'password' ? 0 : -1" @click="activePanel = 'password'">
             <LockKeyhole aria-hidden="true" />
             Password
           </button>
@@ -243,8 +157,7 @@ onBeforeUnmount(() => {
       </aside>
 
       <div class="account-content">
-        <section v-show="activePanel === 'profile'" id="profile-panel" role="tabpanel"
-          aria-labelledby="profile-tab" tabindex="0">
+        <section v-show="activePanel === 'profile'" id="profile-panel" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
           <header class="panel-heading">
             <div class="panel-title">
               <span class="section-icon"><UserRound aria-hidden="true" /></span>
@@ -253,37 +166,23 @@ onBeforeUnmount(() => {
             <p>your name &amp; the email you use to sign in</p>
           </header>
           <form :aria-busy="savingProfile" @submit.prevent="saveProfile">
-            <p v-if="profileError" ref="profileErrorElement" class="form-error" role="alert"
-              tabindex="-1">
+            <p v-if="profileError" ref="profileErrorElement" class="form-error" role="alert" tabindex="-1">
               {{ profileError }}
             </p>
             <div class="account-field">
               <label for="account-name">Full name</label>
-              <Input id="account-name" v-model="draft.name" autocomplete="name" maxlength="100"
-                required :disabled="savingProfile" />
+              <Input id="account-name" v-model="draft.name" autocomplete="name" maxlength="100" required :disabled="savingProfile" />
             </div>
             <div class="account-field">
               <label for="account-email">Email address</label>
-              <Input id="account-email" v-model="draft.email" type="email" autocomplete="email"
-                maxlength="200" required :disabled="savingProfile"
-                :aria-invalid="emailInvalid || undefined" aria-describedby="account-email-help"
-                @blur="emailTouched = true" />
-              <p id="account-email-help" class="field-note"
-                :class="{ 'invalid-note': emailInvalid }">
+              <Input id="account-email" v-model="draft.email" type="email" autocomplete="email" maxlength="200" required :disabled="savingProfile" :aria-invalid="emailInvalid || undefined" aria-describedby="account-email-help" @blur="emailTouched = true" />
+              <p id="account-email-help" class="field-note" :class="{ 'invalid-note': emailInvalid }">
                 {{ emailInvalid ? 'Enter a valid email address.' : 'Use this email to sign in.' }}
               </p>
             </div>
             <footer class="form-footer">
               <p role="status" :class="{ saved: profileSaved }">
-                {{
-                  savingProfile
-                    ? 'Saving your details…'
-                    : profileSaved
-                      ? 'Profile saved'
-                      : changed
-                        ? 'You have unsaved changes'
-                        : 'No unsaved changes'
-                }}
+                {{ savingProfile ? 'Saving your details…' : profileSaved ? 'Profile saved' : changed ? 'You have unsaved changes' : 'No unsaved changes' }}
               </p>
               <Button type="submit" :disabled="!canSaveProfile">
                 {{ savingProfile ? 'Updating…' : 'Update' }}
@@ -292,8 +191,7 @@ onBeforeUnmount(() => {
           </form>
         </section>
 
-        <section v-show="activePanel === 'password'" id="password-panel" role="tabpanel"
-          aria-labelledby="password-tab" tabindex="0">
+        <section v-show="activePanel === 'password'" id="password-panel" role="tabpanel" aria-labelledby="password-tab" tabindex="0">
           <header class="panel-heading">
             <div class="panel-title">
               <span class="section-icon"><LockKeyhole aria-hidden="true" /></span>
@@ -302,21 +200,14 @@ onBeforeUnmount(() => {
             <p>A fresh password for your next chapter. Choose one you don’t use elsewhere.</p>
           </header>
           <form :aria-busy="savingPassword" @submit.prevent="savePassword">
-            <p v-if="passwordError" ref="passwordErrorElement" class="form-error" role="alert"
-              tabindex="-1">
+            <p v-if="passwordError" ref="passwordErrorElement" class="form-error" role="alert" tabindex="-1">
               {{ passwordError }}
             </p>
             <div class="account-field">
               <label for="account-new-password">New password</label>
               <div class="password-input">
-                <Input id="account-new-password" v-model="passwords.password"
-                  :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8"
-                  required :spellcheck="false" autocapitalize="none" :disabled="savingPassword"
-                  aria-describedby="password-hint" />
-                <button type="button"
-                  :aria-label="showPassword ? 'Hide new password' : 'Show new password'"
-                  :aria-pressed="showPassword" :disabled="savingPassword"
-                  @click="showPassword = !showPassword">
+                <Input id="account-new-password" v-model="passwords.password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" required :spellcheck="false" autocapitalize="none" :disabled="savingPassword" aria-describedby="password-hint" />
+                <button type="button" :aria-label="showPassword ? 'Hide new password' : 'Show new password'" :aria-pressed="showPassword" :disabled="savingPassword" @click="showPassword = !showPassword">
                   <component :is="showPassword ? EyeOff : Eye" aria-hidden="true" />
                 </button>
               </div>
@@ -325,40 +216,18 @@ onBeforeUnmount(() => {
             <div class="account-field">
               <label for="account-confirm-password">Confirm new password</label>
               <div class="password-input">
-                <Input id="account-confirm-password" v-model="passwords.confirmation"
-                  :type="showConfirmation ? 'text' : 'password'" autocomplete="new-password" required
-                  :spellcheck="false" autocapitalize="none" :disabled="savingPassword"
-                  :aria-invalid="mismatch || undefined" aria-describedby="password-feedback"
-                  @blur="confirmationTouched = true" />
-                <button type="button"
-                  :aria-label=" showConfirmation ? 'Hide confirmation password' : 'Show confirmation password' "
-                  :aria-pressed="showConfirmation" :disabled="savingPassword"
-                  @click="showConfirmation = !showConfirmation">
+                <Input id="account-confirm-password" v-model="passwords.confirmation" :type="showConfirmation ? 'text' : 'password'" autocomplete="new-password" required :spellcheck="false" autocapitalize="none" :disabled="savingPassword" :aria-invalid="mismatch || undefined" aria-describedby="password-feedback" @blur="confirmationTouched = true" />
+                <button type="button" :aria-label=" showConfirmation ? 'Hide confirmation password' : 'Show confirmation password' " :aria-pressed="showConfirmation" :disabled="savingPassword" @click="showConfirmation = !showConfirmation">
                   <component :is="showConfirmation ? EyeOff : Eye" aria-hidden="true" />
                 </button>
               </div>
-              <p id="password-feedback" class="field-note" :class="{ 'invalid-note': mismatch }"
-                aria-live="polite">
-                {{
-                  mismatch
-                    ? 'Passwords don’t match.'
-                    : passwords.confirmation && canSavePassword
-                      ? 'Passwords match.'
-                      : ''
-                }}
+              <p id="password-feedback" class="field-note" :class="{ 'invalid-note': mismatch }" aria-live="polite">
+                {{ mismatch ? 'Passwords don’t match.' : passwords.confirmation && canSavePassword ? 'Passwords match.' : '' }}
               </p>
             </div>
             <footer class="form-footer">
               <p role="status" :class="{ saved: passwordSaved }">
-                {{
-                  savingPassword
-                    ? 'Updating your password…'
-                    : passwordSaved
-                      ? 'Password updated'
-                      : canSavePassword
-                        ? 'Ready to update your password'
-                        : 'Enter and confirm a new password'
-                }}
+                {{ savingPassword ? 'Updating your password…' : passwordSaved ? 'Password updated' : canSavePassword ? 'Ready to update your password' : 'Enter and confirm a new password' }}
               </p>
               <Button type="submit" :disabled="!canSavePassword">
                 {{ savingPassword ? 'Updating…' : 'Update' }}
@@ -371,168 +240,4 @@ onBeforeUnmount(() => {
   </AppPage>
 </template>
 
-<style scoped>
-.account-heading {
-  margin-bottom: 24px;
-  text-align: center;
-}
-.account-heading > p {
-  margin-top: 8px;
-  font-size: 0.875rem;
-  color: var(--muted-foreground);
-}
-.account-workspace {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 40px;
-  align-items: start;
-}
-.identity {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 4px 0 24px;
-}
-.avatar {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--primary);
-  font: 24px var(--font-heading);
-}
-.identity-details {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.identity-name {
-  font-family: var(--font-heading);
-  font-size: 1.25rem;
-}
-.identity-email {
-  margin-top: 3px;
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-}
-.section-nav {
-  display: grid;
-  gap: 10px;
-}
-.section-nav button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 13px;
-  border-radius: 8px;
-  text-align: left;
-  font-size: 0.875rem;
-}
-.account-content {
-  min-width: 0;
-}
-.panel-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.section-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: var(--primary);
-}
-.panel-heading > p {
-  margin-top: 8px;
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: var(--muted-foreground);
-}
-.account-field {
-  display: grid;
-  gap: 8px;
-}
-.account-field label {
-  font-size: 0.875rem;
-}
-.field-note {
-  font-size: 0.75rem;
-  line-height: 1.5;
-  color: var(--muted-foreground);
-}
-.invalid-note {
-  color: var(--destructive);
-}
-.password-input {
-  position: relative;
-}
-.password-input :deep(input) {
-  padding-right: 36px;
-}
-.password-input button {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-}
-.form-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-.form-footer p {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-}
-.form-footer .saved {
-  color: var(--success-foreground);
-}
-.form-error {
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--badge-rose);
-  color: var(--destructive);
-  font-size: 0.875rem;
-}
-.loading-state {
-  display: grid;
-  gap: 24px;
-}
-.error-state {
-  display: grid;
-  justify-items: start;
-  gap: 16px;
-  font-size: 0.875rem;
-}
-@media (max-width: 700px) {
-  .account-workspace {
-    display: block;
-  }
-  .identity {
-    display: none;
-  }
-  .section-nav {
-    display: flex;
-    margin-bottom: 24px;
-  }
-  .section-nav button {
-    flex: 1;
-    justify-content: center;
-    padding: 10px 8px;
-  }
-}
-</style>
+<style scoped src="@/assets/account.css"></style>

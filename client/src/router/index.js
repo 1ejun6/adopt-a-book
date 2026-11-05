@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { auth, role, homeRoute } from '@/lib/auth';
-import { loadSession } from '@/lib/session';
+import { useAuthStore } from '@/stores/auth';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 
@@ -12,56 +11,60 @@ const router = createRouter({
       component: AppLayout,
       children: [
         { path: 'sample', name: 'adoptionSample', component: () => import('../views/AdoptionSample.vue'), meta: { preview: true } },
-        { path: '', name: 'guestHome', component: () => import('../views/guest/Home.vue'), label: 'Browse Books', roles: ['guest'] },
-        { path: 'drives', name: 'guestDrives', component: () => import('../views/guest/AdoptionDrives.vue'), label: 'Adoption Drives', roles: ['guest'] },
-        { path: 'login', name: 'login', component: () => import('../views/Login.vue'), label: 'Login', roles: ['guest'], end: true },
-        { path: 'register', name: 'register', component: () => import('../views/Register.vue'), label: 'Create Account', roles: ['guest'] },
+        { path: '', name: 'guestHome', component: () => import('../views/guest/Home.vue'), label: 'Browse Books', meta: { roles: ['guest'] } },
+        { path: 'drives', name: 'guestDrives', component: () => import('../views/guest/AdoptionDrives.vue'), label: 'Adoption Drives', meta: { roles: ['guest'] } },
+        { path: 'login', name: 'login', component: () => import('../views/Login.vue'), label: 'Login', meta: { roles: ['guest'] }, end: true },
+        { path: 'register', name: 'register', component: () => import('../views/Register.vue'), label: 'Create Account', meta: { roles: ['guest'] } },
       ],
     },
     {
       path: '/customer',
       component: AppLayout,
       children: [
-        { path: '', name: 'customerHome', component: () => import('../views/customer/Home.vue'), roles: ['customer'] },
-        { path: 'books', name: 'customerBooks', component: () => import('../views/customer/BrowseBooks.vue'), label: 'Browse Books', roles: ['customer']},
-        { path: 'watchlist', name: 'customerWatchlist', component: () => import('../views/customer/Watchlist.vue'), label: 'Watchlist', roles: ['customer']},
-        { path: 'adoption', name: 'customerAdoptions',component: () => import('../views/customer/MyAdoptions.vue'), label: 'My Adoptions',roles: ['customer']},
-        { path: 'adoptions', redirect: to => ({ name: 'customerAdoptions', query: to.query, hash: to.hash }) },
-        {path: 'drives', name: 'customerDrives', component: () => import('../views/customer/AdoptionDrives.vue'), label: 'Adoption Drives', roles: ['customer']},
-        {path: 'account',name: 'customerAccount', component: () => import('../views/customer/Account.vue'), label: 'Account', roles: ['customer'], end: true}
-      ]
+        { path: '', name: 'customerHome', component: () => import('../views/customer/Home.vue'), meta: { roles: ['customer'] } },
+        { path: 'books', name: 'customerBooks', component: () => import('../views/customer/BrowseBooks.vue'), label: 'Browse Books', meta: { roles: ['customer'] } },
+        { path: 'watchlist', name: 'customerWatchlist', component: () => import('../views/customer/Watchlist.vue'), label: 'Watchlist', meta: { roles: ['customer'] } },
+        { path: 'adoptions', name: 'customerAdoptions', component: () => import('../views/customer/MyAdoptions.vue'), label: 'My Adoptions', meta: { roles: ['customer'] } },
+        { path: 'drives', name: 'customerDrives', component: () => import('../views/customer/AdoptionDrives.vue'), label: 'Adoption Drives', meta: { roles: ['customer'] } },
+        { path: 'account', name: 'customerAccount', component: () => import('../views/customer/Account.vue'), label: 'Account', meta: { roles: ['customer'] }, end: true },
+      ],
     },
     {
       path: '/admin',
       component: AppLayout,
       children: [
-        { path: '', name: 'adminHome', component: () => import('../views/admin/Home.vue'), label: 'Home', roles: ['admin'] },
-        { path: 'books', name: 'adminBooks', component: () => import('../views/admin/BookInventory.vue'), label: 'Book Inventory', roles: ['admin'] },
-        { path: 'applications', name: 'adminApplications', component: () => import('../views/admin/AdoptionApplications.vue'), label: 'Adoption Applications', roles: ['admin'] },
-        { path: 'appointments', name: 'adminAppointments', component: () => import('../views/admin/Appointments.vue'), label: 'Appointments', roles: ['admin'] },
-        { path: 'drives', name: 'adminDrives', component: () => import('../views/admin/Drives.vue'), label: 'Drives', roles: ['admin'] },
+        { path: '', name: 'adminHome', component: () => import('../views/admin/Home.vue'), label: 'Home', meta: { roles: ['admin'] } },
+        { path: 'books', name: 'adminBooks', component: () => import('../views/admin/BookInventory.vue'), label: 'Book Inventory', meta: { roles: ['admin'] } },
+        { path: 'applications', name: 'adminApplications', component: () => import('../views/admin/AdoptionApplications.vue'), label: 'Adoption Applications', meta: { roles: ['admin'] } },
+        { path: 'appointments', name: 'adminAppointments', component: () => import('../views/admin/Appointments.vue'), label: 'Appointments', meta: { roles: ['admin'] } },
+        { path: 'drives', name: 'adminDrives', component: () => import('../views/admin/Drives.vue'), label: 'Drives', meta: { roles: ['admin'] } },
       ],
-    }
-  ]
+    },
+  ],
 });
 
 //@1ejun6 > gets child pages from every route group & combines them into one list
-const pages = router.options.routes.flatMap(group => group.children);
+const pages = router.options.routes.flatMap((group) => group.children);
 
-//@1ejun6 > ~to~ is destination route
-router.beforeEach(async to => {
+export function loginDestination(target, auth = useAuthStore()) {
+  if (typeof target !== 'string' || !target.startsWith('/') || target.startsWith('//') || /[\\\s]/.test(target)) return auth.homeRoute;
+  const resolved = router.resolve(target);
+  if (!resolved.matched.length || !resolved.meta.roles?.includes(auth.role)) return auth.homeRoute;
+  return resolved.fullPath;
+}
+
+router.beforeEach(async (to) => {
   if (to.meta.preview) return true;
-  const page = pages.find(page => page.name === to.name);
+  const auth = useAuthStore();
+  const login = { name: 'login', query: { redirect: to.fullPath } };
   try {
-    await loadSession();
+    await auth.loadSession();
   } catch (error) {
     toast.error(error.message);
-    if (page?.roles && !page.roles.includes('guest')) {
-      return { name: 'login' };
-    }
+    if (to.meta.roles && !to.meta.roles.includes('guest')) return login;
+    return true;
   }
-  const allowed = !page?.roles || page.roles.includes(role.value);
-  if (!allowed) { return auth.user ? homeRoute.value : { name: 'login' }; }
+  if (to.meta.roles && !to.meta.roles.includes(auth.role)) return auth.isLoggedIn ? auth.homeRoute : login;
 });
 
 export { router, pages };
