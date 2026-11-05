@@ -25,7 +25,6 @@ const open = defineModel('open', { type: Boolean, default: false });
 const emit = defineEmits(['show-adoptions', 'back', 'state', 'focus-heading', 'pickup-record']);
 const state = usePickupState(props);
 const {
-  selectedSlot,
   step,
   saving,
   uncertain,
@@ -60,7 +59,7 @@ const navigation = usePickupNavigation(props, open, emit, state, {
 const { keepEditing, discardChanges, back, updateOpen, leaveReceipt, canNavigate } = navigation;
 const draftFlow = usePickupDraft(props, open, emit, state, navigation.resetNavigation);
 const { edit, changeField, focusField, review } = draftFlow;
-const { checkStatus, submit, cancelPickup, acceptSlot } = usePickupMutations(props, state, review);
+const { checkStatus, submit, cancelPickup } = usePickupMutations(props, state, review);
 const calendar = computed(() => {
   if (!props.ready || !props.record?.reliable || props.record.warning) {
     return '';
@@ -167,8 +166,6 @@ watchEffect(() =>
     <CustomerPickupDetails
       v-else-if="appointment"
       v-model:confirming="confirming"
-      v-model:selectedSlot="selectedSlot"
-      @accept="acceptSlot"
       :appointment="appointment"
       :confirmed="confirmed"
       :record="record"

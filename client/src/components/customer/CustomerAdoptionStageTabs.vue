@@ -11,7 +11,7 @@ defineProps({
 <template>
   <TabsList
     aria-label="Active adoption stages"
-    class="grid min-w-0 grid-cols-4 gap-1 sm:flex sm:gap-3"
+    class="adoption-tabs adoption-tabs-stages grid min-w-0 grid-cols-4 gap-1 sm:flex sm:gap-3"
   >
     <TabsTrigger
       v-for="item in activeAdoptionStages"
@@ -22,7 +22,7 @@ defineProps({
       <span>{{ item.label }}</span>
       <span
         v-if="showCounts"
-        class="rounded bg-badge-neutral px-1.5 py-0.5 text-[11px] tabular-nums sm:text-xs"
+        class="adoption-tab-count rounded bg-badge-neutral px-1.5 py-0.5 text-[11px] tabular-nums sm:text-xs"
         >{{ counts[item.value] }}</span
       >
     </TabsTrigger>

@@ -89,7 +89,7 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
           key: 'confirmation',
           title: 'Waiting for pickup confirmation',
           description:
-            'The team is checking your preferred time. Wait for confirmation before travelling.',
+            'The team is choosing one of your available times. Wait for confirmation before travelling.',
         },
         {
           key: 'review',

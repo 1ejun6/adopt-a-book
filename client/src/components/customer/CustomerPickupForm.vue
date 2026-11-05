@@ -1,5 +1,5 @@
 <script setup>
-import { pickupTimes as timeSlots } from '@/lib/pickupTimes';
+import { pickupTimes as timeSlots, availablePickupSlot } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
 
 import { Input } from '@/components/ui/input';
@@ -81,35 +81,41 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
           {{ errors.appointmentdate }}
         </p>
       </Field>
-      <Field>
-        <FieldLabel for="pickup-timeslot">Preferred time (SGT)</FieldLabel>
-        <select
-          id="pickup-timeslot"
-          v-model="draft.timeslot"
-          required
-          class="min-h-11 w-full min-w-0 rounded-lg border bg-background px-3 text-base"
-          :disabled="saving"
-          :aria-invalid="!!errors.timeslot || undefined"
-          :aria-describedby="
-            errors.timeslot ? 'pickup-time-help pickup-time-error' : 'pickup-time-help'
-          "
-        >
-          <option disabled value="">Choose a time</option>
-          <option
-            v-if="draft.timeslot && !timeSlots.includes(draft.timeslot)"
-            :value="draft.timeslot"
-          >
-            {{ draft.timeslot }}
-          </option>
-          <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
-        </select>
+      <fieldset class="space-y-2" :disabled="saving" aria-describedby="pickup-time-help">
+        <legend class="text-sm">Three times you’re available (SGT)</legend>
         <p id="pickup-time-help" class="text-xs text-muted-foreground">
-          Choose a preferred time. Wait for the team to confirm before travelling.
+          Choose three different times on this date. The team will pick one and confirm it.
         </p>
+        <div v-for="(_, index) in draft.timeslots" :key="index" class="space-y-1">
+          <label :for="index === 0 ? 'pickup-timeslot' : `pickup-timeslot-${index}`" class="text-sm"
+            >Time {{ index + 1 }}</label
+          >
+          <select
+            :id="index === 0 ? 'pickup-timeslot' : `pickup-timeslot-${index}`"
+            v-model="draft.timeslots[index]"
+            required
+            class="min-h-11 w-full min-w-0 rounded-lg border bg-background px-3 text-base"
+            :aria-invalid="!!errors.timeslot || undefined"
+            :aria-describedby="errors.timeslot ? 'pickup-time-error' : undefined"
+          >
+            <option disabled value="">Choose a time</option>
+            <option
+              v-for="time in timeSlots"
+              :key="time"
+              :value="time"
+              :disabled="
+                (draft.timeslots.includes(time) && draft.timeslots[index] !== time) ||
+                !availablePickupSlot({ appointmentdate: draft.appointmentdate, timeslot: time })
+              "
+            >
+              {{ time }}
+            </option>
+          </select>
+        </div>
         <p v-if="errors.timeslot" id="pickup-time-error" class="text-xs text-destructive">
           {{ errors.timeslot }}
         </p>
-      </Field>
+      </fieldset>
     </div>
     <p class="text-xs text-muted-foreground">All times are in Singapore time (SGT).</p>
     <div class="adoption-actions">

@@ -1,3 +1,4 @@
+import { copyPickupDraft } from '@/lib/pickupTimes';
 import { nextTick, onScopeDispose } from 'vue';
 
 export function usePickupNavigation(
@@ -20,9 +21,9 @@ export function usePickupNavigation(
     resolveNavigation(false);
     closeAction = 'close';
     confirmClose.value = false;
-    if (draftChanged.value && state.selectedSlot.value === '') step.value = 'details';
+    if (draftChanged.value) step.value = 'details';
     await nextTick();
-    if (draftChanged.value && state.selectedSlot.value === '') {
+    if (draftChanged.value) {
       focusField('location');
     } else {
       emit('focus-heading');
@@ -30,7 +31,7 @@ export function usePickupNavigation(
   }
   function discardChanges() {
     fillDraft();
-    initialDraft.value = { ...draft };
+    initialDraft.value = copyPickupDraft(draft);
     confirmClose.value = false;
     if (navigationDecision) {
       open.value = false;

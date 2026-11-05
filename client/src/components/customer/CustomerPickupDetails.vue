@@ -1,5 +1,5 @@
 <script setup>
-import CustomerPickupOptions from './CustomerPickupOptions.vue';
+import { pickupTimeText } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
 
 import { displayDate, pickupStatus, getApplicationStatus } from '@/lib/adoptions';
@@ -15,22 +15,10 @@ defineProps({
   editLabel: String,
   calendar: String,
 });
-const selectedSlot = defineModel('selectedSlot', { type: String, default: '' });
 const confirming = defineModel('confirming', { type: Boolean });
-const emit = defineEmits(['pickup-record', 'cancel', 'edit', 'back', 'calendar', 'accept']);
+const emit = defineEmits(['pickup-record', 'cancel', 'edit', 'back', 'calendar']);
 </script>
 <template>
-  <CustomerPickupOptions
-    v-if="
-      !confirming &&
-      appointment.status === 'pending confirmation' &&
-      appointment.pickupoptions?.length
-    "
-    :appointment="appointment"
-    :disabled="saving || uncertain || !manageable"
-    v-model="selectedSlot"
-    @accept="emit('accept')"
-  />
   <h3 class="font-body text-sm font-semibold">
     {{
       getApplicationStatus(appointment) === 'collected'
@@ -38,9 +26,7 @@ const emit = defineEmits(['pickup-record', 'cancel', 'edit', 'back', 'calendar',
         : confirmed
           ? 'Confirmed pickup'
           : getApplicationStatus(appointment) === 'pending confirmation'
-            ? appointment.pickupoptions?.length
-              ? 'Previously requested pickup'
-              : 'Requested pickup'
+            ? 'Requested pickup'
             : pickupStatus(appointment).label
     }}
   </h3>
@@ -48,9 +34,7 @@ const emit = defineEmits(['pickup-record', 'cancel', 'edit', 'back', 'calendar',
     <dt class="text-muted-foreground">Date</dt>
     <dd>{{ displayDate(appointment.appointmentdate) }}</dd>
     <dt class="text-muted-foreground">Time</dt>
-    <dd class="[overflow-wrap:anywhere]">
-      {{ appointment.timeslot ? `${appointment.timeslot} SGT` : 'Time unavailable' }}
-    </dd>
+    <dd class="[overflow-wrap:anywhere]">{{ pickupTimeText(appointment) }} SGT</dd>
     <dt class="text-muted-foreground">Location</dt>
     <dd class="[overflow-wrap:anywhere]">{{ appointment.location || 'Unavailable' }}</dd>
   </dl>

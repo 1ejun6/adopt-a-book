@@ -6,11 +6,11 @@ import {
   recordId,
   pickupStatus,
 } from '@/lib/adoptions';
+import { appointmentTimes } from '@/lib/pickupTimes';
 import { todayInSingapore } from '@/lib/utils';
 
 export function usePickupState(props) {
   const step = ref('view');
-  const selectedSlot = ref('');
   const saving = ref(false);
   const uncertain = ref(false);
   const operation = ref(null);
@@ -19,12 +19,12 @@ export function usePickupState(props) {
   const confirming = ref(false);
   const confirmClose = ref(false);
   const closeNode = ref(null);
-  const initialDraft = ref({ location: '', appointmentdate: '', timeslot: '' });
+  const initialDraft = ref({ location: '', appointmentdate: '', timeslots: ['', '', ''] });
   const error = ref('');
   const errorNode = ref(null);
   const summaryNode = ref(null);
   const errors = reactive({ location: '', appointmentdate: '', timeslot: '', form: '' });
-  const draft = reactive({ location: '', appointmentdate: '', timeslot: '' });
+  const draft = reactive({ location: '', appointmentdate: '', timeslots: ['', '', ''] });
   const saved = ref(null);
   const today = ref(todayInSingapore());
   const manageable = computed(
@@ -39,21 +39,15 @@ export function usePickupState(props) {
   const changed = computed(
     () =>
       !props.appointment ||
-      ['location', 'appointmentdate', 'timeslot'].some(
-        (key) => draft[key].trim() !== String(props.appointment[key] || '').trim(),
-      ),
+      draft.location.trim() !== (props.appointment.location || '').trim() ||
+      draft.appointmentdate !== props.appointment.appointmentdate ||
+      JSON.stringify(draft.timeslots) !== JSON.stringify(appointmentTimes(props.appointment)),
   );
-  const draftChanged = computed(
-    () =>
-      selectedSlot.value !== '' ||
-      ['location', 'appointmentdate', 'timeslot'].some(
-        (key) => draft[key].trim() !== initialDraft.value[key].trim(),
-      ),
-  );
+  const draftChanged = computed(() => JSON.stringify(draft) !== JSON.stringify(initialDraft.value));
   const title = computed(() => {
     if (confirmClose.value) return 'Leave without sending?';
     if (step.value === 'success') {
-      if (result.value === 'confirmed') return 'Pickup confirmed';
+      if (getApplicationStatus(saved.value) === 'appointment confirmed') return 'Pickup confirmed';
       return result.value === 'cancelled'
         ? 'Pickup cancelled'
         : result.value === 'current' || getApplicationStatus(saved.value) !== 'pending confirmation'
@@ -108,7 +102,6 @@ export function usePickupState(props) {
     return confirmed.value ? 'Request a change' : 'Edit pickup request';
   });
   return {
-    selectedSlot,
     step,
     saving,
     uncertain,

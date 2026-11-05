@@ -1,30 +1,21 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { api } from '@/lib/api';
-import { pickupTimes, availablePickupSlot } from '@/lib/pickupTimes';
-import { todayInSingapore } from '@/lib/utils';
+import { availablePickupSlot } from '@/lib/pickupTimes';
+import { displayDate } from '@/lib/adoptions';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 const props = defineProps({ appointment: { type: Object, required: true } });
 const saving = defineModel('saving', { type: Boolean });
 const emit = defineEmits(['updated']);
-const options = ref([]);
+const selected = ref('');
 const error = ref('');
 const uncertain = ref(false);
 watch(
-  () => [props.appointment.id, props.appointment.updatedat],
+  () => props.appointment.proposalversion,
   () => {
-    options.value = Array.from({ length: 3 }, (_, i) => ({
-      appointmentdate:
-        props.appointment.pickupoptions?.[i]?.appointmentdate ||
-        (props.appointment.appointmentdate >= todayInSingapore()
-          ? props.appointment.appointmentdate
-          : ''),
-      timeslot: props.appointment.pickupoptions?.[i]?.timeslot || '',
-    }));
+    selected.value = '';
   },
-  { immediate: true },
 );
 async function checkStatus() {
   saving.value = true;
@@ -32,36 +23,34 @@ async function checkStatus() {
     const { appointment } = await api(`/admin/appointments/${props.appointment.id}`);
     uncertain.value = false;
     emit('updated', appointment);
-    error.value =
-      'Latest pickup details loaded. Check the choices below before making another change.';
+    error.value = 'Latest pickup details loaded. Check the status before trying again.';
   } catch (failure) {
     error.value = failure.message;
   } finally {
     saving.value = false;
   }
 }
-async function suggest() {
-  if (saving.value || uncertain.value) return;
+async function confirmTime() {
+  if (saving.value || uncertain.value || selected.value === '') return;
   error.value = '';
-  if (!options.value.every(availablePickupSlot)) {
-    error.value = 'Choose three future dates and hourly time slots.';
-    return;
-  }
-  if (new Set(options.value.map((slot) => `${slot.appointmentdate}|${slot.timeslot}`)).size !== 3) {
-    error.value = 'Choose three different pickup slots.';
+  const slot = Number(selected.value);
+  if (!availablePickupSlot(props.appointment.pickupoptions[slot])) {
+    error.value =
+      'That time has passed. Choose another time, or reject the request so the customer can send new availability.';
     return;
   }
   saving.value = true;
   try {
     const { appointment } = await api(`/admin/appointments/${props.appointment.id}`, {
       method: 'PATCH',
-      body: { pickupoptions: options.value, expectedupdatedat: props.appointment.updatedat },
+      body: { proposalversion: props.appointment.proposalversion, slot },
     });
-    if (!appointment?.id) throw new Error('Could not verify the saved choices.');
+    if (appointment?.status !== 'appointment confirmed')
+      throw new Error('Could not verify the confirmation.');
     emit('updated', appointment);
   } catch (failure) {
     uncertain.value = true;
-    error.value = `${failure.message} Check the latest status before sending again.`;
+    error.value = `${failure.message} Check the latest status before trying again.`;
   } finally {
     saving.value = false;
   }
@@ -69,62 +58,42 @@ async function suggest() {
 </script>
 
 <template>
-  <form class="space-y-3 rounded-lg border p-4" @submit.prevent="suggest">
-    <h3>Suggest three pickup times</h3>
-    <p class="text-sm text-muted-foreground">
-      Offer three times you’re available at {{ appointment.location }}. The customer chooses one to
-      confirm the pickup. Sending new choices replaces any previous choices or confirmed time.
-    </p>
-    <fieldset
-      v-for="(slot, index) in options"
-      :key="index"
-      :disabled="saving || uncertain"
-      class="space-y-2"
-    >
-      <legend class="text-sm">Option {{ index + 1 }}</legend>
-      <div class="grid gap-2 sm:grid-cols-2">
-        <div class="space-y-1">
-          <label :for="`offer-date-${index}`" class="text-sm">Date {{ index + 1 }}</label>
-          <Input
-            :id="`offer-date-${index}`"
-            v-model="slot.appointmentdate"
-            type="date"
-            :min="todayInSingapore()"
-            required
-          />
-        </div>
-        <div class="space-y-1">
-          <label :for="`offer-time-${index}`" class="text-sm">Time {{ index + 1 }} (SGT)</label>
-          <select
-            :id="`offer-time-${index}`"
-            v-model="slot.timeslot"
-            required
-            class="min-h-11 w-full rounded-lg border bg-background px-3"
-          >
-            <option disabled value="">Choose a time</option>
-            <option
-              v-for="time in pickupTimes"
-              :key="time"
-              :value="time"
-              :disabled="
-                !availablePickupSlot({ appointmentdate: slot.appointmentdate, timeslot: time })
-              "
-            >
-              {{ time }}
-            </option>
-          </select>
-        </div>
-      </div>
+  <form class="space-y-3 rounded-lg border p-4" @submit.prevent="confirmTime">
+    <fieldset :disabled="saving || uncertain" class="space-y-3">
+      <legend class="text-lg">Choose a customer’s available time</legend>
+      <p class="text-sm text-muted-foreground">
+        The customer is available at these three times. Select one to confirm pickup at
+        {{ appointment.location }}.
+      </p>
+      <label
+        v-for="(slot, index) in appointment.pickupoptions"
+        :key="index"
+        class="flex min-h-11 items-center gap-3 rounded-lg border p-3"
+      >
+        <input
+          v-model="selected"
+          type="radio"
+          name="admin-pickup-time"
+          :value="String(index)"
+          :disabled="!availablePickupSlot(slot)"
+          required
+          class="size-4 shrink-0"
+        />
+        <span
+          >{{ displayDate(slot.appointmentdate) }} · {{ slot.timeslot }} SGT
+          <span v-if="!availablePickupSlot(slot)"> — time has passed</span>
+        </span>
+      </label>
     </fieldset>
-    <p v-if="appointment.pickupoptions?.length" class="text-sm" role="status">
-      Waiting for the customer to choose a time.
-    </p>
     <p v-if="error" class="text-sm text-destructive" role="alert">{{ error }}</p>
     <Button v-if="uncertain" type="button" :disabled="saving" @click="checkStatus"
       >Check latest status</Button
     >
-    <Button v-else type="submit" :disabled="saving">{{
-      saving ? 'Sending…' : 'Send three options'
+    <Button v-else type="submit" :disabled="saving || selected === ''">{{
+      saving ? 'Confirming…' : 'Confirm selected time'
     }}</Button>
+    <p class="text-xs text-muted-foreground">
+      If none work, reject the pickup request so the customer can propose a new date and times.
+    </p>
   </form>
 </template>

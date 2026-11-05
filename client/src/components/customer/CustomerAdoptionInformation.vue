@@ -1,4 +1,5 @@
 <script setup>
+import { pickupTimeText } from '@/lib/pickupTimes';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { api } from '@/lib/api';
 import {
@@ -120,7 +121,7 @@ const attempts = computed(() =>
           <p>{{ pickupStatus(attempt).label }}</p>
           <p>
             {{ displayDate(attempt.appointmentdate) }} ·
-            {{ attempt.timeslot || 'Time unavailable' }} SGT
+            {{ pickupTimeText(attempt) }} SGT
           </p>
           <p>{{ attempt.location || 'Location unavailable' }}</p>
           <button

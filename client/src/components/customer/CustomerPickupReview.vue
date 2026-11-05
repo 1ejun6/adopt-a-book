@@ -23,7 +23,7 @@ const emit = defineEmits(['change-field', 'back', 'submit']);
       v-for="field in [
         { key: 'location', label: 'Location', value: draft.location },
         { key: 'appointmentdate', label: 'Date', value: displayDate(draft.appointmentdate) },
-        { key: 'timeslot', label: 'Time', value: draft.timeslot },
+        { key: 'timeslot', label: 'Times', value: draft.timeslots.join(' · ') },
       ]"
       :key="field.key"
       class="grid grid-cols-[4rem_minmax(0,1fr)_auto] items-start gap-3 border-b pb-3"
@@ -57,7 +57,7 @@ const emit = defineEmits(['change-field', 'back', 'submit']);
     {{
       confirmed
         ? 'Sending these changes replaces your current confirmation. Wait until the updated pickup is confirmed before you travel.'
-        : 'The team must confirm your requested time and location. Please wait for confirmation before you travel.'
+        : 'The team will choose one of your three times and confirm the pickup. Check My Adoptions before travelling.'
     }}
   </p>
   <div class="adoption-actions">

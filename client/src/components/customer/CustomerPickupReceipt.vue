@@ -1,4 +1,5 @@
 <script setup>
+import { pickupTimeText } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
 
 import { displayDate, pickupStatus, getApplicationStatus, recordId } from '@/lib/adoptions';
@@ -14,8 +15,8 @@ defineProps({
 const emit = defineEmits(['edit', 'leave']);
 </script>
 <template>
-  <p v-if="result === 'confirmed'" class="text-sm">
-    Your pickup is confirmed for the time you selected.
+  <p v-if="getApplicationStatus(receipt) === 'appointment confirmed'" class="text-sm">
+    Your pickup is confirmed for the time selected by the team.
   </p>
   <p v-if="result === 'cancelled' || result === 'current'" class="text-sm">
     {{
@@ -33,7 +34,7 @@ const emit = defineEmits(['edit', 'leave']);
     <dt class="text-muted-foreground">Date</dt>
     <dd>{{ displayDate(receipt.appointmentdate) }}</dd>
     <dt class="text-muted-foreground">Time</dt>
-    <dd class="[overflow-wrap:anywhere]">{{ receipt.timeslot }} SGT</dd>
+    <dd class="[overflow-wrap:anywhere]">{{ pickupTimeText(receipt) }} SGT</dd>
     <dt class="text-muted-foreground">Location</dt>
     <dd class="[overflow-wrap:anywhere]">{{ receipt.location }}</dd>
   </dl>
@@ -41,7 +42,8 @@ const emit = defineEmits(['edit', 'leave']);
     v-if="getApplicationStatus(receipt) === 'pending confirmation'"
     class="text-sm text-muted-foreground"
   >
-    Track confirmation in Waiting in My Adoptions.
+    Your three times have been sent. The team will select one; check Waiting in My Adoptions for
+    confirmation.
   </p>
   <details class="text-sm">
     <summary class="min-h-11 cursor-pointer py-3 underline underline-offset-4">

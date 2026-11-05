@@ -1,10 +1,9 @@
-const { z } = require("zod");
 const appointments = require("../models/appointments");
 const { removecustomerrecords } = require("../models/records");
 const { requestids } = require("../utils/validation");
 const { errorstatus, errormessage } = require("../utils/errors");
 
-const proposalschema = appointments.appointmentschema.pick({ bookid: true, location: true, appointmentdate: true, timeslot: true }).strict();
+const proposalschema = appointments.pickupoptionsschema.safeExtend({ bookid: require("zod").z.uuid() });
 
 async function readappointments(req, res) {
   try {
@@ -26,7 +25,7 @@ async function createappointment(req, res) {
   try {
     const fields = proposalschema.parse(req.body);
 
-    const appointment = await appointments.createappointment({ ...fields, userid: req.user.id, booktitle: "collection" });
+    const appointment = await appointments.createappointment({ ...fields, userid: req.user.id });
     return res.status(201).json({ appointment });
   } catch (error) {
     return res.status(errorstatus(error)).json({ error: errormessage(error, "an approved application and a valid collection proposal are required") });
@@ -34,7 +33,7 @@ async function createappointment(req, res) {
 }
 async function updatecustomerappointment(req, res) {
   try {
-    const fields = z.union([appointments.pickupchoiceschema, proposalschema.omit({ bookid: true }).partial().refine((value) => Object.keys(value).length > 0)]).parse(req.body);
+    const fields = appointments.pickupoptionsschema.parse(req.body);
     return res.json({ appointment: await appointments.changecollection(req.params.id, req.user.id, fields) });
   } catch (error) {
     return res.status(errorstatus(error)).json({ error: errormessage(error, "only your active appointments can be rescheduled") });

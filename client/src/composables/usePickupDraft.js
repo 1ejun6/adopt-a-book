@@ -1,5 +1,6 @@
 import { nextTick, watch } from 'vue';
 import { collectionLocation, validPickupDate } from '@/lib/adoptions';
+import { appointmentTimes, availablePickupSlot, copyPickupDraft } from '@/lib/pickupTimes';
 import { todayInSingapore } from '@/lib/utils';
 
 export function usePickupDraft(props, open, emit, state, resetNavigation) {
@@ -31,11 +32,10 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
     });
   }
   function fillDraft() {
-    state.selectedSlot.value = '';
     Object.assign(draft, {
       location: props.appointment?.location || collectionLocation(props.record?.book),
       appointmentdate: props.appointment?.appointmentdate || '',
-      timeslot: props.appointment?.timeslot || '',
+      timeslots: appointmentTimes(props.appointment),
     });
   }
   watch(
@@ -47,7 +47,7 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
       resetNavigation();
       today.value = todayInSingapore();
       fillDraft();
-      initialDraft.value = { ...draft };
+      initialDraft.value = copyPickupDraft(draft);
       confirmClose.value = false;
       clearErrors();
       saved.value = null;
@@ -60,12 +60,6 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
       nextTick(() => emit('focus-heading'));
     },
     { immediate: true },
-  );
-  watch(
-    () => props.appointment?.proposalversion,
-    () => {
-      state.selectedSlot.value = '';
-    },
   );
   watch(error, async (value) => {
     if (value) {
@@ -80,7 +74,6 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
     }
   });
   function edit() {
-    state.selectedSlot.value = '';
     clearErrors();
     confirming.value = false;
     step.value = 'details';
@@ -108,8 +101,13 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
     } else if (draft.appointmentdate < today.value) {
       errors.appointmentdate = 'Choose today or a later date in Singapore time.';
     }
-    if (!draft.timeslot.trim()) {
-      errors.timeslot = 'Choose a preferred pickup time.';
+    if (
+      new Set(draft.timeslots).size !== 3 ||
+      !draft.timeslots.every((timeslot) =>
+        availablePickupSlot({ appointmentdate: draft.appointmentdate, timeslot }),
+      )
+    ) {
+      errors.timeslot = 'Choose three different future times on your preferred date.';
     }
     if (!changed.value) {
       errors.form = 'Change at least one pickup detail before sending an updated request.';

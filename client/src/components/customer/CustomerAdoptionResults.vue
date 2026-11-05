@@ -50,15 +50,15 @@ const emit = defineEmits(['appointment', 'details', 'pickup', 'refresh']);
       <TabsList
         v-if="!searching && tab === 'active' && stage === 'needs-action'"
         aria-label="Pickup actions"
-        class="grid w-full grid-cols-2 gap-1 sm:flex sm:gap-3"
+        class="adoption-tabs adoption-tabs-pickup grid w-full grid-cols-2 gap-1 sm:flex sm:gap-3"
       >
         <TabsTrigger value="arrange" class="min-h-11 min-w-0 justify-center gap-1.5 px-1 text-xs sm:flex-none sm:px-3 sm:text-sm">
           Arrange a pickup
-          <Badge v-if="!loading && !loadError && !pickupError" variant="neutral" class="tabular-nums">{{ actionCounts.arrange }}</Badge>
+          <Badge v-if="!loading && !loadError && !pickupError" variant="neutral" class="adoption-tab-count tabular-nums">{{ actionCounts.arrange }}</Badge>
         </TabsTrigger>
         <TabsTrigger value="check" class="min-h-11 min-w-0 justify-center gap-1.5 px-1 text-xs sm:flex-none sm:px-3 sm:text-sm">
           Check your pickup
-          <Badge v-if="!loading && !loadError && !pickupError" variant="neutral" class="tabular-nums">{{ actionCounts.check }}</Badge>
+          <Badge v-if="!loading && !loadError && !pickupError" variant="neutral" class="adoption-tab-count tabular-nums">{{ actionCounts.check }}</Badge>
         </TabsTrigger>
       </TabsList>
       <component

@@ -111,7 +111,7 @@ onMounted(refresh);
 </script>
 
 <template>
-  <AppPage class="space-y-5" aria-labelledby="adoptions-title">
+  <AppPage class="adoptions-page space-y-5" aria-labelledby="adoptions-title">
     <header class="space-y-2 text-center">
       <h1 id="adoptions-title" ref="titleNode" tabindex="-1" class="text-4xl sm:text-[42px]">
         My Adoptions

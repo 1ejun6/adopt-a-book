@@ -111,3 +111,62 @@
   font-size: 0.875rem;
   line-height: 1.5;
 }
+
+/* My Adoptions uses quiet text tabs with one aligned active indicator. */
+.adoptions-page .adoption-tabs {
+  gap: 0.25rem;
+  padding-bottom: 0;
+  border-bottom: 1px solid var(--border);
+}
+.adoptions-page .adoption-tabs [role='tab'] {
+  position: relative;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  margin-bottom: -1px;
+  padding: 0.75rem 0.625rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  transition: color 150ms ease, border-color 150ms ease;
+}
+.adoptions-page .adoption-tabs [role='tab']:hover {
+  color: var(--foreground);
+  border-bottom-color: var(--border);
+}
+.adoptions-page .adoption-tabs [role='tab'][data-state='active'] {
+  color: var(--foreground);
+  border-bottom-color: var(--foreground);
+  font-weight: 600;
+}
+.adoptions-page .adoption-tabs-primary [role='tab'] {
+  min-width: 6.5rem;
+  font-size: 1rem;
+}
+.adoptions-page .adoption-tabs-pickup [role='tab'] {
+  font-size: 0.8125rem;
+}
+.adoptions-page .adoption-tab-count {
+  min-width: 1ch;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: reduce) {
+  .adoptions-page .adoption-tabs [role='tab'] { transition: none; }
+}
+
+@media (max-width: 639px) {
+  .adoptions-page .adoption-tabs-stages [role='tab'] {
+    gap: 0.25rem;
+    padding-inline: 0.125rem;
+    white-space: nowrap;
+  }
+}

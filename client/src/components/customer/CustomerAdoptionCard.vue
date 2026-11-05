@@ -72,7 +72,7 @@ function openRecord() {
       </p>
     </template>
     <template #pickup>
-      <p v-if="hasPickupOptions(record.appointment)" class="text-sm">Three pickup times to choose from</p>
+      <p v-if="hasPickupOptions(record.appointment)" class="text-sm">{{ displayDate(record.appointment.appointmentdate) }} · Three times proposed</p>
       <template v-else-if="showPickup">
         <p
           class="adoption-row__date"

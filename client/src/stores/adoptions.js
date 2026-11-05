@@ -175,8 +175,8 @@ export const useAdoptionsStore = defineStore('adoptions', () => {
       },
     );
   }
-  function saveAppointment({ id, bookId: copyId, location, appointmentdate, timeslot, choice }) {
-    const body = choice || { location, appointmentdate, timeslot };
+  function saveAppointment({ id, bookId: copyId, location, appointmentdate, pickupoptions }) {
+    const body = { location, appointmentdate, pickupoptions };
     return mutate(
       [`book:${copyId}`, ...(id ? [`appointment:${id}`] : [])],
       id ? `/appointments/${id}` : '/appointments',
@@ -192,8 +192,6 @@ export const useAdoptionsStore = defineStore('adoptions', () => {
         );
         if (id ? !canManagePickup(journey, journey?.appointment) : !journey?.canArrange)
           throw new Error('Pickup eligibility has changed');
-        if (choice && (journey.appointment.proposalversion !== choice.proposalversion || !journey.appointment.pickupoptions?.[choice.slot]))
-          throw new Error('These pickup choices have changed. Refresh and choose again.');
       },
       (response) => {
         if (recordId(response?.appointment))

@@ -7,13 +7,12 @@ import {
   canManagePickup,
   validPickupDate,
 } from '@/lib/adoptions';
-import { availablePickupSlot } from '@/lib/pickupTimes';
+import { availablePickupSlot, copyPickupDraft } from '@/lib/pickupTimes';
 import { todayInSingapore } from '@/lib/utils';
 
 export function usePickupMutations(props, state, review) {
   const adoptions = useAdoptionsStore();
   const {
-    selectedSlot,
     step,
     saving,
     uncertain,
@@ -33,9 +32,8 @@ export function usePickupMutations(props, state, review) {
   // Acknowledged mutations stay successful even if the following list refresh fails.
   async function finish(appointment, kind, reload = true) {
     saved.value = appointment;
-    selectedSlot.value = '';
     result.value = kind;
-    if (kind !== 'current') initialDraft.value = { ...draft };
+    if (kind !== 'current') initialDraft.value = copyPickupDraft(draft);
     uncertain.value = false;
     confirming.value = false;
     step.value = 'success';
@@ -67,35 +65,19 @@ export function usePickupMutations(props, state, review) {
           'Pickup records need checking. Review the latest records before making another change.';
         return;
       }
-      if (pending.kind === 'accept' && current) {
-        if (
-          getApplicationStatus(current) === 'appointment confirmed' &&
-          current.proposalversion === pending.version &&
-          current.appointmentdate === pending.slot.appointmentdate &&
-          current.timeslot === pending.slot.timeslot
-        ) {
-          await finish(current, 'confirmed', false);
-        } else {
-          uncertain.value = false;
-          selectedSlot.value = '';
-          error.value =
-            'Your choice was not confirmed. Review the latest pickup options before trying again.';
-        }
-        return;
-      }
       if (pending.kind === 'cancel' && current && getApplicationStatus(current) === 'cancelled') {
         await finish(current, 'cancelled', false);
         return;
       }
       if (pending.kind === 'save' && current) {
-        const matches = ['location', 'appointmentdate', 'timeslot'].every(
-          (key) => String(current[key] || '').trim() === pending.body[key],
+        const matches = ['location', 'appointmentdate', 'pickupoptions'].every(
+          (key) => JSON.stringify(current[key]) === JSON.stringify(pending.body[key]),
         );
         if (
           (matches && getApplicationStatus(current) !== pending.originalStatus) ||
           (matches &&
-            ['location', 'appointmentdate', 'timeslot'].some(
-              (key) => pending.original[key] !== pending.body[key],
+            ['location', 'appointmentdate', 'pickupoptions'].some(
+              (key) => JSON.stringify(pending.original[key]) !== JSON.stringify(pending.body[key]),
             )) ||
           (!pending.id && matches)
         ) {
@@ -108,8 +90,8 @@ export function usePickupMutations(props, state, review) {
         current &&
         pending.kind === 'save' &&
         (getApplicationStatus(current) !== pending.originalStatus ||
-          ['location', 'appointmentdate', 'timeslot'].some(
-            (key) => current[key] !== pending.original[key],
+          ['location', 'appointmentdate', 'pickupoptions'].some(
+            (key) => JSON.stringify(current[key]) !== JSON.stringify(pending.original[key]),
           ))
       ) {
         await finish(current, 'current', false);
@@ -150,16 +132,27 @@ export function usePickupMutations(props, state, review) {
     )
       return;
     today.value = todayInSingapore();
-    if (!validPickupDate(draft.appointmentdate) || draft.appointmentdate < today.value) {
+    if (
+      !validPickupDate(draft.appointmentdate) ||
+      draft.appointmentdate < today.value ||
+      !draft.timeslots.every((timeslot) =>
+        availablePickupSlot({ appointmentdate: draft.appointmentdate, timeslot }),
+      )
+    ) {
       step.value = 'details';
       await review();
       return;
     }
     saving.value = true;
     error.value = '';
-    const body = Object.fromEntries(
-      ['location', 'appointmentdate', 'timeslot'].map((key) => [key, draft[key].trim()]),
-    );
+    const body = {
+      location: draft.location.trim(),
+      appointmentdate: draft.appointmentdate,
+      pickupoptions: draft.timeslots.map((timeslot) => ({
+        appointmentdate: draft.appointmentdate,
+        timeslot,
+      })),
+    };
     const existingId = recordId(props.appointment);
     operation.value = {
       kind: 'save',
@@ -185,39 +178,6 @@ export function usePickupMutations(props, state, review) {
       saving.value = false;
     }
   }
-  async function acceptSlot() {
-    const index = Number(selectedSlot.value);
-    const slot = props.appointment?.pickupoptions?.[index];
-    if (saving.value || uncertain.value || !manageable.value || selectedSlot.value === '')
-      return;
-    if (!availablePickupSlot(slot)) {
-      error.value = 'That pickup time has passed. Choose another time or request a change.';
-      return;
-    }
-    saving.value = true;
-    error.value = '';
-    operation.value = {
-      kind: 'accept',
-      id: recordId(props.appointment),
-      slot: { ...slot },
-      version: props.appointment.proposalversion,
-    };
-    try {
-      const { response } = await adoptions.saveAppointment({
-        id: recordId(props.appointment),
-        bookId: props.record.bookId,
-        choice: { proposalversion: operation.value.version, slot: index },
-      });
-      if (getApplicationStatus(response?.appointment) !== 'appointment confirmed')
-        throw new Error('Confirmation unavailable');
-      await finish(response.appointment, 'confirmed', false);
-    } catch {
-      uncertain.value = true;
-      await checkStatus();
-    } finally {
-      saving.value = false;
-    }
-  }
   async function cancelPickup() {
     if (saving.value || uncertain.value || !manageable.value) return;
     saving.value = true;
@@ -234,5 +194,5 @@ export function usePickupMutations(props, state, review) {
       saving.value = false;
     }
   }
-  return { checkStatus, submit, cancelPickup, acceptSlot };
+  return { checkStatus, submit, cancelPickup };
 }

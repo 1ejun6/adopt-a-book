@@ -1,4 +1,5 @@
 <script setup>
+import { pickupTimeText } from '@/lib/pickupTimes';
 import { computed, nextTick, ref, watch, watchEffect } from 'vue';
 import { useAdoptionsStore } from '@/stores/adoptions';
 const adoptions = useAdoptionsStore();
@@ -158,7 +159,7 @@ watchEffect(() => {
           </dd>
           <dt class="text-muted-foreground">Time</dt>
           <dd class="[overflow-wrap:anywhere]">
-            {{ currentPickup.timeslot ? `${currentPickup.timeslot} SGT` : 'Time unavailable' }}
+            {{ pickupTimeText(currentPickup) }} SGT
           </dd>
           <dt class="text-muted-foreground">Location</dt>
           <dd class="[overflow-wrap:anywhere]">

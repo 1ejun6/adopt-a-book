@@ -5,10 +5,11 @@ const supabase = require("../supabase/supabase");
 const pickupslots = Array.from({ length: 9 }, (_, i) =>
   `${String(i + 9).padStart(2, "0")}:00–${String(i + 10).padStart(2, "0")}:00`);
 const pickupoptionsschema = z.object({
+  location: z.string().trim().min(1).max(300),
+  appointmentdate: z.iso.date(),
   pickupoptions: z.array(z.object({ appointmentdate: z.iso.date(), timeslot: z.enum(pickupslots) }).strict()).length(3)
-    .refine(options => new Set(options.map(option => `${option.appointmentdate}|${option.timeslot}`)).size === 3, "Choose three different pickup slots"),
-  expectedupdatedat: z.iso.datetime({ offset: true })
-}).strict();
+}).strict().refine(value => value.pickupoptions.every(option => option.appointmentdate === value.appointmentdate) &&
+  new Set(value.pickupoptions.map(option => option.timeslot)).size === 3, "Choose three different times on the same date");
 const pickupchoiceschema = z.object({ proposalversion: z.string().uuid(), slot: z.number().int().min(0).max(2) }).strict();
 
 const appointmentstatusschema = z.enum([
@@ -38,8 +39,8 @@ const sorted = (query) => many(query.order("appointmentdate", { ascending: false
 
 const showappointments = (userid) => sorted(supabase.from("appointments").select("*").eq("userid", userid));
 async function createappointment(value) {
-  const validatedappointment = appointmentschema.parse(value);
-  const { data, error } = await supabase.rpc("book_collection_appointment", { customer_id: validatedappointment.userid, book_id: validatedappointment.bookid, collection_location: validatedappointment.location, collection_date: validatedappointment.appointmentdate, time_slot: validatedappointment.timeslot }).single();
+  const validatedappointment = pickupoptionsschema.safeExtend({ userid: z.uuid(), bookid: z.uuid() }).parse(value);
+  const { data, error } = await supabase.rpc("book_collection_options", { customer_id: validatedappointment.userid, book_id: validatedappointment.bookid, collection_location: validatedappointment.location, collection_date: validatedappointment.appointmentdate, options: validatedappointment.pickupoptions }).single();
   if (error) throw error;
   return mapappointment(data);
 }

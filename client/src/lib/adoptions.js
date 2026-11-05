@@ -150,13 +150,13 @@ export function adoptionJourneys(applications, appointments, ready = true) {
 }
 
 export function hasPickupOptions(appointment) {
-  return getApplicationStatus(appointment) === 'pending confirmation' && appointment.pickupoptions?.length === 3;
+  return getApplicationStatus(appointment) === 'pending confirmation' && appointment.optionsby === 'customer' && appointment.pickupoptions?.length === 3;
 }
 
 export function pickupStatus(appointment) {
   if (hasPickupOptions(appointment)) return {
-    label: 'Choose a pickup time', variant: 'amber',
-    description: 'The team suggested three pickup times. Choose one to confirm your collection.',
+    label: 'Waiting for pickup confirmation', variant: 'neutral',
+    description: 'Your three available times have been sent. The team will pick one and confirm your collection.',
   };
 
   return (
@@ -311,17 +311,17 @@ export function adoptionJourney(
     if (activePickup(appointment)) {
       const confirmed = appointmentStatus === 'appointment confirmed';
       const overdue =
-        !hasPickupOptions(appointment) && appointment.appointmentdate && appointment.appointmentdate < todayInSingapore();
+        appointment.appointmentdate && appointment.appointmentdate < todayInSingapore();
       return {
         ...base,
         ...pickupStatus(appointment),
         code: confirmed ? 'pickup confirmed' : 'pickup requested',
         group: confirmed
           ? 'confirmed'
-          : hasPickupOptions(appointment) || overdue || !pickupComplete(appointment)
+          : overdue || !pickupComplete(appointment)
             ? 'attention'
             : 'waiting',
-        priority: hasPickupOptions(appointment) || overdue || !pickupComplete(appointment) ? -1 : confirmed ? 1 : 3,
+        priority: overdue || !pickupComplete(appointment) ? -1 : confirmed ? 1 : 3,
         warning: !pickupsReady
           ? 'Pickup status unavailable'
           : book?.status !== 'reserved'
@@ -335,7 +335,6 @@ export function adoptionJourney(
         actionLabel:
           book?.status !== 'reserved' || overdue || !pickupComplete(appointment)
             ? 'Check details'
-            : hasPickupOptions(appointment) ? 'Choose a pickup time'
             : confirmed
               ? 'Manage pickup'
               : 'View pickup request',
@@ -526,7 +525,6 @@ export function adoptionSection(record) {
 }
 
 export function actionPriority(record) {
-  if (hasPickupOptions(record.appointment)) return 0;
   if (
     record.warning ||
     (!record.history &&
