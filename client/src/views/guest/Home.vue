@@ -61,7 +61,7 @@ onMounted(loadbooks);
         <div class="space-y-5 text-center">
             <div class="grid gap-2.5">
                 <p class="text-sm">from our shelves to yours</p>
-                <h1 class="text-4xl sm:text-5xl">Different shelves<br>Shared stories</h1>
+                <h1 class="text-4xl sm:text-5xl">Different Shelves<br>Shared Stories</h1>
                 <p class="text-sm">which one feels like your next chapter?</p>
             </div>
             <div v-if="!loaderror || books.length">

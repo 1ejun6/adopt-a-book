@@ -1,5 +1,4 @@
 const { z } = require("zod");
-const { readall } = require("./query");
 const supabase = require("../supabase/supabase");
 
 const userschema = z.object({
@@ -28,12 +27,6 @@ async function createaccount(account) {
   if (error) throw error;
   return mapuser(data);
 }
-async function many(query) {
-  return (await readall(query)).map(mapuser);
-}
-const findadminaccounts = () => many(supabase.from("users").select("*").eq("role", "admin"));
-const findadminbyid = (id) => one(supabase.from("users").select("*").eq("id", id).eq("role", "admin"));
-
 const findonebyemailexcludingid = (email, id) => one(supabase.from("users").select("*").eq("email", email).neq("id", id));
 
 
@@ -45,4 +38,4 @@ async function updatepreferences(id, preferredgenres) {
   return one(supabase.from("users").update({ preferredgenres }).eq("id", id).eq("role", "customer").select("*"));
 }
 
-module.exports = { updatepreferences, userschema, findonebyemail, findbyid, createaccount, findadminaccounts, findadminbyid, findonebyemailexcludingid, findcustomerbyid };
+module.exports = { updatepreferences, userschema, findonebyemail, findbyid, createaccount, findonebyemailexcludingid, findcustomerbyid };

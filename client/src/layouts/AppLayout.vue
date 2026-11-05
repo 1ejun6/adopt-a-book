@@ -10,7 +10,7 @@ import { RouterView } from 'vue-router';
 import AppNavbar from '@/components/shared/AppNavbar.vue';
 const router = useRouter();
 const route = useRoute(), auth = useAuthStore(), adoptions = useAdoptionsStore(), saved = useWatchlistStore();
-const centeredPage = computed(() => ['guestHome', 'login', 'register', 'customerAccount'].includes(route.name));
+const centeredPage = computed(() => ['guestHome', 'login', 'register'].includes(route.name));
 function refreshPrivate() {
   if (auth.role !== 'customer') return;
   void adoptions.refresh();
@@ -37,7 +37,7 @@ onScopeDispose(() => document.removeEventListener('visibilitychange', visible));
       :class="{ 'lg:px-8': !['guestHome', 'login', 'register', 'customerBooks', 'customerAccount'].includes(route.name), 'flex flex-1 items-center': centeredPage }"
       style="padding-bottom: max(1rem, env(safe-area-inset-bottom))">
       <section v-if="!auth.ready" role="alert" class="mx-auto w-full max-w-md space-y-5">
-        <h1>Connection unavailable</h1>
+        <h1>Connection Unavailable</h1>
         <p>{{ auth.error }}</p>
         <Button :disabled="auth.sessionLoading" @click="retrySession" :loading="auth.sessionLoading"><AppIcon name="refresh" /><span class="sr-only">{{ auth.sessionLoading ? 'Checking…' : 'Retry' }}</span></Button>
       </section>

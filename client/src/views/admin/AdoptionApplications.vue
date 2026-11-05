@@ -103,7 +103,7 @@ fetchApplications();
 
 <template>
     <!--@lee-hlmilk > AdminList updates view-owned models > applications contains only the matching server page-->
-    <AdminList @retry="fetchApplications" title="Adoption applications" description="approval reserves a copy for collection"
+    <AdminList @retry="fetchApplications" title="Adoption Applications" description="approval reserves a copy for collection"
         v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="applications" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="saving"
         :selectable="['all', 'pending'].includes(filters.status)"

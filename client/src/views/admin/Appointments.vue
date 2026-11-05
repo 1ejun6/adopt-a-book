@@ -189,7 +189,7 @@ fetchAppointments().then(loadAppointmentLink);
 
 <template>
     <!--@lee-hlmilk > list models update local filters &&& page > History disables selection while keeping record details available-->
-    <AdminList @retry="fetchAppointments" title="Appointments" description="Manage appointments and book collections."
+    <AdminList @retry="fetchAppointments" title="Appointments" description="manage appointments and book collections."
         :tabDescription="filters.view === 'awaiting' ? 'open each pending appointment and confirm one of the customer’s proposed pickup times.' : ''"
         v-model:search="filters.search" v-model:tab="filters.view" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="appointments" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving"

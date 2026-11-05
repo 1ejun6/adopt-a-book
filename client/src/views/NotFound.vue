@@ -9,7 +9,7 @@ const auth = useAuthStore();
 
 <template>
   <AppPage class="space-y-4 text-center">
-    <h1 class="text-4xl">Page not found</h1>
+    <h1 class="text-4xl">Page Not Found</h1>
     <Button asChild variant="outline"><RouterLink :to="auth.homeRoute" class=""><AppIcon name="home" />Return home</RouterLink></Button>
   </AppPage>
 </template>

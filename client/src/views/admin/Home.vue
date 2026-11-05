@@ -85,11 +85,11 @@ fetchDashboard();
 </script>
 
 <template>
-  <AppPage class="space-y-5" aria-labelledby="dashboard-title">
-    <header class="flex flex-wrap items-center justify-between gap-5">
-      <div>
+  <AppPage align="left" class="space-y-5" aria-labelledby="dashboard-title">
+    <header class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+      <div class="app-page-heading text-left">
         <h1 id="dashboard-title">Dashboard</h1>
-        <p class="text-muted-foreground">Review requests, collections and upcoming drives.</p>
+        <p>review requests, collections and upcoming drives.</p>
       </div>
       <div class="text-sm text-muted-foreground sm:text-right">
         <time :datetime="today">{{ displayDate }}</time>

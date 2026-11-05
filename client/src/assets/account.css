@@ -2,13 +2,8 @@
   max-width: 80rem;
 }
 .account-heading {
-  margin-bottom: 24px;
-  text-align: center;
+  margin-bottom: 20px;
 }
-.account-heading > p {
-  margin-top: 8px;
-}
-.account-heading > p,
 .identity-email,
 .panel-heading > p,
 .field-note,

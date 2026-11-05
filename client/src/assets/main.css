@@ -66,6 +66,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer components {
+  .app-page-heading {
+    @apply grid min-w-0 gap-2;
+  }
+  .app-page-heading > h1 {
+    @apply text-3xl leading-tight sm:text-4xl;
+  }
+  .app-page-heading > p {
+    @apply text-sm leading-relaxed text-muted-foreground lowercase;
+  }
   [role='tablist'] {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

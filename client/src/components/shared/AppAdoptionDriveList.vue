@@ -87,9 +87,9 @@ onBeforeUnmount(() => { if (emptyToastId !== undefined) toast.dismiss(emptyToast
 
 <template>
   <AppPage class="adoption-drive-page space-y-5">
-    <header class="text-center">
-      <h1>adoption drives</h1>
-      <p class="text-sm">meet fellow readers & give books a new home</p>
+    <header class="app-page-heading text-center">
+      <h1>Adoption Drives</h1>
+      <p>meet fellow readers and give books a new home</p>
     </header>
 
     <AppAdoptionDriveFilters v-model:search="filters.search" v-model:status="filters.status"

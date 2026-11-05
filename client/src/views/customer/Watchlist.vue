@@ -90,16 +90,14 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
 </script>
 
 <template>
-  <AppPage class="flex flex-1 flex-col gap-8">
-    <header class="space-y-2">
-      <h1 class="text-4xl">Watchlist</h1>
-      <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <p class="text-muted-foreground text-sm">your saved books and private notes</p>
-        <CustomerBookAvailability legend class="ml-auto" />
-      </div>
+  <AppPage class="flex flex-1 flex-col gap-5">
+    <header class="app-page-heading text-center">
+      <h1>Watchlist</h1>
+      <p>your saved books and private notes</p>
     </header>
 
     <div class="flex flex-1 flex-col gap-5">
+    <CustomerBookAvailability legend class="justify-end" />
     <div class="flex flex-col gap-2.5 sm:flex-row">
       <AppSearchInput v-model="search" id="watchlist-search" aria-label="Search watchlist" class="min-w-0 flex-1"
         placeholder="Search by title, author or ISBN..." :disabled="loading && !watchlist.length" />
