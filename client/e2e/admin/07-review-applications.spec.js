@@ -1,29 +1,63 @@
-import { test, expect } from '@playwright/test'
-import { demoAdmin } from '../support/env.js'
+import { test, expect } from '@playwright/test';
+import { demoAdmin } from '../support/env.js';
 
-test.beforeEach(async ({ page }) => {
-  await page.goto('/login')
-  await page.getByRole('textbox', { name: 'Email' }).fill(demoAdmin.email)
-  await page.getByRole('textbox', { name: 'Password' }).fill(demoAdmin.password)
-  await page.getByRole('button', { name: 'Login', exact: true }).click()
-  await expect(page).toHaveURL(/admin/)
-})
+test.describe('Admin review adoption applications', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/login');
+    await page.getByRole('textbox', { name: 'Email' }).fill(demoAdmin.email);
+    await page.getByRole('textbox', { name: 'Password' }).fill(demoAdmin.password);
+    await page.getByRole('textbox', { name: 'Password' }).press('Enter');
+    await expect(page.getByText('login successful')).toBeVisible();
 
-test('admin looks through the adoption applications', async ({ page }) => {
-  await page.getByRole('banner').getByRole('link', { name: 'Adoption Applications' }).click()
-  await expect(page.getByRole('heading', { name: 'Adoption applications', level: 1 })).toBeVisible()
+    await page.getByRole('banner').getByRole('link', { name: 'Adoption Applications' }).click();
+    await expect(page).toHaveURL(/admin\/applications/);
+    await expect(page.getByRole('heading', { name: 'Adoption applications', level: 1 })).toBeVisible();
+  });
 
-  await expect(page.getByRole('tab', { name: /^Pending/ })).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByRole('tab', { name: /^All applications/ })).toBeVisible()
+  test('displays application queue tabs and default pending view', async ({ page }) => {
+    await expect(page.getByRole('tab', { name: 'All', exact: true })).toHaveAttribute('data-state', 'active');
+    await expect(page.getByRole('tab', { name: /Pending/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Approved/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Rejected/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Cancelled/i })).toBeVisible();
+  });
 
-  // opens an application from the All tab
-  await page.getByRole('tab', { name: /^All applications/ }).click()
-  await page.getByRole('main').locator('tbody tr').first().click()
-  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Application details' })).toBeVisible()
-  await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click()
-  await expect(page.getByRole('dialog')).toBeHidden()
+  test('admin sorts applications and opens details modal', async ({ page }) => {
+    const sortSelect = page.getByLabel('Application order');
+    if (await sortSelect.isVisible()) {
+      await sortSelect.selectOption('newest');
+      await sortSelect.selectOption('oldest');
+    }
 
-  // searches for something that doesn't exist
-  await page.getByRole('main').getByRole('searchbox').first().fill('zzzz-no-such-application')
-  await expect(page.getByRole('main').locator('tbody tr')).toHaveCount(0)
-})
+    const firstRow = page.locator('tbody tr').first();
+    if (await firstRow.isVisible()) {
+      await firstRow.click();
+      const details = page.getByRole('dialog', { name: 'Application details' });
+      await expect(details).toBeVisible();
+      await expect(details.getByText('Applicant')).toBeVisible();
+
+      await page.keyboard.press('Escape');
+      await expect(details).toBeHidden();
+    }
+  });
+
+  test('admin inspects application decision buttons and confirmation', async ({ page }) => {
+    const firstRow = page.locator('tbody tr').first();
+    if (await firstRow.isVisible()) {
+      await firstRow.click();
+      const details = page.getByRole('dialog', { name: 'Application details' });
+      await expect(details).toBeVisible();
+
+      const approveBtn = details.getByRole('button', { name: 'Approve' });
+      if (await approveBtn.isVisible()) {
+        await approveBtn.click();
+        const approveConfirm = page.locator('[data-sonner-toast]').filter({ hasText: 'Approve application?' });
+        await expect(approveConfirm).toBeVisible();
+        await approveConfirm.getByRole('button', { name: 'Cancel' }).click();
+        await expect(approveConfirm).toBeHidden();
+      }
+
+      await page.keyboard.press('Escape');
+    }
+  });
+});

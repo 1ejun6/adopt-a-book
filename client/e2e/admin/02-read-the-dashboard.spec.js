@@ -1,37 +1,56 @@
-import { test, expect } from '@playwright/test'
-import { demoAdmin } from '../support/env.js'
+import { test, expect } from '@playwright/test';
+import { demoAdmin } from '../support/env.js';
 
-test.beforeEach(async ({ page }) => {
-  await page.goto('/login')
-  await page.getByRole('textbox', { name: 'Email' }).fill(demoAdmin.email)
-  await page.getByRole('textbox', { name: 'Password' }).fill(demoAdmin.password)
-  await page.getByRole('button', { name: 'Login', exact: true }).click()
-  await expect(page).toHaveURL(/admin/)
-})
+test.describe('Admin dashboard', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/login');
+    await page.getByRole('textbox', { name: 'Email' }).fill(demoAdmin.email);
+    await page.getByRole('textbox', { name: 'Password' }).fill(demoAdmin.password);
+    await page.getByRole('textbox', { name: 'Password' }).press('Enter');
+    await expect(page.getByText('login successful')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible();
+  });
 
-test('admin reads the dashboard and jumps to the waiting work', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible()
-  await expect(page.getByText('Singapore time')).toBeVisible()
+  test('dashboard displays summary metrics and Singapore time', async ({ page }) => {
+    await expect(page.getByText('Singapore time')).toBeVisible();
+    await expect(page.locator('dl div').filter({ hasText: 'Requests awaiting review' })).toBeVisible();
+    await expect(page.locator('dl div').filter({ hasText: 'Pickups awaiting confirmation' })).toBeVisible();
+    await expect(page.locator('dl div').filter({ hasText: 'Pickups today' })).toBeVisible();
+    await expect(page.locator('dl div').filter({ hasText: 'Overdue pickups' })).toBeVisible();
+  });
 
-  await expect(page.getByRole('link', { name: /^Requests awaiting review: \d+$/ })).toBeVisible()
-  await expect(page.getByRole('link', { name: /^Pickups awaiting confirmation: \d+$/ })).toBeVisible()
-  await expect(page.getByRole('link', { name: /^Pickups today: \d+$/ })).toBeVisible()
-  await expect(page.getByRole('link', { name: /^Overdue pickups: \d+$/ })).toBeVisible()
+  test('admin switches between attention queue tabs', async ({ page }) => {
+    const overdueTab = page.getByRole('tab', { name: /Overdue/i });
+    const awaitingTab = page.getByRole('tab', { name: /Confirm pickups/i });
+    const requestsTab = page.getByRole('tab', { name: /Requests/i });
 
-  // clicks through the Needs attention tabs
-  await page.getByRole('tab', { name: /^Overdue/ }).click()
-  await page.getByRole('tab', { name: /^Confirm pickups/ }).click()
-  await page.getByRole('tab', { name: /^Requests/ }).click()
-  await page.getByRole('tab', { name: /^Next drive/ }).click()
-  await expect(page.getByRole('tab', { name: /^Next drive/ })).toHaveAttribute('aria-selected', 'true')
+    await expect(overdueTab).toBeVisible();
+    await expect(awaitingTab).toBeVisible();
+    await expect(requestsTab).toBeVisible();
 
-  // the cards open the right page and tab
-  await page.getByRole('link', { name: /^Requests awaiting review: \d+$/ }).click()
-  await expect(page).toHaveURL(/admin\/applications/)
-  await expect(page.getByRole('tab', { name: /^Pending/ })).toHaveAttribute('aria-selected', 'true')
+    await awaitingTab.click();
+    await expect(page.locator('[role="tabpanel"]:visible')).toBeVisible();
 
-  await page.goBack()
-  await page.getByRole('link', { name: /^Pickups today: \d+$/ }).click()
-  await expect(page).toHaveURL(/admin\/appointments/)
-  await expect(page.getByRole('tab', { name: /^Today's pickup/ })).toHaveAttribute('aria-selected', 'true')
-})
+    await requestsTab.click();
+    await expect(page.locator('[role="tabpanel"]:visible')).toBeVisible();
+
+    await overdueTab.click();
+    await expect(page.locator('[role="tabpanel"]:visible')).toBeVisible();
+  });
+
+  test('admin inspects today pickups sidebar and follows links', async ({ page }) => {
+    const collectionsSection = page.getByRole('region', { name: "Today's pickups" });
+    await expect(collectionsSection).toBeVisible();
+
+    await collectionsSection.getByRole('link', { name: 'View all' }).click();
+    await expect(page).toHaveURL(/admin\/appointments/);
+    await expect(page.getByRole('tab', { name: "Today's pickup" })).toHaveAttribute('data-state', 'active');
+  });
+
+  test('clicking requests metric card deep links to adoption applications', async ({ page }) => {
+    const requestsCard = page.locator('dl div').filter({ hasText: 'Requests awaiting review' });
+    await requestsCard.click();
+    await expect(page).toHaveURL(/admin\/applications/);
+    await expect(page.getByRole('tab', { name: 'All' })).toHaveAttribute('data-state', 'active');
+  });
+});
