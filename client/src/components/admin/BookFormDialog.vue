@@ -175,6 +175,7 @@ defineExpose({ selectAddMode });
         :description="props.book ? 'update the book details and cover photo' : 'find books on Open Library or enter the details manually'"
         submitLabel="Add book" :submittingLabel="submittingLabel" footerClass="grid grid-cols-2"
         :hideForm="!props.book && addMode === 'search'"
+        :contentClass="!props.book && addMode === 'search' ? 'lg:max-w-7xl' : null"
         :showFooterSeparator="!props.book"
         :submitting="props.submitting || checkingCover" :dirty="isFormDirty" noValidate @submit="submitBook">
         <template #headerAside>

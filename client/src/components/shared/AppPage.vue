@@ -1,6 +1,6 @@
 <!-- Shared page width and alignment. Pass page-specific spacing and ARIA attributes on AppPage. -->
 <template>
-  <section class="mx-auto w-full min-w-0 max-w-5xl">
+  <section class="mx-auto w-full min-w-0 max-w-[1800px]">
     <slot />
   </section>
 </template>

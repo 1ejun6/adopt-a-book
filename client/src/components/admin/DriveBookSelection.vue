@@ -14,7 +14,7 @@ const emit = defineEmits(['valid']);
 const mode = ref('select'), page = ref(1), rows = ref([]), loading = ref(false), error = ref('');
 const pageSize = 10;
 let generation = 0, controller;
-const columns = computed(() => [{ key: 'book', label: 'Book' }, { key: 'status', label: 'Status', class: 'w-36' }, ...(mode.value === 'review' ? [{ key: 'remove', label: '', class: 'w-24' }] : [])]);
+const columns = computed(() => [{ key: 'book', label: 'Book' }, { key: 'status', label: 'Status', class: 'w-28' }, ...(mode.value === 'review' ? [{ key: 'remove', label: '', class: 'w-22' }] : [])]);
 const selectedBooks = computed(() => selected.value.map(id => rows.value.find(book => book.id === id) || { id, title: 'Book no longer exists', status: 'unavailable' }));
 const invalid = computed(() => selectedBooks.value.some(book => book.status !== 'available' || book.mrtstationid !== props.stationId));
 const filtered = computed(() => (mode.value === 'review' ? selectedBooks.value : rows.value.filter(book => book.status === 'available' && book.mrtstationid === props.stationId)));
@@ -63,7 +63,7 @@ watch(() => [props.open, props.stationId, props.drive?.id], ([open, station, dri
       <p class="text-sm" aria-live="polite">{{ selected.length }} selected</p>
       <p v-if="invalid" role="alert" class="text-sm text-destructive">Some selected copies are unavailable or belong to another MRT. Remove them in Review selected.</p>
       <div v-if="error" role="alert" class="space-y-2"><p>{{ error }}</p><Button type="button" variant="outline" :disabled="disabled" @click="load">Retry books</Button></div>
-      <AdminTable v-else :rows="visibleRows" :columns="columns" :selectedIds="selected" :selectable="mode === 'select'" :selectionColumn="mode === 'select'"
+      <AdminTable v-else fitToContainer :rows="visibleRows" :columns="columns" :selectedIds="selected" :selectable="mode === 'select'" :selectionColumn="mode === 'select'"
         :rowAction="mode === 'select' ? 'select' : 'none'" :isLoading="loading" :disabled="disabled || loading"
         :emptyTitle="mode === 'review' ? 'No selected books' : 'No available books found'" emptyDescription="Choose available books at this MRT station."
         @selectedRows="selected = $event">

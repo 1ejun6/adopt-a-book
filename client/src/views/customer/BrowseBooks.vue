@@ -221,6 +221,9 @@ useVisibleRefresh(fetchBooks, { busy: () => loading.value });
 </template>
 
 <style scoped>
+.browse-books {
+  max-width: 64rem;
+}
 .browse-books :deep([data-slot="input"]),
 .browse-books :deep(#browse-genre),
 .browse-books :deep(#browse-sort) {

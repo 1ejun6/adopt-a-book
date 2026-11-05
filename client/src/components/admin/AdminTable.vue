@@ -11,6 +11,7 @@ const props = defineProps({
   rows: { type: Array },
   columns: { type: Array },
   compact: { type: Boolean, default: false },
+  fitToContainer: { type: Boolean, default: false },
   selectedIds: { type: Array, default: () => [] },
   selectable: { type: Boolean, default: true },
   selectionColumn: { type: Boolean, default: true },
@@ -117,12 +118,12 @@ function handleRowClick(row) {
       </div>
 
       <!-- Desktop and compact lists retain the shared table. -->
-      <div :class="!props.compact && 'hidden lg:block'">
-        <Table :compact="props.compact">
+      <div :class="[!props.compact && 'hidden lg:block', props.fitToContainer && 'admin-table-fit']">
+        <Table :compact="props.compact || props.fitToContainer">
           <TableHeader class="bg-primary">
             <TableRow>
               <!--@lee-hlmilk > select all visible rows-->
-              <TableHead v-if="props.selectionColumn" class="w-16 text-center" @click="toggleAllRows">
+              <TableHead v-if="props.selectionColumn" class="text-center" :class="props.fitToContainer ? 'w-11' : 'w-16'" @click="toggleAllRows">
                 <!--@1ejun6 > stops its click from bubbling up & triggering a parent element click handler-->
                 <Checkbox :disabled="props.disabled" v-if="props.selectable" class="mx-auto" :modelValue="headerCheckboxState" aria-label="Select all visible rows" @click.stop
                   @update:modelValue="toggleAllRows" />
@@ -131,7 +132,7 @@ function handleRowClick(row) {
                 <slot :name="`header${column.key[0].toUpperCase()}${column.key.slice(1)}`" :column="column">{{ column.label }}</slot>
               </TableHead>
               <!--@lee-hlmilk > row action column-->
-              <TableHead v-if="props.rowAction === 'open'" class="w-16" />
+              <TableHead v-if="props.rowAction === 'open'" :class="props.fitToContainer ? 'w-14' : 'w-16'" />
             </TableRow>
           </TableHeader>
 
@@ -144,7 +145,7 @@ function handleRowClick(row) {
                   @update:modelValue="toggleRowSelection(row.id)" />
               </TableCell>
 
-              <TableCell v-for="column in columns" :key="column.key" class="truncate">
+              <TableCell v-for="column in columns" :key="column.key" :class="!props.fitToContainer && 'truncate'">
                 <!--@lee-hlmilk > column classes size cells > row &&& value let each caller render its own content-->
                 <slot :name="`cell${column.key[0].toUpperCase()}${column.key.slice(1)}`" :row="row"
                   :value="row[column.key]">
@@ -168,3 +169,19 @@ function handleRowClick(row) {
     <p v-else class="sr-only" role="status">{{ emptyTitle }}. {{ emptyDescription }}</p>
   </div>
 </template>
+
+<style scoped>
+/* Fit dialog tables without changing the mobile cards or full-page tables. */
+.admin-table-fit :deep([data-slot='table-head']),
+.admin-table-fit :deep([data-slot='table-cell']) {
+  padding-inline: 0.375rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.admin-table-fit :deep(td strong),
+.admin-table-fit :deep(td small) {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+}
+</style>

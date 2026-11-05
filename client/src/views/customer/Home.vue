@@ -234,7 +234,6 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
 
 <style scoped>
 .customer-home {
-  max-width: 64rem;
   display: grid;
   align-content: start;
   gap: 3rem;

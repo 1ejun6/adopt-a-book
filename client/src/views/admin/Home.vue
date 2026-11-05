@@ -1,5 +1,6 @@
 <script setup>
 import AppIcon from '@/components/shared/AppIcon.vue';
+import AppPage from '@/components/shared/AppPage.vue';
 import { currentTime } from '@/lib/clock';
 import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
 import { computed, reactive, ref } from 'vue';
@@ -84,7 +85,7 @@ fetchDashboard();
 </script>
 
 <template>
-  <section class="mx-auto w-full min-w-0 max-w-7xl space-y-5" aria-labelledby="dashboard-title">
+  <AppPage class="space-y-5" aria-labelledby="dashboard-title">
     <header class="flex flex-wrap items-center justify-between gap-5">
       <div>
         <h1 id="dashboard-title">Dashboard</h1>
@@ -217,5 +218,5 @@ fetchDashboard();
         </template>
       </section>
     </div>
-  </section>
+  </AppPage>
 </template>

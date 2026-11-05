@@ -135,7 +135,7 @@ defineExpose({ canNavigate });
 <template>
   <Dialog :open="open" @update:open="updateOpen">
     <DialogContent
-      class="adoption-dialog max-w-[720px]"
+      class="adoption-dialog"
       :showCloseButton="!state.saving"
       @closeAutoFocus="emit('restore-focus', $event)"
       @escapeKeyDown="
