@@ -71,7 +71,7 @@ async function saveDetails() {
 <template>
   <Dialog :open="open" @update:open="value => { if (!saving) open = value; }">
     <DialogTrigger asChild><Button><AppIcon name="edit" /><span class="sr-only">Edit profile</span></Button></DialogTrigger>
-    <DialogContent class="max-w-md border" :showCloseButton="!saving"
+    <DialogContent class="max-w-md sm:max-w-2xl lg:max-w-3xl border" :showCloseButton="!saving"
       @escapeKeyDown="event => { if (saving) event.preventDefault(); }"
       @interactOutside="event => { if (saving) event.preventDefault(); }">
       <DialogHeader class="space-y-1 border-0 pb-0">

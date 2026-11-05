@@ -51,7 +51,7 @@ async function register() {
 }
 </script>
 <template>
-    <section class="m-auto w-full max-w-md py-5 md:max-w-5xl md:py-8">
+    <section class="m-auto w-full max-w-md py-5 md:max-w-7xl md:py-8">
         <div class="space-y-5">
             <h1>Create account</h1>
             <form @submit.prevent="register">

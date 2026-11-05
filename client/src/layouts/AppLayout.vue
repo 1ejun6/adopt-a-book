@@ -1,6 +1,6 @@
 <script setup>
 import AppIcon from '@/components/shared/AppIcon.vue';
-import { watch, onScopeDispose } from 'vue';
+import { computed, watch, onScopeDispose } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useAdoptionsStore } from '@/stores/adoptions';
 import { useWatchlistStore } from '@/stores/watchlist';
@@ -10,6 +10,7 @@ import { RouterView } from 'vue-router';
 import AppNavbar from '@/components/shared/AppNavbar.vue';
 const router = useRouter();
 const route = useRoute(), auth = useAuthStore(), adoptions = useAdoptionsStore(), saved = useWatchlistStore();
+const centeredPage = computed(() => ['guestHome', 'login', 'register', 'customerAccount'].includes(route.name));
 function refreshPrivate() {
   if (auth.role !== 'customer') return;
   void adoptions.refresh();
@@ -30,9 +31,11 @@ onScopeDispose(() => document.removeEventListener('visibilitychange', visible));
 </script>
 
 <template>
-  <div class="app-layout flex flex-col" style="padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right)">
+  <div class="app-layout flex flex-col" :class="{ 'min-h-dvh': centeredPage }" style="padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right)">
     <AppNavbar />
-    <main class="app-main min-w-0 p-4 sm:p-5" style="padding-bottom: max(1rem, env(safe-area-inset-bottom))">
+    <main class="app-main min-w-0 p-4 sm:p-5"
+      :class="{ 'lg:px-8': !['guestHome', 'login', 'register', 'customerBooks', 'customerAccount'].includes(route.name), 'flex flex-1 items-center': centeredPage }"
+      style="padding-bottom: max(1rem, env(safe-area-inset-bottom))">
       <section v-if="!auth.ready" role="alert" class="mx-auto w-full max-w-md space-y-5">
         <h1>Connection unavailable</h1>
         <p>{{ auth.error }}</p>

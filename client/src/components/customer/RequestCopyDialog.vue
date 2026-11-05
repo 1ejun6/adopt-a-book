@@ -58,7 +58,7 @@ function preventClosing(event) {
   <Dialog :open="open" @update:open="updateOpen">
     <DialogContent
       v-if="book"
-      class="adoption-dialog max-w-[720px]"
+      class="adoption-dialog"
       :showCloseButton="!saving"
       @closeAutoFocus="emit('restore-focus', $event)"
       @escapeKeyDown="preventClosing"

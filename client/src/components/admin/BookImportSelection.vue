@@ -28,11 +28,11 @@ const rows = computed(() => reviewing.value ? reviewBooks.value : results.value)
 const canImport = computed(() => !props.submitting && reviewBooks.value.length > 0 && reviewBooks.value.every(book => book.mrtstationid));
 const columns = computed(() => [
     { key: 'book', label: 'Book' },
-    { key: 'isbn', label: 'ISBN', class: 'w-44' },
-    { key: 'publicationyear', label: 'First publication', class: 'w-36' },
+    { key: 'isbn', label: 'ISBN', class: 'w-36' },
+    { key: 'publicationyear', label: 'First publication', class: 'w-28' },
     ...(reviewing.value ? [
-        { key: 'mrtstationid', label: 'Collection area', class: 'w-56' },
-        { key: 'actions', label: '', class: 'w-24' }
+        { key: 'mrtstationid', label: 'Collection area', class: 'w-48' },
+        { key: 'actions', label: '', class: 'w-16' }
     ] : [])
 ]);
 
@@ -105,7 +105,7 @@ watch(() => props.importedIds, ids => {
                     <Button v-if="!reviewing" type="button" :disabled="props.lookup.loading || !selectedIds.length" @click="reviewSelection"><AppIcon name="next" />Next</Button>
                 </div>
                 <!--@lee-hlmilk > share table markup &&& checkbox logic with admin lists > import-specific controls use slots-->
-                <AdminTable :rows="rows" :columns="columns" :isLoading="props.lookup.loading" :disabled="props.lookup.loading || props.submitting" :selectedIds="reviewing ? [] : selectedIds"
+                <AdminTable fitToContainer :rows="rows" :columns="columns" :isLoading="props.lookup.loading" :disabled="props.lookup.loading || props.submitting" :selectedIds="reviewing ? [] : selectedIds"
                     :emptyKey="JSON.stringify([props.query, reviewing])" :emptyTitle="reviewing ? 'No books selected' : 'No matching books'"
                     :emptyDescription="reviewing ? 'Go back to results to choose books to add.' : 'Try another title, author or ISBN, or use Manual entry.'"
                     :selectable="!reviewing && !props.submitting" :selectionColumn="!reviewing" :rowAction="reviewing ? 'none' : 'select'"

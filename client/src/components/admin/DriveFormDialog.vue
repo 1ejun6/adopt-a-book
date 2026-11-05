@@ -98,6 +98,7 @@ watch(() => [draft.starttime, draft.endtime], () => {
 <template>
     <!--@lee-hlmilk > explicit open/update:open is the v-model contract > relay allowed close changes to the view-->
     <AdminFormDialog :open="props.open" :title="props.drive ? 'Edit drive' : 'Create drive'" :dirty="dirty"
+        contentClass="lg:max-w-7xl"
         :submitting="props.submitting" noValidate :showFooterSeparator="false"
         @update:open="emit('update:open', $event)" @submit="submitDrive">
         <!--@lee-hlmilk > this group spaces fields > the outer form spaces the group from its footer > input/change bubble here-->

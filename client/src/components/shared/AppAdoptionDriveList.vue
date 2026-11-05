@@ -137,9 +137,3 @@ onBeforeUnmount(() => { if (emptyToastId !== undefined) toast.dismiss(emptyToast
       :visibleCount="pagedrives.length" :pageSize="pagesize" :loading="loading" :disabled="loading" />
   </AppPage>
 </template>
-
-<style scoped>
-.adoption-drive-page {
-  max-width: 80rem;
-}
-</style>
