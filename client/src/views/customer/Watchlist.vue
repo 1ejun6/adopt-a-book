@@ -51,7 +51,7 @@ async function removeEntry(entry, closePreview = false) {
   try {
     const result = await removeSavedEntry(entry);
     if (!result) return;
-    toast.success('removed from watchlist');
+    toast.success('Removed from saved books');
     if (closePreview) dialogs.value?.closeBookDetails(entry.bookid);
   } catch (failure) {
     toast.error(failure.message);
@@ -69,21 +69,21 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
     <!--@sree-sanjana06 > watchlist heading and total saved books-->
     <header class="space-y-2 text-center">
       <div class="flex flex-col items-center gap-2">
-        <h1 class="text-4xl">My Watchlist</h1>
+        <h1 class="text-4xl">Saved books</h1>
         <p v-if="!loading && !error" class="text-sm text-muted-foreground" role="status">
           {{ watchlist.length }} saved {{ watchlist.length === 1 ? 'book' : 'books' }}
         </p>
       </div>
-      <p class="text-muted-foreground text-sm">your saved books and private notes saving doesn't reserve a copy</p>
+      <p class="text-muted-foreground text-sm">Your saved books and private notes. Saving doesn’t reserve a copy.</p>
     </header>
 
     <section v-if="loading" class="grid auto-rows-fr gap-5 md:grid-cols-2 lg:grid-cols-4" aria-busy="true">
       <CustomerBookCard v-for="index in 8" :key="index" loading />
     </section>
     <div v-else-if="error" class="space-y-4 rounded-xl border bg-card p-5" role="alert">
-      <h2 class="text-xl">We couldn’t load your watchlist</h2>
+      <h2 class="text-xl">We couldn’t load your saved books</h2>
       <p class="text-destructive text-sm">{{ error }}</p>
-      <Button variant="outline" @click="loadWatchlist">Try Again</Button>
+      <Button variant="outline" @click="loadWatchlist">Try again</Button>
     </div>
     <!--@sree-sanjana06 > show empty state after removing the final saved book-->
     <div v-else-if="!watchlist.length" class="space-y-4 rounded-xl border bg-card p-8 text-center" data-active>
@@ -103,10 +103,10 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
     <!--@sree-sanjana06 > existing book details and adoption request popups-->
     <CustomerBookDialogs ref="dialogs" :savedIds="savedIds">
       <template #book-action="{ book }">
-        <button type="button" class="washi-tape-hover min-h-11 min-w-11 shrink-0 rounded-lg p-2 text-destructive" title="Remove from watchlist"
+        <button type="button" class="min-h-11 min-w-11 rounded-lg p-2 text-destructive" title="Remove from saved books"
           :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="removePreviewBook(book)">
           <HugeiconsIcon :icon="Delete02Icon" class="size-6" aria-hidden="true" />
-          <span class="sr-only">Remove from watchlist</span>
+          <span class="sr-only">Remove from saved books</span>
         </button>
       </template>
       <template #details="{ book }">
@@ -115,11 +115,11 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
             <h3>Your private note</h3>
             <Button type="button" variant="outline" size="sm"
               :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="editPreviewNote(book)">
-              <HugeiconsIcon :icon="PencilEdit02Icon" class="size-4 shrink-0" aria-hidden="true" />
+              <HugeiconsIcon :icon="PencilEdit02Icon" class="size-4" aria-hidden="true" />
               <span>Edit note</span>
             </Button>
           </div>
-          <p class="text-sm text-muted-foreground [overflow-wrap:anywhere]">{{ notes.get(book?.id) || 'no note added yet' }}</p>
+          <p class="text-sm text-muted-foreground break-words">{{ notes.get(book?.id) || 'no note added yet' }}</p>
         </section>
       </template>
     </CustomerBookDialogs>

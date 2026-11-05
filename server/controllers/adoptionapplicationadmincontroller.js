@@ -23,7 +23,7 @@ const getupdateadoptionapplication = async (req, res) => {
     if (!id) {
       return res.status(400).json({ error: "application id is required" });
     }
-    const adoptionapplication = await adopt.findbyadoptionapplicationid(id);
+    const adoptionapplication = await adopt.findbyadoptionapplicationid(id, "id,name,email");
     if (!adoptionapplication || adoptionapplication.bookid.ownerid) {
       return res.status(404).json({ error: "adoption application not found" });
     }

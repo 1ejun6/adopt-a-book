@@ -36,10 +36,10 @@ const statusTabs = [
     { value: 'cancelled', label: 'Cancelled', status: 'cancelled' }
 ];
 const columns = [
-    { key: 'applicant', label: 'Applicant', class: 'w-1/5' },
-    { key: 'book', label: 'Requested copy', class: 'w-2/5' },
-    { key: 'submitted', label: 'Submitted', class: 'w-1/5' },
-    { key: 'status', label: 'Status' }
+    { key: 'applicant', label: 'Applicant', class: 'w-1/5', mobileClass: 'col-span-2 flex items-baseline gap-2' },
+    { key: 'book', label: 'Requested copy', class: 'w-2/5', mobileClass: 'col-start-1 row-start-1', hideMobileLabel: true },
+    { key: 'submitted', label: 'Date submitted', class: 'w-1/5', mobileClass: 'col-span-2 flex items-baseline gap-2' },
+    { key: 'status', label: 'Status', mobileClass: 'col-start-2 row-start-1', hideMobileLabel: true }
 ];
 //@lee-hlmilk > filters &&& totals come from SQL > selection stays scoped to the returned page
 const { rows: applications, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchApplications } = useServerPagination({
@@ -120,7 +120,7 @@ fetchApplications();
         </template>
         <template #cellApplicant="{ row }">
             <p class="break-words lg:truncate">{{ row.userid?.name || 'Unknown applicant' }}</p>
-            <small class="block break-words lg:truncate text-sm text-muted-foreground">{{ row.userid?.email || 'Email not provided' }}</small>
+            <small class="hidden truncate text-sm text-muted-foreground lg:block">{{ row.userid?.email || 'Email not provided' }}</small>
         </template>
         <template #cellBook="{ row }">
             <BookIdentity :title="row.bookid?.title || 'Untitled'" :author="row.bookid?.authors?.join(', ') || 'Unknown Author'" :cover="row.bookid?.coverurl" />

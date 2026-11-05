@@ -9,7 +9,7 @@ const sort = defineModel('sort', { type: String, default: 'asc' });
 
 <template>
   <section class="space-y-5">
-    <div class="flex flex-wrap items-center gap-2.5 sm:gap-5">
+    <div class="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-5">
       <slot name="tabs" />
       <AppAdoptionDriveLegend v-model:status="status" class="w-full sm:ml-auto sm:w-auto" />
     </div>

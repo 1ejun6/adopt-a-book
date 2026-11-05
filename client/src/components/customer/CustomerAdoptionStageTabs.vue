@@ -1,4 +1,5 @@
 <script setup>
+import { Badge } from '@/components/ui/badge';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { activeAdoptionStages } from '@/lib/adoptions';
 
@@ -17,13 +18,13 @@ defineProps({
       v-for="item in activeAdoptionStages"
       :key="item.value"
       :value="item.value"
-
     >
       <span>{{ item.label }}</span>
-      <span
+      <Badge
         v-if="showCounts"
+        variant="neutral"
         class="adoption-tab-count tabular-nums"
-        >{{ counts[item.value] }}</span
+        >{{ counts[item.value] }}</Badge
       >
     </TabsTrigger>
   </TabsList>

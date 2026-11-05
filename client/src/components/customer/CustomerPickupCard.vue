@@ -42,6 +42,7 @@ const action = computed(() =>
   <CustomerAdoptionRow
     :id="`adoption-pickup-${recordId(appointment)}`"
     :label="`${action} for ${title}`"
+    :action="action"
     @open="needsDetails && editable && !unlinked ? emit('edit') : emit('details')"
   >
     <template #book>

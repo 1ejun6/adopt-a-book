@@ -43,23 +43,29 @@ onBeforeUnmount(() => observer?.disconnect());
 
 <template>
   <div class="saved-carousel">
-    <div class="controls">
-      <Button
-        variant="outline"
-        aria-label="Previous saved books"
-        aria-controls="saved-track"
-        :disabled="atStart"
-        @click="move(-1)"
-        ><HugeiconsIcon :icon="ArrowLeft01Icon" class="size-4" aria-hidden="true" /></Button
-      >
-      <Button
-        variant="outline"
-        aria-label="Next saved books"
-        aria-controls="saved-track"
-        :disabled="atEnd"
-        @click="move(1)"
-        ><HugeiconsIcon :icon="ArrowRight01Icon" class="size-4" aria-hidden="true" /></Button
-      >
+    <div class="header">
+      <slot name="heading" />
+      <div class="controls">
+        <Button asChild variant="outline">
+          <RouterLink :to="{ name: 'customerWatchlist' }">View saved books</RouterLink>
+        </Button>
+        <Button
+          variant="outline"
+          aria-label="Previous saved books"
+          aria-controls="saved-track"
+          :disabled="atStart"
+          @click="move(-1)"
+          ><HugeiconsIcon :icon="ArrowLeft01Icon" class="size-4" aria-hidden="true" /></Button
+        >
+        <Button
+          variant="outline"
+          aria-label="Next saved books"
+          aria-controls="saved-track"
+          :disabled="atEnd"
+          @click="move(1)"
+          ><HugeiconsIcon :icon="ArrowRight01Icon" class="size-4" aria-hidden="true" /></Button
+        >
+      </div>
     </div>
     <ul
       id="saved-track"
@@ -85,24 +91,28 @@ onBeforeUnmount(() => observer?.disconnect());
           />
           <span class="metadata">
             <span class="availability">{{
-              entry.bookid.status === 'available'
-                ? 'Available to request'
-                : 'Unavailable for new requests'
+              props.requestIds.get(entry.bookid.id)
+                ? 'Request sent'
+                : entry.bookid.status === 'available'
+                  ? 'Available to request'
+                  : 'Unavailable for new requests'
             }}</span>
-            <span class="collection">Collection: {{ entry.bookid.collectionarea || entry.bookid.mrtstation?.name || 'Not provided' }}</span>
+            <span class="collection" :title="entry.bookid.collectionarea || entry.bookid.mrtstation?.name || 'Not provided'">Collection: {{ entry.bookid.collectionarea || entry.bookid.mrtstation?.name || 'Not provided' }}</span>
           </span>
         </button>
         <div class="actions">
-          <RouterLink v-if="props.requestIds.get(entry.bookid.id)" class="inline-flex min-h-11 items-center text-sm underline underline-offset-4" :to="{ name: 'customerAdoptions', query: { request: props.requestIds.get(entry.bookid.id) } }">View my request<span class="sr-only"> for {{ entry.bookid.title }}</span></RouterLink>
+          <Button v-if="props.requestIds.get(entry.bookid.id)" asChild variant="outline" size="sm" class="flex-1 whitespace-nowrap">
+            <RouterLink :to="{ name: 'customerAdoptions', query: { request: props.requestIds.get(entry.bookid.id) } }">View my request<span class="sr-only"> for {{ entry.bookid.title }}</span></RouterLink>
+          </Button>
           <Button
             variant="outline"
-            class="w-full text-destructive"
+            :class="[props.requestIds.get(entry.bookid.id) ? 'px-0' : 'w-full', 'text-destructive']"
             :disabled="busyIds.has(entry.bookid.id)"
             :aria-label="`Remove ${entry.bookid.title} from saved books`"
             @click="$emit('remove', entry.bookid)"
           >
-            <HugeiconsIcon :icon="Delete02Icon" class="size-4 shrink-0" aria-hidden="true" />
-            <span>Remove</span>
+            <HugeiconsIcon :icon="Delete02Icon" class="size-4" aria-hidden="true" />
+            <span v-if="!props.requestIds.get(entry.bookid.id)">Remove</span>
           </Button>
         </div>
       </li>
@@ -111,11 +121,18 @@ onBeforeUnmount(() => observer?.disconnect());
 </template>
 
 <style scoped>
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
 .controls {
   display: flex;
-  justify-content: flex-end;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-left: auto;
 }
 .track {
   display: flex;
@@ -124,7 +141,8 @@ onBeforeUnmount(() => observer?.disconnect());
   padding: 0.5rem 0.25rem 1rem;
 }
 .saved-book {
-  flex: 0 0 13rem;
+  flex: 0 0 13.5rem;
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   padding: 1rem;
@@ -134,29 +152,26 @@ onBeforeUnmount(() => observer?.disconnect());
 }
 .preview {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
   gap: 0.75rem;
   text-align: left;
 }
 .metadata {
+  margin-top: auto;
   display: grid;
   gap: 0.25rem;
-  font-size: 0.875rem;
-}
-.availability {
-  display: block;
-  color: var(--foreground);
+  font-size: 0.75rem;
 }
 .collection {
-  display: block;
   color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .actions {
-  margin-top: auto;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.5rem;
 }
 </style>

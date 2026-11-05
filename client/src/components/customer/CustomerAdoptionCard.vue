@@ -50,6 +50,7 @@ function openRecord() {
   <CustomerAdoptionRow
     :id="`adoption-${record.id}`"
     :label="`${actionLabel} for ${title}${overdue ? '. Pickup times have passed' : ''}`"
+    :action="actionLabel"
     @open="openRecord"
   >
     <template #book>
@@ -92,7 +93,7 @@ function openRecord() {
           {{ record.appointment.location || 'Location unavailable' }}
         </p>
       </template>
-      <p v-else class="text-sm">{{ pickupPlaceholder }}</p>
+      <p v-else class="text-sm text-muted-foreground">{{ pickupPlaceholder }}</p>
     </template>
   </CustomerAdoptionRow>
 </template>

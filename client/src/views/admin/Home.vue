@@ -20,8 +20,8 @@ const now = computed(() => new Date(currentTime.value));
 const today = computed(() => todayInSingapore(now.value));
 const displayDate = computed(() => now.value.toLocaleDateString('en-SG', { timeZone: 'Asia/Singapore', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
 const attentionQueues = reactive([
-  { label: 'Overdue', action: 'View collection', view: 'overdue', count: null, rows: null, empty: 'No overdue pickups.', to: { name: 'adminAppointments', state: { view: 'overdue' } } },
-  { label: 'Confirm pickups', action: 'Review proposal', view: 'awaiting', count: null, rows: null, empty: 'No pickups awaiting confirmation.', to: { name: 'adminAppointments', state: { view: 'awaiting' } } },
+  { label: 'Overdue', action: 'View overdue', view: 'overdue', count: null, rows: null, empty: 'No overdue pickups.', to: { name: 'adminAppointments', state: { view: 'overdue' } } },
+  { label: 'Confirm pickups', action: 'View pickup', view: 'awaiting', count: null, rows: null, empty: 'No pickups awaiting confirmation.', to: { name: 'adminAppointments', state: { view: 'awaiting' } } },
   { label: 'Requests', action: 'View requests', count: null, rows: null, empty: 'No pending adoption requests.', to: { name: 'adminApplications' } },
   { label: 'Next drive', action: 'View drives', count: null, rows: null, empty: 'No upcoming drives.', to: { name: 'adminDrives' } }
 ]);
@@ -95,8 +95,8 @@ fetchDashboard();
     </header>
 
     <!--@lee-hlmilk > full-card links open the corresponding queue > navigation state selects the appointment tab on arrival-->
-    <dl class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-      <div v-for="item in summary" :key="item.label" class="relative rounded-lg border p-5 hover:bg-primary" :aria-busy="loading">
+    <dl class="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-4">
+      <div v-for="item in summary" :key="item.label" class="relative flex flex-col justify-between rounded-lg border p-4 hover:bg-primary sm:p-5" :aria-busy="loading">
         <RouterLink :to="item.queue.to" class="absolute inset-0 rounded-lg" :aria-label="`${item.label}: ${loading ? 'Loading' : item.queue.count ?? 'Unavailable'}`" />
         <dt class="text-sm text-muted-foreground">{{ item.label }}</dt>
         <dd class="mt-2.5 flex items-center justify-between gap-2.5 font-heading text-3xl">
@@ -113,9 +113,9 @@ fetchDashboard();
           <h2 id="attention-title">Needs attention</h2>
         </header>
         <Tabs v-model="selectedQueue">
-          <TabsList aria-label="Attention queues" class="gap-0 border-b">
+          <TabsList aria-label="Attention queues" class="gap-0">
             <TabsTrigger v-for="(queue, index) in attentionQueues" :key="queue.label" :value="index"
-              class="text-center">
+              class="flex-1 text-center">
               {{ queue.label }} <Badge variant="neutral">{{ queue.count ?? '—' }}</Badge>
             </TabsTrigger>
           </TabsList>

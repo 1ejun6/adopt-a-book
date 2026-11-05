@@ -25,7 +25,6 @@ const emit = defineEmits(['update:open', 'retry']);
             <DialogHeader>
                 <DialogTitle>{{ props.title }}</DialogTitle>
             </DialogHeader>
-            <hr>
             <div class="space-y-5">
                 <div v-if="props.book || props.status || $slots.summary" class="flex flex-wrap items-center justify-between gap-5">
                     <!--@lee-hlmilk > book identity is optional > other records such as drives can supply their own summary-->
@@ -37,21 +36,18 @@ const emit = defineEmits(['update:open', 'retry']);
                     <StatusBadge v-if="props.status" :status="props.status" class="shrink-0" />
                 </div>
                 <p v-if="props.description" class="whitespace-pre-line">{{ props.description }}</p>
-                <dl v-if="props.fields.length" class="grid gap-2.5 sm:grid-cols-[auto_minmax(0,1fr)]">
+                <dl v-if="props.fields.length" class="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-baseline sm:gap-x-4 sm:gap-y-2.5">
                     <!--@lee-hlmilk > mobile stacks labels above values > sm uses label/value columns with a shrinkable value track-->
-                    <template v-for="field in props.fields" :key="field.label">
-                        <dt class="text-muted-foreground">{{ field.label }}</dt>
+                    <div v-for="field in props.fields" :key="field.label" class="min-w-0 space-y-0.5 sm:contents">
+                        <dt class="text-xs text-muted-foreground sm:text-sm">{{ field.label }}</dt>
                         <!--@lee-hlmilk > optional field slots keep related content such as location links with their value-->
                         <dd class="min-w-0"><slot :name="`field-${field.key || field.label}`" :field="field">{{ field.value || 'Not provided' }}</slot></dd>
-                    </template>
+                    </div>
                 </dl>
                 <fieldset :disabled="busy || !!error" :inert="busy || !!error" class="min-w-0"><slot /></fieldset>
             </div>
             <!--@lee-hlmilk > read-only records omit actions > no empty footer ||| separator-->
-            <template v-if="$slots.actions">
-                <hr>
-                <DialogFooter class="flex-col sm:flex-row"><fieldset :disabled="busy || !!error" :inert="busy || !!error" class="flex flex-wrap gap-3 w-full min-w-0"><slot name="actions" /></fieldset></DialogFooter>
-            </template>
+            <DialogFooter v-if="$slots.actions"><fieldset :disabled="busy || !!error" :inert="busy || !!error" class="flex flex-wrap gap-3 w-full min-w-0"><slot name="actions" /></fieldset></DialogFooter>
         </DialogContent>
     </Dialog>
 </template>

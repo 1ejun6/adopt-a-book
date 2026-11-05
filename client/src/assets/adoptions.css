@@ -19,13 +19,14 @@
 /* All adoption records share the same columns and action treatment. */
 .adoption-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 20px;
-  grid-template-areas: 'book arrow' 'status arrow' 'pickup arrow';
-  gap: 10px 12px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'book' 'status' 'pickup' 'action';
+  gap: 8px 12px;
   min-width: 0;
   width: 100%;
   font-size: 0.875rem;
   text-align: left;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 16px;
@@ -44,7 +45,6 @@
 .adoption-row__warning {
   margin-top: 4px;
   color: var(--destructive);
-  font-size: 0.75rem;
   line-height: 1.4;
 }
 .adoption-row__pickup {
@@ -57,21 +57,31 @@
 .adoption-row__mobile-label {
   flex-shrink: 0;
   color: var(--muted-foreground);
-  font-size: 0.75rem;
 }
 .adoption-row__date {
   overflow-wrap: anywhere;
 }
 .adoption-row__location {
+  margin-top: 2px;
+  color: var(--muted-foreground);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
   overflow-wrap: anywhere;
 }
-.adoption-row__arrow {
-  grid-area: arrow;
+.adoption-row__action {
+  grid-area: action;
   align-self: center;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted-foreground);
+}
+.adoption-row__action-label {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .adoption-column-headings {
   display: none;
@@ -79,14 +89,14 @@
 @media (min-width: 1024px) {
   .adoption-columns {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.95fr) minmax(0, 1.05fr) 20px;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.9fr) minmax(0, 1fr) 9.5rem;
     column-gap: 18px;
     padding-inline: 16px;
   }
   .adoption-row {
-    grid-template-areas: 'book status pickup arrow';
+    grid-template-areas: 'book status pickup action';
     align-items: center;
-    min-height: 88px;
+    min-height: 84px;
   }
   .adoption-column-headings {
     color: var(--muted-foreground);

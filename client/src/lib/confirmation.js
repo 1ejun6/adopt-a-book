@@ -24,7 +24,7 @@ export function useConfirmation() {
       const content = () => h(FocusScope, { loop: true, trapped: true, asChild: true }, () => h('div', { class: 'pointer-events-auto space-y-2.5' }, [
         h('p', title),
         description && h('p', { class: 'max-h-48 overflow-y-auto whitespace-pre-line text-muted-foreground' }, description),
-        h('div', { class: 'flex flex-wrap gap-2.5' }, [
+        h('div', { class: 'flex flex-col gap-2.5 sm:flex-row sm:flex-wrap' }, [
           h(Button, { type: 'button', variant: 'outline', class: 'flex-1', onClick: () => settle(false) }, () => cancelLabel),
           h(Button, { type: 'button', variant: destructive ? 'destructive' : 'default', class: 'flex-1', onClick: () => settle(true) }, () => actionLabel)
         ])

@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/lib/api'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -13,14 +13,22 @@ import GenrePicker from '@/components/customer/GenrePicker.vue';
 const router = useRouter();
 const route = useRoute();
 const errorMessage = ref('');
+const genreError = ref('');
+const genrePicker = ref(null);
 const fieldErrors = reactive({});
 function fieldFeedback(event) { fieldErrors[event.target.id] = event.target.validationMessage || ''; }
 const form = reactive({ name: '', email: '', password: '', preferredgenres: [], loading: false });
+watch(() => form.preferredgenres.length, length => { if (length) genreError.value = ''; });
 
 async function register() {
     if (form.loading) { return; }
     errorMessage.value = "";
-    if (!form.preferredgenres.length) { errorMessage.value = "Choose at least one favourite genre"; return; }
+    if (!form.preferredgenres.length) {
+        genreError.value = 'Choose at least one favourite genre to create your account.';
+        await nextTick();
+        genrePicker.value?.focus();
+        return;
+    }
     form.loading = true;
 
     try {
@@ -65,7 +73,7 @@ async function register() {
                 <p v-if="fieldErrors.password" id="password-feedback" class="text-sm text-destructive" role="alert">{{ fieldErrors.password }}</p>
                 </Field>
                 <p class="text-sm">Use at least 8 characters.</p>
-                <GenrePicker v-model="form.preferredgenres" :disabled="form.loading" />
+                <GenrePicker ref="genrePicker" v-model="form.preferredgenres" compact required :error="genreError" :disabled="form.loading" />
                 <Button type="submit" class="w-full " :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
                 </fieldset>
             </form>

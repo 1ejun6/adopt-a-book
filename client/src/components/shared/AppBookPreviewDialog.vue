@@ -47,7 +47,7 @@ const fields = computed(() => [
         <DialogDescription>details for the selected book</DialogDescription>
       </DialogHeader>
 
-      <div class="dialog-body space-y-4">
+      <div class="dialog-body">
         <div v-if="props.loading" class="space-y-4" role="status" aria-busy="true">
           <AppBookIdentity loading coverClass="w-16" />
           <div class="space-y-1.5">
@@ -64,15 +64,15 @@ const fields = computed(() => [
         </div>
 
         <div v-else-if="props.error" role="alert" class="space-y-3"><p>{{ props.error }}</p><button type="button" class="underline min-h-11" @click="emit('retry')">Retry book details</button></div>
-        <div v-else-if="!props.error" class="space-y-4">
+        <div v-else class="space-y-4">
           <div class="flex items-start gap-2.5">
             <AppBookIdentity :title="props.book.title" :author="props.book.authors?.join(', ') || 'author not listed'"
               :cover="props.book.coverurl" coverClass="w-16" class="flex-1" wrap />
             <slot name="book-action" :book="props.book">
             <button v-if="props.canSave || props.saved" type="button" class="washi-tape-hover min-h-11 min-w-11 shrink-0 rounded-lg p-2"
               :disabled="!props.canSave || props.busy"
-              :title="props.saved ? 'Remove from saved books' : 'Save to saved books'"
-              :aria-label="props.saved ? 'Remove from saved books' : 'Save to saved books'"
+              :title="props.saved ? 'Remove from saved books' : 'Save book'"
+              :aria-label="props.saved ? 'Remove from saved books' : 'Save book'"
               :aria-pressed="props.saved"
               @click="emit('save', props.book)">
               <HugeiconsIcon :icon="Bookmark02Icon" class="size-6"

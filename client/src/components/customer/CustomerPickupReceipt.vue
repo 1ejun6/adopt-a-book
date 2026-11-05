@@ -42,8 +42,8 @@ const emit = defineEmits(['edit', 'leave']);
     v-if="getApplicationStatus(receipt) === 'pending confirmation'"
     class="text-sm text-muted-foreground"
   >
-    Your three times have been sent. The team will select one; check Waiting in My Adoptions for
-    confirmation.
+    Your three times have been sent. The team will confirm one. Check My Adoptions for
+    confirmation before travelling.
   </p>
   <div class="adoption-actions">
     <Button

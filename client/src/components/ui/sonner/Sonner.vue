@@ -34,9 +34,10 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
   z-index: 100;
   width: min(400px, calc(100% - 24px));
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
-.quietToaster [data-sonner-toast] { position: relative; }
+.quietToaster [data-sonner-toast] { position: relative; min-width: 0; width: 100%; }
 .quietToaster [data-visible='false'],
 .quietToaster [data-removed='true'] { display: none; }
 .quietToaster [data-styled='true'] {

@@ -9,6 +9,7 @@ import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import genres from '../../../../shared/genres.json';
 
 //@lee-hlmilk > view supplies saved book &&& lookup results > this component owns draft &&& emits actions
 const props = defineProps({
@@ -52,7 +53,7 @@ function fillBookForm(book) {
         description: book.description || '',
         isbn: book.isbn || '',
         publicationyear: book.publicationyear ?? '',
-        subject: book.subjects?.[0] || '', //@lee-hlmilk > form accepts one subject > use first when existing metadata has several
+        subject: book.subjects?.find(item => genres.includes(item)) || '', //@lee-hlmilk > form accepts one subject > use first matching static genre
         openlibraryid: book.openlibraryid || '',
         coverurl: book.coverurl || ''
     });
@@ -123,10 +124,10 @@ function submitBook(event) {
     const form = event.target;
     //@lee-hlmilk > noValidate allows submit event > still use native required &&& pattern &&& number validity
     if (!validate(form)) {
-        if (invalidFields.value.includes('edit-subject') || invalidFields.value.includes('edit-year')) {
+        if (invalidFields.value.includes('edit-year')) {
             metadataOpen.value = true;
         }
-        toast.error('Please check the highlighted fields. Title and collection area are required; enter only one subject.');
+        toast.error('Please check the highlighted fields. Title, collection area and subject are required.');
         focusInvalid(form);
         return;
     }
@@ -217,6 +218,15 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
                 <p id="cover-file-help" class="text-sm text-muted-foreground">JPG, PNG or WebP · Maximum 5 MB</p>
                 <p v-if="coverError" id="cover-photo-error" role="alert" class="text-sm text-destructive">{{ coverError }}</p>
             </Field>
+            <Field class="sm:col-span-2">
+                <FieldLabel for="edit-subject">Subject <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
+                <select id="edit-subject" v-model="bookForm.subject" required
+                    :aria-invalid="invalidFields.includes('edit-subject')" @change="clearInvalid"
+                    class="w-full min-w-0 rounded-lg border px-3 text-base min-h-11">
+                    <option value="" disabled>Select a subject</option>
+                    <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
+                </select>
+            </Field>
             <Field>
                 <FieldLabel for="edit-condition">Condition</FieldLabel>
                 <select id="edit-condition" v-model="bookForm.condition"
@@ -257,11 +267,6 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
                     <FieldLabel for="edit-year">First publication year</FieldLabel>
                     <Input id="edit-year" v-model="bookForm.publicationyear" type="number" step="1"
                         :aria-invalid="invalidFields.includes('edit-year')" @input="clearInvalid" />
-                </Field>
-                <Field class="sm:col-span-2">
-                    <FieldLabel for="edit-subject">Subject</FieldLabel>
-                    <Input id="edit-subject" v-model="bookForm.subject" pattern="[^,]+" title="Enter one subject without commas."
-                        :aria-invalid="invalidFields.includes('edit-subject')" @input="clearInvalid" />
                 </Field>
                 <Field>
                     <FieldLabel for="edit-olid">Open Library ID</FieldLabel>

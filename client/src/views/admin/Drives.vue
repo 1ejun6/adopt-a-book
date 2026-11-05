@@ -37,10 +37,10 @@ let booksRequestId = 0;
 
 const viewTabs = [{ value: 'upcoming', label: 'Upcoming' }, { value: 'past', label: 'Past / cancelled' }];
 const columns = [
-    { key: 'title', label: 'Drive', class: 'w-2/5' },
+    { key: 'title', label: 'Drive', class: 'w-2/5', mobileClass: 'col-start-1 row-start-1', hideMobileLabel: true },
     { key: 'eventdate', label: 'Date / location', class: 'w-1/4' },
-    { key: 'registrations', label: 'Registrations', class: 'w-32' },
-    { key: 'status', label: 'Status' }
+    { key: 'registrations', label: 'Registrations', class: 'w-32', mobileClass: 'col-span-2 flex items-baseline gap-2' },
+    { key: 'status', label: 'Status', mobileClass: 'col-start-2 row-start-1', hideMobileLabel: true }
 ];
 const bookColumns = [{ key: 'title', label: 'Title / Author' }];
 //@lee-hlmilk > cancelled drives belong in Past regardless of their scheduled date
@@ -188,7 +188,7 @@ fetchDrives();
         <template #cellTitle="{ value }"><strong class="block break-words lg:truncate font-heading font-normal text-lg">{{ value }}</strong></template>
         <template #cellEventdate="{ row }">
             <p>{{ formatDate(row.eventdate) }}</p>
-            <small class="block break-words lg:truncate text-sm text-muted-foreground">{{ row.location }}</small>
+            <small class="block break-words text-sm lg:truncate lg:text-muted-foreground">{{ row.location }}</small>
         </template>
         <template #cellRegistrations="{ row }">{{ row.userids.length }} / {{ row.maxcapacity }}</template>
         <template #cellStatus="{ value }"><StatusBadge :status="value" /></template>
