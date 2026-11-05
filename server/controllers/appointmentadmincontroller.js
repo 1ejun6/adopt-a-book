@@ -23,10 +23,10 @@ async function readappointment(req, res) {
 }
 async function updateappointment(req, res) {
   try {
-    const fields = z.object({ status: z.enum(["appointment confirmed", "collected"]) }).strict().parse(req.body);
+    const fields = z.object({ status: z.enum(["appointment confirmed", "rejected", "collected"]) }).strict().parse(req.body);
     return res.json({ appointment: await appointments.changecollection(req.params.id, req.user.id, fields) });
   } catch (error) {
-    return res.status(errorstatus(error)).json({ error: errormessage(error, "only organisation appointments can be confirmed then collected") });
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not update organisation appointment") });
   }
 }
 module.exports = { readallappointments, readappointment, updateappointment };

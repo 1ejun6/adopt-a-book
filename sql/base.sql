@@ -494,6 +494,7 @@ begin
     next_status := changes->>'status';
     if changes - 'status' <> '{}'::jsonb or next_status is null or
        not ((next_status = 'appointment confirmed' and booking.status = 'pending confirmation' and booking.appointmentdate >= (now() at time zone 'Asia/Singapore')::date)
+         or (next_status = 'rejected' and booking.status = 'pending confirmation')
          or (next_status = 'collected' and booking.status = 'appointment confirmed')) then
       raise exception 'invalid collection transition';
     end if;
