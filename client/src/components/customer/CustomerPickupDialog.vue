@@ -795,12 +795,15 @@ watchEffect(() =>
         </div>
       </section>
       <div v-else class="adoption-actions adoption-actions-wrap">
-        <Button type="button" variant="outline"  :disabled="saving" @click="back"
-          >Back</Button
-        >
-        <Button v-if="manageable && !uncertain" type="button"  @click="edit">{{
-          editLabel
-        }}</Button>
+        <template v-if="manageable && !uncertain">
+          <Button type="button" variant="destructive" :disabled="saving" @click="confirming = true">
+            Cancel pickup
+          </Button>
+          <Button type="button" :disabled="saving" @click="edit">{{ editLabel }}</Button>
+        </template>
+        <Button v-else type="button" variant="outline" :disabled="saving" @click="back">
+          Back
+        </Button>
       </div>
       <div v-if="!confirming" class="flex flex-wrap gap-x-5 gap-y-2">
         <button
@@ -811,15 +814,7 @@ watchEffect(() =>
         >
           Add to calendar
         </button>
-        <button
-          v-if="manageable && !uncertain"
-          type="button"
-          class="min-h-11 text-sm text-destructive underline underline-offset-4"
-          @click="confirming = true"
-        >
-          Cancel pickup
-        </button>
-        <p v-else-if="record?.canArrange" class="text-sm text-muted-foreground">
+        <p v-if="(!manageable || uncertain) && record?.canArrange" class="text-sm text-muted-foreground">
           Your adoption stays approved. You can arrange another pickup in Active.
         </p>
       </div>
