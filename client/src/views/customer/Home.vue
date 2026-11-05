@@ -1,7 +1,8 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
-import { onBeforeUnmount, ref, watch } from 'vue';
-import { RouterLink } from 'vue-router';
+import { h, onBeforeUnmount, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useSavedBookActions } from '@/composables/useSavedBookActions';
 import { useAdoptionsStore } from '@/stores/adoptions';
 import { storeToRefs } from 'pinia';
@@ -16,18 +17,20 @@ import CustomerBookDialogs from '@/components/customer/CustomerBookDialogs.vue';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import dice from '@/assets/dice.svg';
+const router = useRouter();
 const auth = useAuthStore(),
   watchlist = useWatchlistStore();
 const adoptions = useAdoptionsStore();
 const { entries, savedIds, loading: savedLoading, loadError: savedError } = storeToRefs(watchlist);
-const { busyIds, toggleBook } = useSavedBookActions();
-const preferredgenres = ref([]);
+const { busyIds, savingIds, toggleBook } = useSavedBookActions();
+const preferredgenres = ref(auth.user?.preferredgenres || []);
 const pool = ref([]),
   selection = ref([]),
   loading = ref(true),
   error = ref(''),
   announcement = ref(''),
   dialogs = ref(null);
+let emptyToastId, lastEmptyKey;
 let controller,
   generation = 0,
   shuffleCount = 0;
@@ -67,11 +70,40 @@ async function loadShelf() {
     pool.value = [
       ...new Map(
         response.books
-          .filter((book) => book?.id && book.status === 'available')
+          .filter((book) => book?.id && book.status === 'available' && !savedIds.value.has(book.id))
           .map((book) => [book.id, book]),
       ).values(),
     ].slice(0, 100);
-    shuffle(false);
+    if (!selection.value.length) {
+      shuffle(false);
+    } else {
+      // Refresh book data without changing the selection the reader is looking at.
+      const available = new Map(pool.value.map(book => [book.id, book]));
+      const retained = selection.value.map(book => available.get(book.id)).filter(Boolean);
+      const retainedIds = new Set(retained.map(book => book.id));
+      selection.value = [...retained, ...pool.value.filter(book => !retainedIds.has(book.id))].slice(0, 5);
+    }
+    const emptyKey = JSON.stringify([auth.user?.id, preferredgenres.value]);
+    if (selection.value.length) {
+      if (emptyToastId !== undefined) { toast.dismiss(emptyToastId); emptyToastId = undefined; }
+      lastEmptyKey = undefined;
+    } else if (lastEmptyKey !== emptyKey) {
+      lastEmptyKey = emptyKey;
+      if (emptyToastId !== undefined) toast.dismiss(emptyToastId);
+      const navigate = destination => {
+        toast.dismiss(emptyToastId);
+        void router.push(destination);
+      };
+      emptyToastId = toast.info(() => h('div', { class: 'space-y-2.5' }, [
+        h('p', 'No matches on your shelf just yet'),
+        h('div', { class: 'flex flex-wrap gap-2.5' }, [
+          h(Button, { type: 'button', size: 'sm', onClick: () => navigate({ name: 'customerBooks', query: { genregroup: 'other' } }) },
+            () => [h(AppIcon, { name: 'book' }), 'Explore books']),
+          h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: () => navigate({ name: 'customerAccount', hash: '#preferences' }) },
+            () => [h(AppIcon, { name: 'edit' }), 'Favourite genres']),
+        ]),
+      ]), { duration: Infinity });
+    }
   } catch (failure) {
     if (current === generation) error.value = failure.message;
   } finally {
@@ -97,7 +129,7 @@ async function toggle(book) {
 watch(
   () => auth.user?.id,
   () => {
-    preferredgenres.value = [];
+    preferredgenres.value = auth.user?.preferredgenres || [];
     pool.value = [];
     selection.value = [];
     announcement.value = '';
@@ -108,7 +140,14 @@ watch(
   },
   { immediate: true },
 );
+watch(() => `${[...savedIds.value].sort().join(',')}:${watchlist.pendingOperations.size}`,  () => {
+  pool.value = pool.value.filter(book => !savedIds.value.has(book.id));
+  selection.value = selection.value.filter(book => !savedIds.value.has(book.id));
+  void loadShelf();
+});
+watch(() => JSON.stringify(auth.user?.preferredgenres), () => { void loadShelf(); });
 onBeforeUnmount(() => {
+  if (emptyToastId !== undefined) toast.dismiss(emptyToastId);
   generation++;
   controller?.abort();
 });
@@ -132,7 +171,6 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
           type="button"
           class="inline-flex size-14 shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0"
           aria-label="Random"
-          title="Random"
           :disabled="loading || !!error || pool.length < 2"
           @click="shuffle()"
           ><img :src="dice" alt="" class="size-9" /></button
@@ -140,32 +178,24 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
       </div>
       <div v-if="error" class="state" role="alert">
         <p>{{ error }}</p>
-        <Button variant="outline" @click="loadShelf">Retry available books</Button>
+        <Button variant="outline" @click="loadShelf" :loading="loading"><AppIcon name="refresh" /><span class="sr-only">Retry available books</span></Button>
       </div>
       <CustomerShelf
-        v-else-if="loading || selection.length"
+        v-else
+        showEmptyBooks
         :books="selection"
         :loading="loading"
         :saved-ids="savedIds"
         @select="dialogs?.openBookDetails($event)"
       />
-      <div v-else class="state">
-        <p>No available books match your favourite genres right now.</p>
-        <div class="flex flex-wrap gap-2.5">
-          <Button asChild><RouterLink :to="{ name: 'customerBooks' }">Browse all books</RouterLink></Button>
-          <Button asChild variant="outline"><RouterLink :to="{ name: 'customerAccount' }">Change favourite genres</RouterLink></Button>
-        </div>
-      </div>
       <p class="sr-only" role="status" aria-live="polite">{{ announcement }}</p>
-      <RouterLink v-if="loading || error || selection.length" :to="{ name: 'customerBooks' }" class="inline-flex min-h-11 items-center text-sm underline underline-offset-4">Browse all books</RouterLink>
     </section>
     <section aria-labelledby="saved-heading" class="saved-section">
       <div v-if="savedLoading || savedError || !entries.length" class="section-heading">
-        <h2 id="saved-heading">Saved books</h2>
-        <Button asChild variant="outline"><RouterLink :to="{ name: 'customerWatchlist' }">View saved books</RouterLink></Button>
+        <h2 id="saved-heading">Watchlist</h2>
       </div>
       <div
-        v-if="savedLoading"
+        v-if="savedLoading && !entries.length"
         class="saved-loading"
         aria-busy="true"
         aria-label="Loading saved books"
@@ -174,18 +204,18 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
       </div>
       <div v-else-if="savedError" class="state" role="alert">
         <p>{{ savedError }}</p>
-        <Button variant="outline" @click="loadSaved">Retry saved books</Button>
+        <Button variant="outline" @click="loadSaved" :loading="savedLoading"><AppIcon name="refresh" /><span class="sr-only">Retry saved books</span></Button>
       </div>
       <CustomerSavedCarousel
         v-else-if="entries.length"
         :entries="entries"
-        :busy-ids="busyIds"
+        :busy-ids="busyIds" :saving-ids="savingIds"
         :request-ids="adoptions.existingRequestIds"
         @select="dialogs?.openBookDetails($event)"
         @remove="toggle"
       >
         <template #heading>
-          <h2 id="saved-heading">Saved books</h2>
+          <h2 id="saved-heading">Watchlist</h2>
         </template>
       </CustomerSavedCarousel>
       <p v-else class="state">
@@ -195,7 +225,7 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
     <CustomerBookDialogs
       ref="dialogs"
       :saved-ids="savedIds"
-      :busy-ids="busyIds"
+      :busy-ids="busyIds" :saving-ids="savingIds"
       :can-save="watchlist.loaded && !savedLoading && !savedError"
       @save="toggle"
     />
@@ -206,6 +236,7 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
 .customer-home {
   max-width: 64rem;
   display: grid;
+  align-content: start;
   gap: 3rem;
 }
 .saved-section {
@@ -228,7 +259,11 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
   border-radius: 8px;
   padding: 1.25rem;
   display: grid;
+  align-content: start;
   gap: 1rem;
+}
+.discovery > .section-heading {
+  min-height: 3.5rem;
 }
 .shelf-note {
   margin-top: 0.375rem;

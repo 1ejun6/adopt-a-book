@@ -21,20 +21,20 @@ export function usePickupState(props) {
   const confirming = ref(false);
   const confirmClose = ref(false);
   const closeNode = ref(null);
-  const initialDraft = ref({ location: '', appointmentdate: '', timeslots: ['', '', ''] });
+  const initialDraft = ref({ location: '', appointmentdate: '', timeslots: ['', ''] });
   const error = ref('');
   const errorNode = ref(null);
   const summaryNode = ref(null);
   const errors = reactive({ location: '', appointmentdate: '', timeslot: '', form: '' });
-  const draft = reactive({ location: '', appointmentdate: '', timeslots: ['', '', ''] });
+  const draft = reactive({ location: '', appointmentdate: '', timeslots: ['', ''] });
   const saved = ref(null);
   const today = ref(todayInSingapore());
   watch(currentTime, value => { today.value = todayInSingapore(new Date(value)); });
   const pickupDateError = computed(() => {
     if (!validPickupDate(draft.appointmentdate)) return '';
     if (draft.appointmentdate < today.value) return 'Choose today or a later date in Singapore time.';
-    return availablePickupTimes(draft.appointmentdate).length < 3
-      ? "There aren't three available times left on this date. Choose another date." : '';
+    return availablePickupTimes(draft.appointmentdate).length < 2
+      ? "There aren't two available times left on this date. Choose another date." : '';
   });
   const manageable = computed(
     () => props.ready && canManagePickup(props.record, props.appointment),
@@ -48,6 +48,7 @@ export function usePickupState(props) {
   const changed = computed(
     () =>
       !props.appointment ||
+      props.appointment.pickupoptions?.length === 3 ||
       draft.location.trim() !== (props.appointment.location || '').trim() ||
       draft.appointmentdate !== props.appointment.appointmentdate ||
       JSON.stringify(draft.timeslots) !== JSON.stringify(appointmentTimes(props.appointment)),

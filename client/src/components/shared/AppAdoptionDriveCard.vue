@@ -1,7 +1,8 @@
 <script setup>
 import { computed } from 'vue';
+import { driveTimeLabel } from '../../../../shared/drives.mjs';
 import { ArrowRight01Icon, Book02Icon, UserGroupIcon } from '@hugeicons/core-free-icons';
-import { Badge } from '@/components/ui/badge';
+import AppStatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/utils';
 
@@ -15,7 +16,6 @@ const emit = defineEmits(['open']);
 // @brod > check if drive has ended
 const ended = computed(() => props.drive?.past && props.drive.status !== 'cancelled');
 const status = computed(() => ended.value ? 'ended' : props.drive?.status);
-const calendarcolour = computed(() => ({ open: 'bg-badge-green', closed: 'bg-badge-rose' })[status.value] || 'bg-badge-neutral');
 
 const when = computed(() => ({
   day: formatDate(props.drive?.eventdate, { day: 'numeric' }),
@@ -32,6 +32,7 @@ const when = computed(() => ({
 const slots = computed(() => props.drive?.spotsleft ?? props.drive?.maxcapacity ?? 0);
 const bookcount = computed(() => props.drive?.bookCount);
 const booklabel = computed(() => `${bookcount.value ?? '—'} ${bookcount.value === 1 ? 'book' : 'books'}`);
+const mapUrl = computed(() => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(/singapore/i.test(props.drive?.location) ? props.drive.location : `${props.drive?.location}, Singapore`)}`);
 </script>
 
 <template>
@@ -47,25 +48,23 @@ const booklabel = computed(() => `${bookcount.value ?? '—'} ${bookcount.value 
       </div>
     </div>
   </div>
-  <button v-else-if="drive" type="button"
-    class="washi-tape-hover flex w-full items-center gap-2.5 rounded-lg border p-5 sm:gap-5 text-left text-sm"
-    @click="emit('open')">
+  <article v-else-if="drive"
+    class="hover:bg-primary data-[active]:bg-primary relative flex w-full items-center gap-2.5 rounded-lg border p-5 sm:gap-5 text-left text-sm">
     <time :datetime="drive.eventdate"
-      class="grid size-14 shrink-0 self-start place-content-center rounded-lg border text-center"
-      :class="calendarcolour">
+      class="grid size-14 shrink-0 self-start place-content-center rounded-lg border bg-primary text-center">
       <strong class="font-heading text-2xl">{{ when.day }}</strong>
-      <small class="text-xs">{{ when.month }}</small>
+      <small class="text-sm">{{ when.month }}</small>
     </time>
 
     <div class="min-w-0 flex-1 space-y-2.5">
       <div class="flex flex-wrap items-center gap-2.5">
-        <h3 class="text-lg">{{ drive.title }}</h3>
-        <Badge v-if="showRegistration && drive.registered" variant="green">registered</Badge>
-        <Badge v-if="status !== 'open'" variant="neutral">{{ status }}</Badge>
+        <h3 class="text-lg"><button type="button" class="text-left after:absolute after:inset-0 after:rounded-lg after:content-['']" @click="emit('open')">{{ drive.title }}</button></h3>
+        <AppStatusBadge v-if="showRegistration && drive.registered" status="registered" />
+        <AppStatusBadge :status="status" dot />
       </div>
-      <p class="text-sm">{{ drive.location }}</p>
+      <a v-if="drive.location" :href="mapUrl" target="_blank" rel="noopener noreferrer" class="relative z-10 inline-block text-sm underline underline-offset-4">{{ drive.location }}</a>
       <div class="flex flex-wrap items-center justify-between gap-2.5">
-        <p class="text-sm">{{ when.full }}</p>
+        <p class="text-sm">{{ when.full }} · {{ driveTimeLabel(drive) }}</p>
         <div class="flex flex-wrap gap-2.5 sm:gap-5">
           <span v-if="!drive.past" class="flex gap-2.5" title="remaining attendee slots">
             <HugeiconsIcon :icon="UserGroupIcon" class="size-5 shrink-0" aria-hidden="true" />
@@ -81,5 +80,5 @@ const booklabel = computed(() => `${bookcount.value ?? '—'} ${bookcount.value 
     </div>
 
     <HugeiconsIcon :icon="ArrowRight01Icon" class="size-5 shrink-0" aria-hidden="true" />
-  </button>
+  </article>
 </template>

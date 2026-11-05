@@ -18,14 +18,16 @@ const getadminalldrives = async (req, res) => {
 
 const createadmindrive = async (req, res) => {
   try {
-    require("../utils/validation").rejectfields(req.body, ["title", "location", "mrtstationid", "eventdate", "description", "maxcapacity"]);
-    const { title, location, mrtstationid, eventdate, description, maxcapacity } = req.body;
+    require("../utils/validation").rejectfields(req.body, ["title", "location", "mrtstationid", "eventdate", "starttime", "endtime", "description", "maxcapacity"]);
+    const { title, location, mrtstationid, eventdate, starttime, endtime, description, maxcapacity } = req.body;
 
     await adoptiondrivemodel.createdrive({
       title,
       location,
       mrtstationid,
       eventdate,
+      starttime,
+      endtime,
       description,
       maxcapacity,
       userids: [],

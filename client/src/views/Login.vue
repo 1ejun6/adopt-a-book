@@ -31,7 +31,7 @@ async function login() {
 }
 </script>
 <template>
-  <section class="mx-auto w-full max-w-md py-5">
+  <section class="m-auto w-full max-w-md py-5">
     <div class="space-y-5">
       <h1>Login</h1>
       <form @submit.prevent="login">
@@ -47,10 +47,9 @@ async function login() {
           <AppPasswordInput id="password" @blur="fieldFeedback" @invalid="fieldFeedback" @input="fieldFeedback" :aria-invalid="!!fieldErrors.password || undefined" :aria-describedby="fieldErrors.password ? 'password-feedback' : undefined" :disabled="auth.loginLoading" v-model="form.password"  autocomplete="current-password"  required />
         <p v-if="fieldErrors.password" id="password-feedback" class="text-sm text-destructive" role="alert">{{ fieldErrors.password }}</p>
                 </Field>
-        <Button type="submit" class="w-full " :disabled="auth.loginLoading">{{ auth.loginLoading ? 'Signing in…' : 'Login' }}</Button>
+        <Button type="submit" class="w-full " :disabled="auth.loginLoading" :loading="auth.loginLoading">{{ auth.loginLoading ? 'Signing in…' : 'Login' }}</Button>
         </fieldset>
       </form>
-      <RouterLink class="underline" :to="{ name: 'register', query: { redirect: route.query.redirect } }">Create an account</RouterLink>
     </div>
   </section>
 </template>

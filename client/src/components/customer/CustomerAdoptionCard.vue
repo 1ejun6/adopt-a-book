@@ -64,16 +64,16 @@ function openRecord() {
       />
     </template>
     <template #status>
-      <Badge :variant="record.variant" class="text-xs font-normal">{{ record.label }}</Badge>
+      <Badge :variant="record.variant" class="text-sm font-normal">{{ record.label }}</Badge>
       <p v-if="warning && !(groupedOverdueWarning && overdue)" class="adoption-row__warning">
         {{ warning }}
       </p>
-      <p v-else-if="pickupOutcome" class="mt-1 text-xs text-muted-foreground">
+      <p v-else-if="pickupOutcome" class="mt-1 text-sm text-muted-foreground">
         {{ pickupOutcome }}
       </p>
     </template>
     <template #pickup>
-      <p v-if="hasPickupOptions(record.appointment)" class="text-sm">{{ displayDate(record.appointment.appointmentdate) }} · Three times proposed</p>
+      <p v-if="hasPickupOptions(record.appointment)" class="text-sm">{{ displayDate(record.appointment.appointmentdate) }} · Times proposed</p>
       <template v-else-if="showPickup">
         <p
           class="adoption-row__date"

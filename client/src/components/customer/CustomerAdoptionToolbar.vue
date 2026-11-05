@@ -1,4 +1,6 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
+import { Button } from '@/components/ui/button';
 import CustomerAdoptionStageTabs from './CustomerAdoptionStageTabs.vue';
 import AppSearchInput from '@/components/shared/AppSearchInput.vue';
 defineProps({
@@ -28,9 +30,9 @@ const search = defineModel('search', { type: String });
       class="w-full"
     />
   </div>
-  <div v-if="searching" class="text-xs text-muted-foreground">
-    <button type="button" class="min-h-11 underline underline-offset-4" @click="search = ''">
+  <div v-if="searching" class="text-sm text-muted-foreground">
+    <Button variant="outline" type="button" class="min-h-11 " @click="search = ''"><AppIcon name="back" />
       Back to {{ tab === 'active' ? 'Active' : 'History' }}
-    </button>
+    </Button>
   </div>
 </template>

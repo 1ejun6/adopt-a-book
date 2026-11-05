@@ -1,4 +1,5 @@
 <script setup>
+import { ArrowRightDoubleIcon } from "@hugeicons/core-free-icons";
 import { reactiveOmit } from "@vueuse/core";
 import { PaginationLast, useForwardProps } from "reka-ui";
 
@@ -13,10 +14,10 @@ const forwarded = useForwardProps(delegatedProps);
 </script>
 
 <template>
-  <PaginationLast data-slot="pagination-last" class="washi-tape-hover min-h-11 min-w-11 rounded-lg p-2" :class="props.class"
+  <PaginationLast aria-label="Last page" data-slot="pagination-last" class="hover:bg-primary data-[active]:bg-primary min-h-11 min-w-11 rounded-lg p-2" :class="props.class"
     v-bind="forwarded">
     <slot>
-      <span>Last</span>
+      <HugeiconsIcon :icon="ArrowRightDoubleIcon" class="size-4" aria-hidden="true" />
     </slot>
   </PaginationLast>
 </template>

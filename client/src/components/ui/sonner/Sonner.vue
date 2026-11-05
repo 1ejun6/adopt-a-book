@@ -1,11 +1,11 @@
 <script setup>
 import { Toaster } from 'vue-sonner';
 import { HugeiconsIcon } from '@hugeicons/vue';
-import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon, Loading03Icon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircleIcon } from '@hugeicons/core-free-icons';
 </script>
 
 <template>
-  <Toaster position="top-center" :duration="4000" close-button :mobileOffset="10" class="quietToaster">
+  <Toaster position="top-center" :duration="1000" close-button :mobileOffset="10" class="quietToaster">
     <template #success-icon>
       <HugeiconsIcon :icon="CheckmarkCircle02Icon" :size="20" />
     </template>
@@ -17,10 +17,6 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
     </template>
     <template #close-icon>
       <HugeiconsIcon :icon="Cancel01Icon" :size="20" />
-    </template>
-    <!--@1ejun6 > toast.promise uses loading while pending > success when resolved ||| error when rejected-->
-    <template #loading-icon>
-      <HugeiconsIcon :icon="Loading03Icon" :size="20" />
     </template>
   </Toaster>
 </template>
@@ -56,5 +52,6 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
 .quietToaster [data-button] { grid-row: 2; min-height: 44px; padding: 8px; border-radius: 8px; background: var(--primary); }
 .quietToaster [data-cancel] { grid-column: 2; background: transparent; }
 .quietToaster [data-action] { grid-column: 3; }
+.quietToaster [data-action]:not([data-cancel] ~ [data-action]) { grid-column: 2 / -1; }
 .quietToaster [data-close-button] { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 44px; height: 44px; }
 </style>

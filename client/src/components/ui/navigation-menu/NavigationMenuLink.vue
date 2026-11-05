@@ -18,7 +18,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits); //@1ejun6 > forwa
 
 <template>
   <NavigationMenuLink data-slot="navigation-menu-link" v-bind="forwarded"
-    :class="cn('washi-tape-hover flex min-h-11 items-center rounded-lg px-3 text-sm', props.class)">
+    :class="cn('hover:bg-primary data-[active]:bg-primary flex min-h-11 items-center rounded-lg px-3 text-sm', props.class)">
     <slot />
   </NavigationMenuLink>
 </template>

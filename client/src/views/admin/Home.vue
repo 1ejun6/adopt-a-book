@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { currentTime } from '@/lib/clock';
 import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
 import { computed, reactive, ref } from 'vue';
@@ -73,7 +74,7 @@ async function fetchDashboard() {
       })
     ]);
     for (const result of results) {
-      if (result.status === 'rejected') { toast.error(result.reason.message, { action: { label: 'retry', onClick: fetchDashboard } }); }
+      if (result.status === 'rejected') { toast.error(result.reason.message, { duration: Infinity, action: { label: 'retry', onClick: fetchDashboard } }); }
     }
   } finally { loading.value = false; }
 }
@@ -191,7 +192,7 @@ fetchDashboard();
         <header class="flex flex-wrap items-center justify-between gap-2.5 border-b bg-primary p-5">
           <h2 id="collections-title">Today's pickups</h2>
           <Button asChild size="sm" variant="outline">
-            <RouterLink :to="todayQueue.to" aria-label="View all today's pickups">View all</RouterLink>
+            <RouterLink :to="todayQueue.to" aria-label="View all today's pickups"><AppIcon name="request" />View all</RouterLink>
           </Button>
         </header>
         <div v-if="loading" class="space-y-2.5 p-5" role="status" aria-label="Loading today's pickups">

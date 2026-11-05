@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { ref, watch } from 'vue';
 import { api } from '@/lib/api';
 import { availablePickupSlot } from '@/lib/pickupTimes';
@@ -66,7 +67,7 @@ async function confirmTime() {
     <fieldset :disabled="disabled || saving || uncertain" class="space-y-3">
       <legend class="text-lg">Confirm a time</legend>
       <p class="text-sm text-muted-foreground">
-        The customer is available at these three times. Select one to confirm pickup at
+        The customer is available at these proposed times. Select one to confirm pickup at
         {{ appointment.location }}.
       </p>
       <label
@@ -91,12 +92,12 @@ async function confirmTime() {
     </fieldset>
     <p v-if="error" class="text-sm text-destructive" role="alert">{{ error }}</p>
     <Button v-if="uncertain" type="button" :disabled="saving" @click="checkStatus"
-      >Check latest status</Button
+       :loading="saving"><AppIcon name="refresh" /><span class="sr-only">Check latest status</span></Button
     >
-    <Button v-else type="submit" :disabled="disabled || saving || selected === '' || !availablePickupSlot(appointment.pickupoptions[Number(selected)])">{{
+    <Button v-else type="submit" :disabled="disabled || saving || selected === '' || !availablePickupSlot(appointment.pickupoptions[Number(selected)])" :loading="saving"><AppIcon name="success" />{{
       saving ? 'Confirming…' : 'Confirm selected time'
     }}</Button>
-    <p class="text-xs text-muted-foreground">
+    <p class="text-sm text-muted-foreground">
       Reject to request new availability.
     </p>
   </form>

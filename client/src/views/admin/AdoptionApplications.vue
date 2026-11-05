@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { useAdminRecord } from '@/composables/useAdminRecord';
 import { computed, reactive, ref } from 'vue';
 import { toast } from 'vue-sonner';
@@ -25,6 +26,7 @@ const detailsHint = computed(() => selectedApplication.value ? decisionHint([sel
 const detailsOpen = ref(false);
 const { detailError, detailLoading, refreshDetail } = useAdminRecord(selectedApplication, detailsOpen, '/admin/applications', 'adoptionapplication', { busy: () => saving.value });
 const saving = ref(false);
+const savingAction = ref('');
 const { confirm } = useConfirmation();
 const filters = reactive({ search: '', status: 'pending', sort: 'oldest' });
 
@@ -77,6 +79,7 @@ async function decideApplications(status, rows = selectedApplications.value) {
     if (loading.value || saving.value) { return; }
     const current = targets.map(target => applications.value.find(application => application.id === target.id));
     if (current.some(application => !application) || decisionHint(current)) { toast.error('These applications have changed. Select them again.'); return; }
+    savingAction.value = status;
     saving.value = true;
     let completed = 0;
     const failures = [];
@@ -91,7 +94,7 @@ async function decideApplications(status, rows = selectedApplications.value) {
         if (failures.length) { toast.error(`${failures.length} ${failures.length === 1 ? 'decision' : 'decisions'} failed`, { description: failures.join('\n'), style: { whiteSpace: 'pre-line' } }); }
         await fetchApplications();
         await refreshDetail();
-    } finally { saving.value = false; }
+    } finally { saving.value = false; savingAction.value = ''; }
 }
 
 fetchApplications();
@@ -115,8 +118,8 @@ fetchApplications();
             <p v-if="selectionHint || approvalConflict" class="text-sm text-muted-foreground" role="status">
                 {{ selectionHint || 'Choose one reader per copy to approve requests.' }}
             </p>
-            <Button :disabled="detailLoading || !!detailError || loading || saving || !!selectionHint || approvalConflict" @click="decideApplications('approved')">Approve</Button>
-            <Button variant="destructive" :disabled="detailLoading || !!detailError || loading || saving || !!selectionHint" @click="decideApplications('rejected')">Reject</Button>
+            <Button :disabled="detailLoading || !!detailError || loading || saving || !!selectionHint || approvalConflict" @click="decideApplications('approved')" :loading="saving && savingAction === 'approved'"><AppIcon name="success" />Approve</Button>
+            <Button variant="destructive" :disabled="detailLoading || !!detailError || loading || saving || !!selectionHint" @click="decideApplications('rejected')" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" />Reject</Button>
         </template>
         <template #cellApplicant="{ row }">
             <p class="break-words lg:truncate">{{ row.userid?.name || 'Unknown applicant' }}</p>
@@ -130,18 +133,18 @@ fetchApplications();
         <template #empty>
             <h2>{{ pendingEmpty ? 'No pending applications' : filters.search.trim() ? 'No matching applications' : 'No applications in this view' }}</h2>
             <p class="text-sm text-muted-foreground">{{ pendingEmpty ? 'You’re all caught up.' : filters.search.trim() ? 'Try another search term or status.' : 'New requests will appear here. Try another status or search term.' }}</p>
-            <Button v-if="pendingEmpty" variant="outline" class="mt-2.5 " @click="filters.status = 'all'">View all applications</Button>
+            <Button v-if="pendingEmpty" variant="outline" class="mt-2.5 " @click="filters.status = 'all'"><AppIcon name="request" />View all applications</Button>
         </template>
     </AdminList>
 
-    <AdminDetailsDialog :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedApplication" :open="detailsOpen" title="Application details"
+    <AdminDetailsDialog :loading="detailLoading" :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedApplication" :open="detailsOpen" title="Application details"
         :book="selectedApplication.bookid" :status="selectedApplication.status" :fields="applicationFields" @update:open="detailsOpen = $event">
         <p v-if="selectedApplication.status === 'pending' && detailsHint" class="text-muted-foreground">{{ detailsHint }}</p>
         <!--@lee-hlmilk > reviewed applications are read-only > decision actions remain available only for pending requests-->
         <template v-if="selectedApplication.status === 'pending'" #actions>
             <!--@lee-hlmilk > both flex-1 buttons share the footer width > pass one record to the same bulk-capable action-->
-            <Button type="button" variant="destructive" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="decideApplications('rejected', [selectedApplication])">Reject</Button>
-            <Button type="button" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="decideApplications('approved', [selectedApplication])">Approve</Button>
+            <Button type="button" variant="destructive" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="decideApplications('rejected', [selectedApplication])" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" />Reject</Button>
+            <Button type="button" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="decideApplications('approved', [selectedApplication])" :loading="saving && savingAction === 'approved'"><AppIcon name="success" />Approve</Button>
         </template>
     </AdminDetailsDialog>
 </template>

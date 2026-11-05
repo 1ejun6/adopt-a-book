@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { pickupTimeText } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
 
@@ -42,7 +43,7 @@ const emit = defineEmits(['edit', 'leave']);
     v-if="getApplicationStatus(receipt) === 'pending confirmation'"
     class="text-sm text-muted-foreground"
   >
-    Your three times have been sent. The team will confirm one. Check My Adoptions for
+    Your proposed times have been sent. The team will confirm one. Check My Adoptions for
     confirmation before travelling.
   </p>
   <div class="adoption-actions">
@@ -52,8 +53,8 @@ const emit = defineEmits(['edit', 'leave']);
       variant="outline"
       :disabled="saving"
       @click="emit('edit')"
-      >Continue editing request</Button
+      ><AppIcon name="next" />Continue editing request</Button
     >
-    <Button type="button" :disabled="saving" @click="emit('leave')"> Back to my adoptions </Button>
+    <Button type="button" :disabled="saving" @click="emit('leave')"><AppIcon name="back" /> Back to my adoptions </Button>
   </div>
 </template>

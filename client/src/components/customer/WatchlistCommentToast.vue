@@ -1,4 +1,6 @@
 <script setup>
+import AppTextarea from '@/components/shared/AppTextarea.vue';
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { ref } from 'vue';
 import { FocusScope } from 'reka-ui';
 import { toast } from 'vue-sonner';
@@ -58,20 +60,20 @@ async function saveComment() {
           <p :role="error ? 'alert' : undefined">{{ error || (editing ? 'Edit your note' : 'Book saved') }}</p>
           <p class="truncate text-muted-foreground" :title="entry.bookid.title">{{ entry.bookid.title }}</p>
         </div>
-        <button type="button" class="min-h-11 min-w-11 shrink-0 rounded-lg p-2" title="Dismiss" aria-label="Dismiss" @click="dismiss">
+        <button type="button" class="min-h-11 min-w-11 shrink-0 rounded-lg p-2" aria-label="Close notification" @click="dismiss">
           <HugeiconsIcon :icon="Cancel01Icon" class="size-5" aria-hidden="true" />
         </button>
       </div>
       <form class="space-y-3" @submit.prevent="saveComment">
       <label class="block space-y-2">
       <span>Private note (optional)</span>
-      <textarea v-model="comment" rows="3" maxlength="300" :disabled="busy" placeholder="Write a note about this book..." class="block w-full rounded-md border bg-transparent px-3 py-2 text-base leading-relaxed" />
+      <AppTextarea v-model="comment" rows="3" maxlength="300" :disabled="busy" placeholder="Write a note about this book..." class="block w-full rounded-md border bg-transparent px-3 py-2 text-base leading-relaxed" />
       </label>
       <div class="flex items-center justify-between gap-3">
-        <p class="text-xs text-muted-foreground">
+        <p class="text-sm text-muted-foreground">
           {{ comment.length }}/300 characters
         </p>
-      <Button type="submit" :disabled="busy">
+      <Button type="submit" :disabled="busy" :loading="busy"><AppIcon name="save" />
         {{ busy ? 'Saving…' : 'Save note' }}
       </Button>
       </div>

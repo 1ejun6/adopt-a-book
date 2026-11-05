@@ -1,8 +1,9 @@
 <script setup>
 import { RouterLink, useRoute } from 'vue-router'
+import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 const auth = useAuthStore()
-import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu'
+import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from '@/components/ui/navigation-menu'
 
 defineProps({
   links: { type: Array, required: true },
@@ -22,22 +23,22 @@ const route = useRoute();
       :data-active="route.name === link.name ? true : undefined" @click="emit('navigate')">
       {{ link.label }}
     </RouterLink>
-    <button v-if="auth.ready && auth.user" type="button" class="px-2.5 py-3 text-right" :disabled="logoutLoading"
+    <Button variant="outline" :loading="logoutLoading" v-if="auth.ready && auth.user" type="button" class="justify-end border-0 bg-transparent px-2.5 py-3 text-right normal-case hover:bg-transparent" :disabled="logoutLoading"
       @click="emit('logout')">
       Logout
-    </button>
+    </Button>
   </nav>
   <NavigationMenu v-else :viewport="false" class="ml-2.5 hidden xl:block">
     <NavigationMenuList>
       <NavigationMenuItem v-for="link in links" :key="link.name" :class="{ 'ml-auto': link.end }">
-        <NavigationMenuLink asChild :active="route.name === link.name" :class="navigationMenuTriggerStyle()">
+        <NavigationMenuLink asChild :active="route.name === link.name" class="px-4">
           <RouterLink :to="{ name: link.name }" @click="emit('navigate')">{{ link.label }}</RouterLink>
         </NavigationMenuLink>
       </NavigationMenuItem>
       <NavigationMenuItem v-if="auth.ready && auth.user" :class="{ 'ml-auto': !links.some(link => link.end) }">
-        <button type="button" :class="navigationMenuTriggerStyle()" :disabled="logoutLoading" @click="emit('logout')">
+        <Button variant="outline" :loading="logoutLoading" type="button" class="border-0 normal-case hover:bg-transparent" :disabled="logoutLoading" @click="emit('logout')">
           Logout
-        </button>
+        </Button>
       </NavigationMenuItem>
     </NavigationMenuList>
   </NavigationMenu>

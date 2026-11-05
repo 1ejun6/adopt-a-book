@@ -1,7 +1,7 @@
 import { adoptionSection } from '@/lib/adoptions';
 
 export function useAdoptionReveal({ grouping, navigation, results }) {
-  const { entries, entryStage, groups, stageGroups, actionGroups, entryAction } = grouping;
+  const { entries, entryStage, groups, stageGroups, actionGroups, entryAction, waitingGroups, entryWaiting } = grouping;
   const { searching, tab, stage, pageSize, updateQuery, clearSearchOrigin } = navigation;
   const { matchesSearch, filtered } = results;
   async function revealRecord(record, preserve = false) {
@@ -25,11 +25,12 @@ export function useAdoptionReveal({ grouping, navigation, results }) {
           ? entryStage(entry)
           : 'needs-action';
     const selectedAction = entry ? entryAction(entry) : 'check';
+    const selectedWaiting = entry ? entryWaiting(entry) : 'approval';
     const source =
       selected === 'active'
         ? selectedStage === 'needs-action'
           ? actionGroups.value[selectedAction]
-          : stageGroups.value[selectedStage]
+          : selectedStage === 'waiting' ? waitingGroups.value[selectedWaiting] : stageGroups.value[selectedStage]
         : groups.value.history;
     const index = source.findIndex(
       (item) => item.kind === 'request' && item.record.id === record.id,
@@ -40,6 +41,7 @@ export function useAdoptionReveal({ grouping, navigation, results }) {
         tab: selected,
         stage: selected === 'active' ? selectedStage : undefined,
         action: selectedAction,
+        waiting: selectedWaiting,
         search: undefined,
         page: String(Math.floor(Math.max(0, index) / pageSize) + 1),
       },

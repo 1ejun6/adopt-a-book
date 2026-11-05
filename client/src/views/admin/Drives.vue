@@ -1,4 +1,9 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
+import AppCalendarButton from '@/components/shared/AppCalendarButton.vue';
+import { driveEvent } from '@/lib/calendar';
+import { currentTime } from '@/lib/clock';
+import { driveHasEnded, driveTimeLabel } from '../../../../shared/drives.mjs';
 import { useAdminRecord } from '@/composables/useAdminRecord';
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
@@ -21,9 +26,11 @@ const selectedIds = ref([]);
 const selectedDrive = ref(null);
 const editingDrive = ref(null);
 const detailsOpen = ref(false);
-const { detailError, detailLoading, refreshDetail } = useAdminRecord(selectedDrive, detailsOpen, '/admin/drives', 'drive', { busy: () => saving.value });
+const { detailError, detailLoading, refreshDetail } = useAdminRecord(selectedDrive, detailsOpen, '/admin/drives', 'drive', { busy: () => saving.value || !!formLoading.value });
 const formOpen = ref(false);
 const saving = ref(false);
+const formLoading = ref('');
+const savingAction = ref('');
 const stationBooks = reactive({ rows: [], search: '', loading: false, error: '' });
 const filteredStationBooks = computed(() => {
     const search = stationBooks.search.trim().toLowerCase();
@@ -35,7 +42,7 @@ const { confirm } = useConfirmation();
 let formRequestId = 0;
 let booksRequestId = 0;
 
-const viewTabs = [{ value: 'upcoming', label: 'Upcoming' }, { value: 'past', label: 'Past / cancelled' }];
+const viewTabs = [{ value: 'upcoming', label: 'Upcoming' }, { value: 'past', label: 'History/Cancelled' }];
 const columns = [
     { key: 'title', label: 'Drive', class: 'w-2/5', mobileClass: 'col-start-1 row-start-1', hideMobileLabel: true },
     { key: 'eventdate', label: 'Date / location', class: 'w-1/4' },
@@ -44,17 +51,18 @@ const columns = [
 ];
 const bookColumns = [{ key: 'title', label: 'Title / Author' }];
 //@lee-hlmilk > cancelled drives belong in Past regardless of their scheduled date
-function isPastDrive(drive) { return drive.eventdate < today.value || drive.status === 'cancelled'; }
+function isPastDrive(drive) { return driveHasEnded(drive, currentTime.value); }
 const statusOptions = computed(() => filters.view === 'past' ? ['closed', 'cancelled'] : ['open', 'closed']);
 //@lee-hlmilk > SQL owns tab/date/search filtering > only this page is loaded
 const { rows: drives, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchDrives } = useServerPagination({
-    busy: () => saving.value, endpoint: '/admin/drives', filters, selectedIds, read: response => response.drives,
-    beforeLoad: () => { formRequestId++; }, onResponse: response => { today.value = response.today; }
+    busy: () => saving.value || !!formLoading.value, endpoint: '/admin/drives', filters, selectedIds, read: response => response.drives,
+    beforeLoad: () => { formRequestId++; formLoading.value = ''; }, onResponse: response => { today.value = response.today; }
 });
 const selectedDrives = computed(() => drives.value.filter(drive => selectedIds.value.includes(drive.id)));
 const pastDrive = computed(() => selectedDrive.value && isPastDrive(selectedDrive.value));
 const driveFields = computed(() => [
     { label: 'Event date', value: selectedDrive.value ? formatDate(selectedDrive.value.eventdate) : null },
+    { label: 'Time', value: driveTimeLabel(selectedDrive.value) },
     { key: 'location', label: 'Location', value: selectedDrive.value?.location },
     { label: 'Registrations', value: selectedDrive.value ? `${selectedDrive.value.userids.length} / ${selectedDrive.value.maxcapacity}` : null }
 ]);
@@ -69,7 +77,7 @@ const closeHint = computed(() => actionHint(selectedDrives.value, 'closed'));
 const cancelHint = computed(() => actionHint(selectedDrives.value, 'cancelled'));
 
 function openDrive(drive) {
-    if (loading.value || saving.value) { return; }
+    if (loading.value || saving.value || formLoading.value) { return; }
     selectedDrive.value = drive;
     detailsOpen.value = true;
 }
@@ -94,13 +102,14 @@ async function fetchStationBooks() {
     } catch (error) {
         if (id !== booksRequestId) { return; }
         stationBooks.error = error.message;
-        toast.error(error.message, { action: { label: 'retry', onClick: fetchStationBooks } });
+        toast.error(error.message, { duration: Infinity, action: { label: 'retry', onClick: fetchStationBooks } });
     } finally { if (id === booksRequestId) { stationBooks.loading = false; } }
 }
 
 async function openForm(drive = null) {
-    if (loading.value || saving.value) { return; }
+    if (loading.value || saving.value || formLoading.value) { return; }
     const id = ++formRequestId;
+    formLoading.value = drive ? 'edit' : 'create';
     try {
         if (!stations.value.length) { stations.value = (await api('/locations/stations')).stations; }
         if (id !== formRequestId) { return; }
@@ -108,6 +117,7 @@ async function openForm(drive = null) {
         detailsOpen.value = false;
         formOpen.value = true;
     } catch (error) { if (id === formRequestId) { toast.error(error.message); } }
+    finally { if (id === formRequestId) { formLoading.value = ''; } }
 }
 
 async function saveDrive(data) {
@@ -122,12 +132,12 @@ async function saveDrive(data) {
         await fetchDrives();
         await refreshDetail();
     } catch (error) { toast.error(error.message); }
-    finally { saving.value = false; }
+    finally { saving.value = false; savingAction.value = ''; }
 }
 
 //@lee-hlmilk > snapshot targets before confirmation > status updates report partial failures while DELETE uses the existing atomic endpoint
 async function updateDrives(status, rows = selectedDrives.value) {
-    if (detailLoading.value || detailError.value || loading.value || saving.value || !rows.length || (status !== 'delete' && actionHint(rows, status))) { return; }
+    if (detailLoading.value || detailError.value || loading.value || saving.value || formLoading.value || !rows.length || (status !== 'delete' && actionHint(rows, status))) { return; }
     const targets = [...rows];
     const label = status === 'closed' ? 'Close registration' : status === 'cancelled' ? 'Cancel drives' : 'Delete';
     if (!await confirm(status === 'closed' ? 'Close registration?' : `${status === 'delete' ? 'Delete' : 'Cancel'} ${targets.length === 1 ? 'drive' : 'drives'}?`, {
@@ -135,9 +145,10 @@ async function updateDrives(status, rows = selectedDrives.value) {
             ? 'These events will be cancelled. Existing registrations remain for reference.' : 'These drives and their registrations will be permanently deleted.') + '\n' + targets.map(drive => drive.title).join('\n'),
         actionLabel: label, destructive: status !== 'closed'
     })) { return; }
-    if (loading.value || saving.value) { return; }
+    if (loading.value || saving.value || formLoading.value) { return; }
     const current = targets.map(target => drives.value.find(drive => drive.id === target.id));
     if (current.some(drive => !drive) || (status !== 'delete' && actionHint(current, status))) { toast.error('These drives have changed. Select them again.'); return; }
+    savingAction.value = status;
     saving.value = true;
     let completed = 0;
     const failures = [];
@@ -155,7 +166,7 @@ async function updateDrives(status, rows = selectedDrives.value) {
         if (failures.length) { toast.error(`${failures.length} ${failures.length === 1 ? 'update' : 'updates'} failed`, { description: failures.join('\n'), style: { whiteSpace: 'pre-line' } }); }
     } catch (error) { toast.error(error.message); }
     finally { await fetchDrives();
-        await refreshDetail(); saving.value = false; }
+        await refreshDetail(); saving.value = false; savingAction.value = ''; }
 }
 
 watch(() => filters.view, () => { filters.status = 'all'; });
@@ -167,10 +178,10 @@ fetchDrives();
     <!--@lee-hlmilk > list models update this view > Past hides selection &&& actions while retaining the table's column alignment-->
     <AdminList @retry="fetchDrives" title="Drives" description="Manage adoption drives and registrations."
         v-model:search="filters.search" v-model:tab="filters.view" v-model:selectedIds="selectedIds" v-model:page="page"
-        :rows="drives" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving" :selectable="filters.view !== 'past'"
+        :rows="drives" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving || !!formLoading" :selectable="filters.view !== 'past'"
         :error="loadError" searchPlaceholder="Search by Title, Venue, MRT station..."
         :pagination="{ itemLabel: 'drives', total, pageSize, pageCount }" @openRow="openDrive">
-        <template #headerActions><Button :disabled="detailLoading || !!detailError || loading || saving" @click="openForm()">Create drive</Button></template>
+        <template #headerActions><Button :loading="formLoading === 'create'" :disabled="detailLoading || !!detailError || loading || saving || !!formLoading" @click="openForm()"><AppIcon name="add" />Create drive</Button></template>
         <template #filters>
             <AppDatePicker v-model="filters.date" label="Event date" />
             <select v-model="filters.status" aria-label="Drive status" class="w-full rounded-lg border px-3 sm:w-auto text-base min-h-11">
@@ -179,15 +190,15 @@ fetchDrives();
             </select>
         </template>
         <template #selectionActions="{ onlyOne }">
-            <Button v-if="onlyOne" variant="outline" :disabled="detailLoading || !!detailError || loading || saving" @click="openForm(selectedDrives[0])">Edit</Button>
+            <Button v-if="onlyOne" variant="outline" :loading="formLoading === 'edit'" :disabled="detailLoading || !!detailError || loading || saving || !!formLoading" @click="openForm(selectedDrives[0])"><AppIcon name="edit" /><span class="sr-only">Edit</span></Button>
             <p v-if="closeHint && cancelHint && filters.view !== 'past'" class="text-sm text-muted-foreground" role="status">{{ cancelHint }}</p>
-            <Button v-if="filters.view !== 'past'" :disabled="detailLoading || !!detailError || loading || saving || !!closeHint" @click="updateDrives('closed')">Close registration</Button>
-            <Button v-if="filters.view !== 'past'" variant="outline" :disabled="detailLoading || !!detailError || loading || saving || !!cancelHint" @click="updateDrives('cancelled')">Cancel drives</Button>
-            <Button variant="destructive" :disabled="detailLoading || !!detailError || loading || saving" @click="updateDrives('delete')">Delete</Button>
+            <Button v-if="filters.view !== 'past'" :disabled="detailLoading || !!detailError || loading || saving || !!closeHint" @click="updateDrives('closed')" :loading="saving && savingAction === 'closed'">Close registration</Button>
+            <Button v-if="filters.view !== 'past'" variant="outline" :disabled="detailLoading || !!detailError || loading || saving || !!cancelHint" @click="updateDrives('cancelled')" :loading="saving && savingAction === 'cancelled'"><AppIcon name="cancel" />Cancel drives</Button>
+            <Button variant="destructive" :disabled="detailLoading || !!detailError || loading || saving" @click="updateDrives('delete')" :loading="saving && savingAction === 'delete'"><AppIcon name="delete" /><span class="sr-only">Delete</span></Button>
         </template>
         <template #cellTitle="{ value }"><strong class="block break-words lg:truncate font-heading font-normal text-lg">{{ value }}</strong></template>
         <template #cellEventdate="{ row }">
-            <p>{{ formatDate(row.eventdate) }}</p>
+            <p>{{ formatDate(row.eventdate) }}</p><p>{{ driveTimeLabel(row) }}</p>
             <small class="block break-words text-sm lg:truncate lg:text-muted-foreground">{{ row.location }}</small>
         </template>
         <template #cellRegistrations="{ row }">{{ row.userids.length }} / {{ row.maxcapacity }}</template>
@@ -198,21 +209,22 @@ fetchDrives();
         </template>
     </AdminList>
 
-    <AdminDetailsDialog :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedDrive" :open="detailsOpen" title="Drive details" :status="selectedDrive.status"
+    <AdminDetailsDialog :loading="detailLoading" :error="detailError" :busy="saving || detailLoading || !!formLoading" @retry="refreshDetail" v-if="selectedDrive" :open="detailsOpen" title="Drive details" :status="selectedDrive.status"
         :description="selectedDrive.description || 'No description recorded.'" :fields="driveFields" @update:open="detailsOpen = $event">
         <template #summary><h2 class="min-w-0 flex-1">{{ selectedDrive.title }}</h2></template>
         <template #field-location="{ field }">
             <!--@lee-hlmilk > field-location matches the field's key > scoped field data keeps the map link beside its location-->
             <p>{{ field.value }}</p>
-            <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(field.value)}`" target="_blank" rel="noopener noreferrer" class="underline">Open in Google Maps ↗</a>
+            <Button asChild variant="outline"><a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(field.value)}`" target="_blank" rel="noopener noreferrer" class=""><AppIcon name="location" />Open in Google Maps ↗</a></Button>
         </template>
+        <AppCalendarButton :event="driveEvent(selectedDrive, currentTime)" :disabled="detailLoading || !!detailError" />
         <section v-if="!pastDrive" class="space-y-2.5" aria-labelledby="drive-books-title">
             <h2 id="drive-books-title">Available books</h2>
             <Input v-if="selectedDrive.mrtstationid" v-model="stationBooks.search" type="search" aria-label="Search available books by title or author"
                 placeholder="Search by Title or Author..." :disabled="stationBooks.loading" />
             <p v-if="!selectedDrive.mrtstationid" class="text-muted-foreground">No MRT station assigned to this drive.</p>
             <!--@lee-hlmilk > contain long book lists within their own scroll area > no selection or record actions-->
-            <div v-else-if="stationBooks.error" role="alert"><p>{{ stationBooks.error }}</p><Button variant="outline" @click="fetchStationBooks">Retry book list</Button></div>
+            <div v-else-if="stationBooks.error" role="alert"><p>{{ stationBooks.error }}</p><Button variant="outline" @click="fetchStationBooks" :loading="stationBooks.loading"><AppIcon name="refresh" /><span class="sr-only">Retry book list</span></Button></div>
             <div v-else-if="!stationBooks.error" class="max-h-80 overflow-auto" tabindex="0" role="region" aria-label="Available books at this MRT station">
                 <AdminTable compact :rows="filteredStationBooks" :columns="bookColumns" :isLoading="stationBooks.loading"
                     :selectable="false" :selectionColumn="false" rowAction="none"
@@ -224,10 +236,10 @@ fetchDrives();
         </section>
         <template v-if="!pastDrive" #actions>
             <div class="grid w-full gap-2.5 sm:grid-cols-2">
-                <Button type="button" variant="outline" :disabled="detailLoading || !!detailError || loading || saving" @click="openForm(selectedDrive)">Edit</Button>
-                <Button v-if="selectedDrive.eventdate >= today && selectedDrive.status === 'open'" type="button" :disabled="detailLoading || !!detailError || loading || saving" @click="updateDrives('closed', [selectedDrive])">Close registration</Button>
-                <Button v-if="selectedDrive.eventdate >= today && selectedDrive.status !== 'cancelled'" type="button" variant="outline" :disabled="detailLoading || !!detailError || loading || saving" @click="updateDrives('cancelled', [selectedDrive])">Cancel drive</Button>
-                <Button type="button" variant="destructive" :disabled="detailLoading || !!detailError || loading || saving" @click="updateDrives('delete', [selectedDrive])">Delete</Button>
+                <Button type="button" variant="outline" :loading="formLoading === 'edit'" :disabled="detailLoading || !!detailError || loading || saving || !!formLoading" @click="openForm(selectedDrive)"><AppIcon name="edit" /><span class="sr-only">Edit</span></Button>
+                <Button v-if="selectedDrive.eventdate >= today && selectedDrive.status === 'open'" type="button" :disabled="detailLoading || !!detailError || loading || saving" @click="updateDrives('closed', [selectedDrive])" :loading="saving && savingAction === 'closed'">Close registration</Button>
+                <Button v-if="selectedDrive.eventdate >= today && selectedDrive.status !== 'cancelled'" type="button" variant="outline" :disabled="detailLoading || !!detailError || loading || saving" @click="updateDrives('cancelled', [selectedDrive])" :loading="saving && savingAction === 'cancelled'"><AppIcon name="cancel" />Cancel drive</Button>
+                <Button type="button" variant="destructive" :disabled="detailLoading || !!detailError || loading || saving" @click="updateDrives('delete', [selectedDrive])" :loading="saving && savingAction === 'delete'"><AppIcon name="delete" /><span class="sr-only">Delete</span></Button>
             </div>
         </template>
     </AdminDetailsDialog>

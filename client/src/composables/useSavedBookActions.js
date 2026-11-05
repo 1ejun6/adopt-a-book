@@ -38,5 +38,6 @@ export function useSavedBookActions() {
     const entry = store.entriesByBook.get(book.id);
     return entry ? removeEntry(entry) : store.toggleBook(book);
   }
-  return { busyIds, removeEntry, toggleBook };
+  const savingIds = computed(() => new Set(store.pendingOperations.keys()));
+  return { busyIds, savingIds, removeEntry, toggleBook };
 }

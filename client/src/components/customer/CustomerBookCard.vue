@@ -1,8 +1,9 @@
 <script setup>
+import CustomerBookAvailability from '@/components/customer/CustomerBookAvailability.vue';
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
-import { RouterLink } from 'vue-router';
 import { HugeiconsIcon } from '@hugeicons/vue';
 import {
   Bookmark02Icon,
@@ -16,6 +17,7 @@ const props = defineProps({
   variant: { type: String, default: 'browse' },
   saved: { type: Boolean, default: false },
   requestId: { type: String, default: '' },
+  saving: { type: Boolean, default: false },
   busy: { type: Boolean, default: false }
 });
 
@@ -46,45 +48,70 @@ function handleAction(book) {
         <Skeleton class="h-4 w-1/3" />
         <Skeleton class="size-6" />
       </div>
-      <AppBookIdentity loading vertical coverClass="h-32 w-full" />
+      <AppBookIdentity loading vertical coverClass="h-40 w-full" />
     </div>
     <Skeleton class="h-4 w-2/3" />
   </article>
 
-  <!--@sree-sanjana06 > allow cards to size naturally without unnecessary empty space-->
-  <article v-else-if="book" class="washi-tape-hover flex h-full min-w-0 flex-col gap-2.5 rounded-xl border p-4">
-    <!--@sree-sanjana06 > shared book cover, title and author-->
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center gap-2">
-        <p v-if="book.subjects?.length" class="truncate text-sm text-muted-foreground" :title="book.subjects[0]">{{ book.subjects[0] }}</p>
-        <!--@sree-sanjana06 > save directly or request removal when already saved-->
-        <!--@sree-sanjana06 > remove saved book from watchlist-->
-        <button type="button" class="ml-auto min-h-11 min-w-11 shrink-0 rounded-lg p-2" :class="{ 'text-destructive': variant === 'watchlist' }"
-          :disabled="busy" :title="variant === 'watchlist' || saved ? 'Remove from saved books' : 'Save book'"
-          :aria-label="`${variant === 'watchlist' || saved ? 'Remove' : 'Save'} ${book.title} ${variant === 'watchlist' || saved ? 'from' : 'to'} saved books`"
-          :aria-pressed="variant === 'browse' ? saved : undefined" @click.stop="handleAction(book)">
-          <HugeiconsIcon v-if="variant === 'watchlist'" :icon="Delete02Icon" class="size-5" aria-hidden="true" />
-          <HugeiconsIcon v-else :icon="Bookmark02Icon" class="size-5" :class="{ 'fill-success-foreground text-success-foreground': saved }" aria-hidden="true" />
+  <article v-else-if="book" class="flex h-full min-w-0 flex-col gap-3 rounded-xl border bg-transparent p-4 hover:bg-primary focus-within:bg-primary data-[active]:bg-primary">
+        <div class="flex items-center gap-2">
+          <p v-if="book.subjects?.length" class="truncate text-sm text-muted-foreground" :title="book.subjects[0]">{{ book.subjects[0] }}</p>
+          <Button variant="outline" type="button" class="ml-auto border-0 bg-transparent min-h-11 min-w-11 shrink-0 rounded-lg p-2" :class="{ 'text-destructive': variant === 'watchlist' }"
+            :disabled="busy" :loading="saving" :aria-label="`${variant === 'watchlist' || saved ? 'Remove' : 'Save'} ${book.title} ${variant === 'watchlist' || saved ? 'from' : 'to'} saved books`"
+            :aria-pressed="variant === 'browse' ? saved : undefined"
+            @click.stop="handleAction(book)">
+            <HugeiconsIcon v-if="variant === 'watchlist'" :icon="Delete02Icon" class="size-5" aria-hidden="true" />
+            <HugeiconsIcon v-else :icon="Bookmark02Icon" class="size-5" :class="{ 'fill-success-foreground text-success-foreground': saved }" aria-hidden="true" />
+          </Button>
+        </div>
+        <button
+          class="preview"
+          type="button"
+          aria-haspopup="dialog"
+          :aria-label="`View details for ${book.title}`"
+          @click="$emit('preview', book)"
+        >
+          <AppBookIdentity
+            :title="book.title"
+            :author="getAuthors(book)"
+            :cover="book.thumbnailurl || book.coverurl"
+            cover-class="h-40 w-full"
+            vertical
+            wrap
+          />
+          <span class="metadata">
+            <span class="collection flex min-w-0 items-center gap-2" :title="book.collectionarea || book.mrtstation?.name || 'Not provided'">
+              <AppIcon name="location" :size="14" /><span class="sr-only">Collection:</span>
+              <span class="min-w-0 flex-1 truncate">{{ book.collectionarea || book.mrtstation?.name || 'Not provided' }}</span>
+              <CustomerBookAvailability v-if="variant === 'watchlist'" dot :status="book.status" :requestId="requestId" />
+            </span>
+          </span>
         </button>
-      </div>
-      <!--@lee-hlmilk > details and save are independent keyboard controls > no button contains another button -->
-      <button type="button" class="min-h-11 w-full rounded-lg text-left" aria-haspopup="dialog" :aria-label="`View details for ${book.title}`" @click="emit('preview', book)">
-        <AppBookIdentity :title="book.title" :author="getAuthors(book)" :cover="book.thumbnailurl || book.coverurl" coverClass="h-32 w-full" wrap vertical />
-      </button>
-    </div>
 
-    <!--@1ejun6 > shared metadata styles > missing fields do not reserve empty rows -->
-    <div class="mt-auto space-y-1 pt-1 text-sm text-muted-foreground">
-      <p v-if="variant === 'watchlist'" class="text-foreground">{{ props.requestId ? 'Request sent' : book.status === 'available' ? 'Available to request' : 'Unavailable for new requests' }}</p>
-      <p class="truncate" :title="book.collectionarea || book.mrtstation?.name || 'Not provided'">Collection: {{ book.collectionarea || book.mrtstation?.name || 'Not provided' }}</p>
-    </div>
-    <Button v-if="props.requestId" asChild variant="outline" class="w-full">
-      <RouterLink :to="{ name: 'customerAdoptions', query: { request: props.requestId } }">View my request<span class="sr-only"> for {{ book.title }}</span></RouterLink>
-    </Button>
-    <Button v-else-if="variant === 'watchlist'" type="button" variant="outline" class="w-full" aria-haspopup="dialog" @click="emit('preview', book)">
-      View details<span class="sr-only"> for {{ book.title }}</span>
-    </Button>
-
-    <!--@sree-sanjana06 > personal notes are managed only in watchlist-->
   </article>
 </template>
+
+<style scoped>
+.preview {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: left;
+}
+.metadata {
+  margin-top: auto;
+  display: grid;
+  gap: 0.625rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  width: 100%;
+  font-size: 0.875rem;
+}
+.collection {
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>

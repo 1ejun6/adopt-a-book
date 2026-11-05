@@ -1,6 +1,6 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { computed, nextTick, ref, watch } from 'vue';
-import { RouterLink } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
@@ -32,13 +32,7 @@ const open = defineModel('open', { type: Boolean, default: false });
 const emit = defineEmits(['submit', 'check', 'back', 'restore-focus']);
 const errorNode = ref(null);
 const saving = computed(() => props.loading && !props.submitted);
-const adoptionsLink = computed(() => {
-  const query = {};
-  if (props.applicationId) {
-    query.request = props.applicationId;
-  }
-  return { name: 'customerAdoptions', query };
-});
+
 watch(
   () => props.error,
   async (value) => {
@@ -108,24 +102,7 @@ function preventClosing(event) {
           <p v-if="receiptWarning" class="text-sm text-muted-foreground" role="status">
             {{ receiptWarning }}
           </p>
-          <details v-if="applicationId" class="text-sm">
-            <summary class="min-h-11 cursor-pointer py-3 underline underline-offset-4">
-              Request reference
-            </summary>
-            <p class="select-all [overflow-wrap:anywhere]">{{ applicationId }}</p>
-          </details>
-          <div class="adoption-actions">
-            <button
-              type="button"
-              class="min-h-11 text-sm underline underline-offset-4"
-              @click="open = false"
-            >
-              Continue browsing
-            </button>
-            <Button asChild >
-              <RouterLink :to="adoptionsLink">View my request</RouterLink>
-            </Button>
-          </div>
+
         </template>
         <template v-else>
           <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
@@ -143,9 +120,6 @@ function preventClosing(event) {
               <dd class="[overflow-wrap:anywhere]">{{ reader?.email || 'Not available' }}</dd>
             </dl>
           </section>
-          <p class="text-sm text-muted-foreground">
-            Arrange collection after approval.
-          </p>
           <p
             v-if="error"
             ref="errorNode"
@@ -161,8 +135,9 @@ function preventClosing(event) {
               variant="outline"
 
               :disabled="loading"
+              aria-label="Back to details"
               @click="emit('back')"
-              >Back to details</Button
+              ><AppIcon name="back" /></Button
             >
             <Button
               v-if="uncertain"
@@ -171,20 +146,18 @@ function preventClosing(event) {
 
               :disabled="loading"
               @click="emit('check')"
-              >Check status again</Button
+               :loading="loading"><AppIcon name="refresh" /><span class="sr-only">Check status again</span></Button
             >
-            <Button v-else-if="existing" asChild >
-              <RouterLink :to="adoptionsLink">View my request</RouterLink>
-            </Button>
             <Button
-              v-else
+              v-else-if="!existing"
               type="button"
-
+              variant="outline"
+              class="border-success-foreground bg-transparent text-success-foreground hover:bg-badge-green"
               :disabled="loading || disabled"
               :aria-busy="loading"
+              :aria-label="loading ? 'Sending adoption request' : 'Confirm adoption request'"
               @click="emit('submit')"
-            >
-              {{ loading ? 'Sending…' : 'Send adoption request' }}
+             :loading="loading">confirm
             </Button>
           </div>
         </template>

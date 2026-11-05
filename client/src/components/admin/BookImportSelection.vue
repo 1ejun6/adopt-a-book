@@ -1,4 +1,6 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
+import AppStationSelect from '@/components/shared/AppStationSelect.vue';
 import { computed, nextTick, toRefs, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import AdminTable from '@/components/admin/AdminTable.vue';
@@ -86,7 +88,7 @@ watch(() => props.importedIds, ids => {
         <fieldset :disabled="props.submitting" class="min-w-0 space-y-5">
             <div class="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <h2>{{ reviewing ? 'Choose collection locations' : 'Find on Open Library' }}</h2>
-                <Button v-if="!reviewing" type="button" variant="outline" @click="emit('manual')">Enter manually</Button>
+                <Button v-if="!reviewing" type="button" variant="outline" @click="emit('manual')"><AppIcon name="book" />Enter manually</Button>
             </div>
             <p v-if="reviewing" class="text-muted-foreground">Check the selected books against the physical copies. Choose an MRT station for each book before adding them.</p>
             <Field v-else>
@@ -94,17 +96,17 @@ watch(() => props.importedIds, ids => {
                 <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center">
                     <Input id="book-search" :modelValue="props.query" type="search" class="flex-1  "
                         @update:modelValue="emit('update:query', $event)" />
-                    <Button type="submit" class="shrink-0 " :disabled="props.lookup.loading || !props.query.trim()">{{ props.lookup.loading ? 'Searching…' : 'Search' }}</Button>
+                    <Button type="submit" class="shrink-0" :disabled="props.lookup.loading || !props.query.trim()" :loading="props.lookup.loading"><AppIcon name="search" /><span class="sr-only">{{ props.lookup.loading ? 'Searching…' : 'Search' }}</span></Button>
                 </div>
             </Field>
             <p v-if="props.lookup.loading" role="status">Searching Open Library…</p>
-            <template v-else-if="props.lookup.searched">
-                <div class="flex items-center justify-between gap-2.5">
+            <template v-if="props.lookup.loading || props.lookup.searched">
+                <div v-if="!props.lookup.loading" class="flex items-center justify-between gap-2.5">
                     <p role="status">{{ reviewing ? `${reviewBooks.length} books to add` : `${results.length} results · ${selectedIds.length} selected` }}</p>
-                    <Button v-if="!reviewing" type="button" :disabled="props.lookup.loading || !selectedIds.length" @click="reviewSelection">Next</Button>
+                    <Button v-if="!reviewing" type="button" :disabled="props.lookup.loading || !selectedIds.length" @click="reviewSelection"><AppIcon name="next" />Next</Button>
                 </div>
                 <!--@lee-hlmilk > share table markup &&& checkbox logic with admin lists > import-specific controls use slots-->
-                <AdminTable :rows="rows" :columns="columns" :selectedIds="reviewing ? [] : selectedIds"
+                <AdminTable :rows="rows" :columns="columns" :isLoading="props.lookup.loading" :disabled="props.lookup.loading || props.submitting" :selectedIds="reviewing ? [] : selectedIds"
                     :selectable="!reviewing && !props.submitting" :selectionColumn="!reviewing" :rowAction="reviewing ? 'none' : 'select'"
                     @selectedRows="selectedIds = $event">
                     <template #cellBook="{ row }"><BookIdentity :title="row.title" :author="row.authors.join(', ')" :cover="row.coverurl" /></template>
@@ -114,15 +116,10 @@ watch(() => props.importedIds, ids => {
                     <template #headerActions><span class="sr-only">Actions</span></template>
                     <template #cellMrtstationid="{ row }">
                         <!--@lee-hlmilk > review rows are draft copies > this native v-model stores each copy's station before submission-->
-                        <select v-model="row.mrtstationid" required :aria-label="`MRT station for ${row.title}`"
-                            :aria-invalid="invalidIds.includes(row.id)" class="w-full min-w-0 rounded-lg border px-3 text-base min-h-11"
-                            @change="invalidIds = invalidIds.filter(id => id !== row.id)">
-                            <option value="" disabled>Select an MRT station</option>
-                            <option v-for="station in props.stations" :key="station.id" :value="station.id">{{ station.name }}</option>
-                        </select>
+                        <AppStationSelect v-model="row.mrtstationid" :stations="props.stations" required :disabled="props.submitting" :aria-label="`MRT station for ${row.title}`" :aria-invalid="invalidIds.includes(row.id)" @change="invalidIds = invalidIds.filter(id => id !== row.id)" />
                     </template>
                     <template #cellActions="{ row }">
-                        <Button type="button" variant="outline" :aria-label="`Remove ${row.title}`" @click.stop="removeBook(row.id)">Remove</Button>
+                        <Button type="button" variant="outline" :aria-label="`Remove ${row.title}`" @click.stop="removeBook(row.id)"><AppIcon name="delete" /><span class="sr-only">Remove</span></Button>
                     </template>
                     <template #empty>
                         <p class="text-muted-foreground">{{ reviewing ? 'No books selected. Go back to results to choose books to add.' : 'Try another title, author or ISBN, or enter the book manually.' }}</p>
@@ -130,8 +127,8 @@ watch(() => props.importedIds, ids => {
                 </AdminTable>
             </template>
             <div v-if="reviewing" class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-                <Button type="button" variant="outline" @click="reviewing = false">Back to results</Button>
-                <Button type="submit" :disabled="!canImport">{{ props.submitting ? 'Adding…' : `Add ${reviewBooks.length} ${reviewBooks.length === 1 ? 'book' : 'books'}` }}</Button>
+                <Button type="button" variant="outline" @click="reviewing = false"><AppIcon name="back" />Back to results</Button>
+                <Button type="submit" :disabled="!canImport" :loading="props.submitting"><AppIcon name="add" />{{ props.submitting ? 'Adding…' : `Add ${reviewBooks.length} ${reviewBooks.length === 1 ? 'book' : 'books'}` }}</Button>
             </div>
         </fieldset>
     </form>

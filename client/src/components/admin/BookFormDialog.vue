@@ -1,4 +1,7 @@
 <script setup>
+import AppTextarea from '@/components/shared/AppTextarea.vue';
+import AppIcon from '@/components/shared/AppIcon.vue';
+import AppStationSelect from '@/components/shared/AppStationSelect.vue';
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { useFormValidation } from '@/composables/useFormValidation';
@@ -174,12 +177,12 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
                 @search="emit('search')" @select="emit('select')" @manual="enterManually" @submit="emit('import', $event)" />
         </template>
         <template v-if="!props.book" #extraActions>
-            <Button type="submit" value="continue" variant="outline" :disabled="props.submitting || checkingCover">Add and continue</Button>
+            <Button type="submit" value="continue" variant="outline" :disabled="props.submitting || checkingCover" :loading="props.submitting || checkingCover"><AppIcon name="add" />Add and continue</Button>
         </template>
         <template v-if="props.book" #footer>
-            <Button type="submit" class="w-full " :disabled="props.submitting || checkingCover">{{ props.submitting || checkingCover ? submittingLabel : 'Save changes' }}</Button>
+            <Button type="submit" class="w-full " :disabled="props.submitting || checkingCover" :loading="props.submitting || checkingCover"><AppIcon name="save" />{{ props.submitting || checkingCover ? submittingLabel : 'Save changes' }}</Button>
         </template>
-        <div class="flex items-center justify-between gap-2.5 text-xs">
+        <div class="flex items-center justify-between gap-2.5 text-sm">
             <p class="text-muted-foreground"><span class="text-destructive" aria-hidden="true">*</span> Required</p>
             <StatusBadge v-if="props.book" :status="props.book.status" />
         </div>
@@ -239,18 +242,11 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
             </Field>
             <Field>
                 <FieldLabel for="edit-station">Collection area (MRT station) <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
-                <select id="edit-station" v-model="bookForm.mrtstationid" required
-                    :aria-invalid="invalidFields.includes('edit-station')" @change="clearInvalid"
-                    class="w-full min-w-0 rounded-lg border px-3 text-base min-h-11">
-                    <option value="" disabled>Select an MRT station</option>
-                    <option v-for="station in stationOptions" :key="station.id" :value="station.id">
-                        {{ station.name }}
-                    </option>
-                </select>
+                <AppStationSelect id="edit-station" v-model="bookForm.mrtstationid" :stations="stationOptions" required :disabled="submitting" :aria-invalid="invalidFields.includes('edit-station')" />
             </Field>
             <Field class="sm:col-span-2">
                 <FieldLabel for="edit-description">Description</FieldLabel>
-                <textarea id="edit-description" v-model="bookForm.description" rows="3"
+                <AppTextarea id="edit-description" v-model="bookForm.description" rows="3"
                     class="w-full min-w-0 rounded-lg border p-2.5 text-base" />
             </Field>
         </div>

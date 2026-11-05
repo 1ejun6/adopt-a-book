@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { computed } from 'vue';
 import { pickupTimes as timeSlots, availablePickupSlot, availablePickupTimes } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ defineProps({
   today: String,
 });
 const draft = defineModel('draft', { type: Object, required: true });
-const insufficientTimes = computed(() => !!draft.value.appointmentdate && availablePickupTimes(draft.value.appointmentdate).length < 3);
+const insufficientTimes = computed(() => !!draft.value.appointmentdate && availablePickupTimes(draft.value.appointmentdate).length < 2);
 const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
 </script>
 <template>
@@ -34,38 +35,23 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
       <h3 class="text-xl">Check your pickup details</h3>
       <ul class="space-y-2 text-sm">
         <li v-for="[key, message] in errorEntries" :key="key">
-          <button
+          <Button variant="outline"
             v-if="key !== 'form'"
             type="button"
-            class="text-left underline underline-offset-4"
+            class="text-left "
             @click="emit('focus-field', key)"
           >
             {{ message }}
-          </button>
+          </Button>
           <span v-else>{{ message }}</span>
         </li>
       </ul>
     </div>
-    <Field>
-      <FieldLabel for="pickup-location">Preferred pickup location</FieldLabel>
-      <Input
-        id="pickup-location"
-        v-model="draft.location"
-        required
-        maxlength="300"
-        :disabled="saving"
-        :aria-invalid="!!errors.location || undefined"
-        :aria-describedby="
-          errors.location ? 'pickup-location-help pickup-location-error' : 'pickup-location-help'
-        "
-      />
-      <p id="pickup-location-help" class="text-xs text-muted-foreground">
-        Choose a meeting point.
-      </p>
-      <p v-if="errors.location" id="pickup-location-error" class="text-xs text-destructive">
-        {{ errors.location }}
-      </p>
-    </Field>
+    <div class="space-y-1">
+      <p class="text-sm font-semibold">Pickup MRT station</p>
+      <p id="pickup-location" class="text-sm">{{ draft.location || 'Station unavailable' }}</p>
+      <p v-if="errors.location" role="alert" class="text-sm text-destructive">{{ errors.location }}</p>
+    </div>
     <div class="grid gap-4 sm:grid-cols-2">
       <Field>
         <FieldLabel for="pickup-appointmentdate">Preferred date</FieldLabel>
@@ -79,14 +65,14 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
           :aria-invalid="!!errors.appointmentdate || undefined"
           :aria-describedby="errors.appointmentdate ? 'pickup-date-error' : undefined"
         />
-        <p v-if="errors.appointmentdate" id="pickup-date-error" class="text-xs text-destructive">
+        <p v-if="errors.appointmentdate" id="pickup-date-error" class="text-sm text-destructive">
           {{ errors.appointmentdate }}
         </p>
       </Field>
       <fieldset class="space-y-2" :disabled="saving" aria-describedby="pickup-time-help">
-        <legend class="text-sm">Three times you’re available (SGT)</legend>
-        <p id="pickup-time-help" class="text-xs text-muted-foreground">
-          Choose three different hourly times on the same date. The team will confirm one.
+        <legend class="text-sm">Two times you’re available (SGT)</legend>
+        <p id="pickup-time-help" class="text-sm text-muted-foreground">
+          Choose two different hourly times on the same date. The team will confirm one.
         </p>
         <div v-for="(_, index) in draft.timeslots" :key="index" class="space-y-1">
           <label :for="index === 0 ? 'pickup-timeslot' : `pickup-timeslot-${index}`" class="text-sm"
@@ -114,12 +100,12 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
             </option>
           </select>
         </div>
-        <p v-if="errors.timeslot" id="pickup-time-error" class="text-xs text-destructive">
+        <p v-if="errors.timeslot" id="pickup-time-error" class="text-sm text-destructive">
           {{ errors.timeslot }}
         </p>
       </fieldset>
     </div>
-    <p class="text-xs text-muted-foreground">All times are in Singapore time (SGT).</p>
+    <p class="text-sm text-muted-foreground">All times are in Singapore time (SGT).</p>
     <div class="adoption-actions">
       <Button
         type="button"
@@ -127,9 +113,9 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
         class="flex-1"
         :disabled="saving"
         @click="emit('back')"
-        >Back</Button
+        ><AppIcon name="back" />Back</Button
       >
-      <Button type="submit" class="flex-1" :disabled="saving || uncertain || !eligible || insufficientTimes">
+      <Button type="submit" class="flex-1" :disabled="saving || uncertain || !eligible || insufficientTimes"><AppIcon name="next" />
         Review pickup request
       </Button>
     </div>

@@ -108,7 +108,7 @@ async function readshelf(req, res) {
     const account = await user.findcustomerbyid(req.user.id);
     if (!account) return res.status(404).json({ error: "customer account not found" });
     const preferredgenres = account.preferredgenres || [];
-    const books = await require("../models/books").shelf(preferredgenres);
+    const books = await require("../models/books").shelf(req.user.id);
     return res.json({ books, preferredgenres });
   } catch (error) {
     return res.status(errorstatus(error)).json({ error: errormessage(error, "could not load your shelf") });

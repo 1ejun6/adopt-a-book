@@ -1,12 +1,13 @@
 <script setup>
+import CustomerBookAvailability from '@/components/customer/CustomerBookAvailability.vue';
+import CustomerSavedBookCard from '@/components/customer/CustomerSavedBookCard.vue';
 import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
-import { ArrowLeft01Icon, ArrowRight01Icon, Delete02Icon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { Button } from '@/components/ui/button';
-import { RouterLink } from 'vue-router';
-import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 const props = defineProps({
   entries: { type: Array, default: () => [] },
   busyIds: { type: Set, default: () => new Set() },
+  savingIds: { type: Set, default: () => new Set() },
   requestIds: { type: Map, default: () => new Map() },
 });
 defineEmits(['select', 'remove']);
@@ -46,9 +47,6 @@ onBeforeUnmount(() => observer?.disconnect());
     <div class="header">
       <slot name="heading" />
       <div class="controls">
-        <Button asChild variant="outline">
-          <RouterLink :to="{ name: 'customerWatchlist' }">View saved books</RouterLink>
-        </Button>
         <Button
           variant="outline"
           aria-label="Previous saved books"
@@ -75,48 +73,12 @@ onBeforeUnmount(() => observer?.disconnect());
       @scroll.passive="update"
     >
       <li v-for="entry in entries" :key="entry.id" class="saved-book">
-        <button
-          class="preview"
-          type="button"
-          aria-haspopup="dialog"
-          @click="$emit('select', entry.bookid)"
-        >
-          <AppBookIdentity
-            :title="entry.bookid.title"
-            :author="(entry.bookid.authors || []).join(', ')"
-            :cover="entry.bookid.thumbnailurl || entry.bookid.coverurl"
-            cover-class="h-36 w-full"
-            vertical
-            wrap
-          />
-          <span class="metadata">
-            <span class="availability">{{
-              props.requestIds.get(entry.bookid.id)
-                ? 'Request sent'
-                : entry.bookid.status === 'available'
-                  ? 'Available to request'
-                  : 'Unavailable for new requests'
-            }}</span>
-            <span class="collection" :title="entry.bookid.collectionarea || entry.bookid.mrtstation?.name || 'Not provided'">Collection: {{ entry.bookid.collectionarea || entry.bookid.mrtstation?.name || 'Not provided' }}</span>
-          </span>
-        </button>
-        <div class="actions">
-          <Button v-if="props.requestIds.get(entry.bookid.id)" asChild variant="outline" size="sm" class="flex-1 whitespace-nowrap">
-            <RouterLink :to="{ name: 'customerAdoptions', query: { request: props.requestIds.get(entry.bookid.id) } }">View my request<span class="sr-only"> for {{ entry.bookid.title }}</span></RouterLink>
-          </Button>
-          <Button
-            variant="outline"
-            :class="[props.requestIds.get(entry.bookid.id) ? 'px-0' : 'w-full', 'text-destructive']"
-            :disabled="busyIds.has(entry.bookid.id)"
-            :aria-label="`Remove ${entry.bookid.title} from saved books`"
-            @click="$emit('remove', entry.bookid)"
-          >
-            <HugeiconsIcon :icon="Delete02Icon" class="size-4" aria-hidden="true" />
-            <span v-if="!props.requestIds.get(entry.bookid.id)">Remove</span>
-          </Button>
-        </div>
+        <CustomerSavedBookCard :book="entry.bookid" :busy="busyIds.has(entry.bookid.id)"
+          :saving="savingIds.has(entry.bookid.id)" :requestId="props.requestIds.get(entry.bookid.id)"
+          @preview="$emit('select', $event)" @remove="$emit('remove', $event)" />
       </li>
     </ul>
+    <CustomerBookAvailability legend class="mt-2.5" />
   </div>
 </template>
 
@@ -138,40 +100,13 @@ onBeforeUnmount(() => observer?.disconnect());
   display: flex;
   gap: 1rem;
   overflow-x: auto;
-  padding: 0.5rem 0.25rem 1rem;
+  padding: 0.25rem 0.25rem 1rem;
+  scroll-snap-type: x proximity;
 }
 .saved-book {
   flex: 0 0 13.5rem;
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  scroll-snap-align: start;
 }
-.preview {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 0.75rem;
-  text-align: left;
-}
-.metadata {
-  margin-top: auto;
-  display: grid;
-  gap: 0.25rem;
-  font-size: 0.75rem;
-}
-.collection {
-  color: var(--muted-foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+
 </style>

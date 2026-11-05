@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 
 const props = defineProps({
+  embedded: { type: Boolean, default: false },
   record: { type: Object, default: null },
   appointment: { type: Object, default: null },
   initialMode: { type: String, default: 'adoption' },
@@ -66,7 +67,7 @@ const flowDescription = computed(() => {
   if (view.value === 'pickup' && state.value.pickupStep === 'details') {
     return getApplicationStatus(props.appointment) === 'appointment confirmed'
       ? 'Update your preferred pickup details. Your current pickup stays confirmed until you send changes.'
-      : 'Choose your preferred pickup location, date and time. The team will confirm them before you travel.';
+      : 'Choose a date and two available times for pickup at the book’s MRT station. The team will confirm one before you travel.';
   }
   return status.value?.description || '';
 });
@@ -154,7 +155,7 @@ defineExpose({ canNavigate });
             :editingPickup="editingPickup"
           />
           <div class="space-y-2">
-            <p v-if="unlinked" class="text-xs text-muted-foreground">Unlinked pickup record</p>
+            <p v-if="unlinked" class="text-sm text-muted-foreground">Unlinked pickup record</p>
             <Badge :variant="status.variant">{{ status.label }}</Badge>
             <Badge v-if="record?.warning || unlinked" variant="amber" class="ml-2">{{
               record?.warning || 'Needs checking'
@@ -174,6 +175,7 @@ defineExpose({ canNavigate });
           ref="detailsBody"
           v-model:open="open"
           :record="record"
+          :embedded="embedded"
           :ready="requestsReady"
           :reconcile="refresh"
           :complete="withdrawn"

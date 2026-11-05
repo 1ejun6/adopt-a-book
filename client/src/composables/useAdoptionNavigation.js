@@ -1,7 +1,7 @@
 import { computed, ref, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction }) {
+export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction, defaultWaiting }) {
   const route = useRoute();
   const router = useRouter();
   const rememberedStage = ref('');
@@ -37,8 +37,15 @@ export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction
       );
     },
   });
-  function activePageKey(value = stage.value, selectedAction = action.value) {
-    return `active:${value}${value === 'needs-action' ? `:${selectedAction}` : ''}`;
+  const waiting = computed({
+    get: () => ['approval', 'confirmation'].includes(route.query.waiting) ? route.query.waiting : defaultWaiting.value,
+    set: value => {
+      if (!['approval', 'confirmation'].includes(value)) return;
+      return updateQuery({ waiting: value, page: String(rememberedPages[activePageKey('waiting', action.value, value)] || 1) }, false, true);
+    },
+  });
+  function activePageKey(value = stage.value, selectedAction = action.value, selectedWaiting = waiting.value) {
+    return `active:${value}${value === 'needs-action' ? `:${selectedAction}` : value === 'waiting' ? `:${selectedWaiting}` : ''}`;
   }
   function normaliseTab(value) {
     if (value === 'history') return 'history';
@@ -82,11 +89,14 @@ export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction
       if (query.stage === 'needs-action')
         query.action = ['arrange', 'check'].includes(query.action) ? query.action : action.value;
       else delete query.action;
+      if (query.stage === 'waiting') query.waiting = ['approval', 'confirmation'].includes(query.waiting) ? query.waiting : waiting.value;
+      else delete query.waiting;
       if (query.stage === defaultStage.value) delete query.stage;
       delete query.tab;
     } else {
       delete query.stage;
       delete query.action;
+      delete query.waiting;
     }
     if (consumeAction) {
       for (const key of ['request', 'application', 'appointment', 'edit']) delete query[key];
@@ -192,6 +202,7 @@ export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction
   }
 
   return {
+    waiting,
     action,
     route,
     stage,

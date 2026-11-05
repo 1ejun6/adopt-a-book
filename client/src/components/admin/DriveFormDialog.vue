@@ -1,4 +1,7 @@
 <script setup>
+import AppTextarea from '@/components/shared/AppTextarea.vue';
+import AppIcon from '@/components/shared/AppIcon.vue';
+import AppStationSelect from '@/components/shared/AppStationSelect.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { useFormValidation } from '@/composables/useFormValidation';
@@ -17,7 +20,7 @@ const props = defineProps({
     submitting: { type: Boolean, default: false }
 });
 const emit = defineEmits(['update:open', 'submit']);
-const draft = reactive({ title: '', location: '', mrtstationid: '', eventdate: '', maxcapacity: 30, description: '' });
+const draft = reactive({ title: '', location: '', mrtstationid: '', eventdate: '', starttime: '', endtime: '', maxcapacity: 30, description: '' });
 const initialForm = ref('');
 const { invalidFields, validate, clearInvalid, focusInvalid, resetValidation } = useFormValidation();
 const dirty = computed(() => JSON.stringify(draft) !== initialForm.value);
@@ -29,6 +32,7 @@ watch(() => props.open, isOpen => {
     if (!isOpen) { return; }
     Object.assign(draft, {
         title: props.drive?.title || '', location: props.drive?.location || '', mrtstationid: props.drive?.mrtstationid || '',
+        starttime: props.drive?.starttime?.slice(0, 5) || '', endtime: props.drive?.endtime?.slice(0, 5) || '',
         eventdate: props.drive?.eventdate || props.today, maxcapacity: props.drive?.maxcapacity ?? 30, description: props.drive?.description || ''
     });
     initialForm.value = JSON.stringify(draft);
@@ -40,6 +44,11 @@ function submitDrive(event) {
     if (!validate(event.target)) {
         toast.error('Please check the highlighted fields. Complete all required fields and check the date and capacity.');
         focusInvalid(event.target);
+        return;
+    }
+    if (draft.endtime <= draft.starttime) {
+        toast.error('End time must be after start time.');
+        document.getElementById('drive-endtime')?.focus();
         return;
     }
     emit('submit', { ...draft, description: draft.description.trim() });
@@ -65,10 +74,7 @@ function submitDrive(event) {
             <Field>
                 <FieldLabel for="drive-station">Nearest MRT station <span class="text-destructive" aria-hidden="true">*</span></FieldLabel>
                 <!--@lee-hlmilk > select commits its model on change > stop input validation from re-rendering the old selection first-->
-                <select id="drive-station" v-model="draft.mrtstationid" required :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-station')" class="w-full rounded-lg border px-3 text-base min-h-11" @input.stop>
-                    <option value="" disabled>Select an MRT station</option>
-                    <option v-for="station in stationOptions" :key="station.id" :value="station.id">{{ station.name }}</option>
-                </select>
+                <AppStationSelect id="drive-station" v-model="draft.mrtstationid" :stations="stationOptions" required :disabled="submitting" :aria-invalid="invalidFields.includes('drive-station')" />
             </Field>
             <div class="grid gap-5 sm:grid-cols-2">
                 <Field>
@@ -83,14 +89,22 @@ function submitDrive(event) {
                         :disabled="props.submitting" :aria-invalid="invalidFields.includes('drive-capacity')" />
                 </Field>
             </div>
+            <div class="grid gap-5 sm:grid-cols-2">
+                <Field><FieldLabel for="drive-starttime">Start time (SGT) *</FieldLabel>
+                    <Input id="drive-starttime" v-model="draft.starttime" type="time" required :disabled="submitting" :aria-invalid="invalidFields.includes('drive-starttime')" />
+                </Field>
+                <Field><FieldLabel for="drive-endtime">End time (SGT) *</FieldLabel>
+                    <Input id="drive-endtime" v-model="draft.endtime" type="time" required :disabled="submitting" :aria-invalid="invalidFields.includes('drive-endtime')" />
+                </Field>
+            </div>
             <p v-if="props.drive" class="text-muted-foreground">{{ props.drive.userids?.length || 0 }} registered. Capacity cannot be lower than this count.</p>
             <Field>
                 <FieldLabel for="drive-description">Description</FieldLabel>
-                <textarea id="drive-description" v-model="draft.description" rows="3" :disabled="props.submitting" class="rounded-lg border p-2.5 text-base" />
+                <AppTextarea id="drive-description" v-model="draft.description" rows="3" :disabled="props.submitting" class="rounded-lg border p-2.5 text-base" />
             </Field>
         </div>
         <template #footer>
-            <Button type="submit" class="w-full " :disabled="props.submitting">{{ props.submitting ? 'Saving…' : props.drive ? 'Save changes' : 'Create drive' }}</Button>
+            <Button type="submit" class="w-full " :disabled="props.submitting" :loading="props.submitting"><AppIcon name="save" />{{ props.submitting ? 'Saving…' : props.drive ? 'Save changes' : 'Create drive' }}</Button>
         </template>
     </AdminFormDialog>
 </template>

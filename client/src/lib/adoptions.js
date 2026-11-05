@@ -1,6 +1,6 @@
 import { pendingPickupState, pickupMatchesView } from '../../../shared/pickups.mjs';
 import { currentTime } from '@/lib/clock';
-import { formatDate, todayInSingapore } from './utils.js';
+import { formatDate } from './utils.js';
 
 export function getApplicationStatus(record, fallback = 'unknown') {
   return (
@@ -152,13 +152,13 @@ export function adoptionJourneys(applications, appointments, ready = true) {
 }
 
 export function hasPickupOptions(appointment) {
-  return getApplicationStatus(appointment) === 'pending confirmation' && appointment.optionsby === 'customer' && appointment.pickupoptions?.length === 3;
+  return getApplicationStatus(appointment) === 'pending confirmation' && appointment.optionsby === 'customer' && [2, 3].includes(appointment.pickupoptions?.length);
 }
 
 export function pickupStatus(appointment) {
   if (hasPickupOptions(appointment)) return {
     label: 'Waiting for pickup confirmation', variant: 'neutral',
-    description: 'Your three available times have been sent. The team will confirm one. Wait for confirmation before travelling.',
+    description: 'Your available times have been sent. The team will confirm one. Wait for confirmation before travelling.',
   };
 
   return (
@@ -185,8 +185,8 @@ export function pickupStatus(appointment) {
       },
       rejected: {
         label: 'Pickup declined',
-        variant: 'rose',
-        description: 'This pickup was declined. Your adoption is still approved. You can propose another date and three available times.',
+        variant: 'purple',
+        description: 'This pickup was declined. Your adoption is still approved. You can propose another date and two available times.',
       },
     }[getApplicationStatus(appointment)] || {
       label: 'Pickup status unavailable',
@@ -252,7 +252,7 @@ export function adoptionJourney(
     return {
       ...base,
       label: 'Not approved',
-      variant: 'rose',
+      variant: 'purple',
       description: 'Your adoption request was not approved.',
       history: true,
     };
@@ -409,7 +409,7 @@ export function adoptionJourney(
     description: canArrange
       ? appointment
         ? `${pickupStatus(appointment).label}. Your adoption is still approved. You can request another pickup.`
-        : 'Your next step is to propose a pickup location, date and three available times.'
+        : 'Your next step is to choose a date and two available times for the book’s MRT station.'
       : 'Your adoption is approved, but we couldn’t verify the pickup details. Refresh the page or check with the team before arranging pickup.',
   };
 }
@@ -559,64 +559,4 @@ export function adoptionProgress(applicationStatus, appointmentStatus = '') {
     return { current: 3, completed: 2 };
   }
   return null;
-}
-
-// Free-text time proposals are valid, but only explicit, ordered time ranges can be exported.
-export function pickupCalendar(appointment, title) {
-  if (
-    getApplicationStatus(appointment) !== 'appointment confirmed' ||
-    !pickupComplete(appointment) ||
-    appointment.appointmentdate < todayInSingapore()
-  ) {
-    return '';
-  }
-  const times = appointment.timeslot.match(/^(\d{2}):(\d{2})\s*[–-]\s*(\d{2}):(\d{2})$/);
-  if (!times) {
-    return '';
-  }
-  const [, h1, m1, h2, m2] = times.map(Number);
-  if (h1 > 23 || h2 > 23 || m1 > 59 || m2 > 59 || h2 * 60 + m2 <= h1 * 60 + m1) {
-    return '';
-  }
-  const stamp = (time) =>
-    new Date(`${appointment.appointmentdate}T${time}:00+08:00`)
-      .toISOString()
-      .replace(/[-:]/g, '')
-      .replace('.000', '');
-  const escape = (value) =>
-    String(value)
-      .replace(/\\/g, '\\\\')
-      .replace(/\r?\n/g, '\\n')
-      .replace(/,/g, '\\,')
-      .replace(/;/g, '\\;');
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Adopt a Book//Collections//EN',
-    'BEGIN:VEVENT',
-    `UID:${escape(recordId(appointment))}@adopt-a-book`,
-    `DTSTAMP:${new Date()
-      .toISOString()
-      .replace(/[-:]/g, '')
-      .replace(/\.\d{3}/, '')}`,
-    `DTSTART:${stamp(`${times[1]}:${times[2]}`)}`,
-    `DTEND:${stamp(`${times[3]}:${times[4]}`)}`,
-    `SUMMARY:${escape(`Collect ${title || 'your adopted book'}`)}`,
-    `LOCATION:${escape(appointment.location)}`,
-    'END:VEVENT',
-    'END:VCALENDAR',
-    '',
-  ].join('\r\n');
-}
-
-// Both the pickup card and details dialog export the same confirmed appointment.
-export function downloadPickupCalendar(appointment, title) {
-  const calendar = pickupCalendar(appointment, title);
-  if (!calendar) return;
-  const url = URL.createObjectURL(new Blob([calendar], { type: 'text/calendar;charset=utf-8' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `pickup-${recordId(appointment)}.ics`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

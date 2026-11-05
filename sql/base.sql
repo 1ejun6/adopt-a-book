@@ -1048,3 +1048,343 @@ create index if not exists admin_applications_status_created_id_idx on public.ad
 create index if not exists admin_appointments_status_date_time_id_idx on public.appointments(status,appointmentdate,timeslot,id);
 create index if not exists admin_drives_status_date_id_idx on public.adoptiondrives(status,eventdate,id);
 notify pgrst, 'reload schema';
+
+
+-- Discovery and scheduling updates (also shipped as a forward migration).
+-- Apply once to an existing installation; seed.sql is a separate, explicit operation.
+alter table public.adoptiondrives add column if not exists starttime time;
+alter table public.adoptiondrives add column if not exists endtime time;
+alter table public.adoptiondrives drop constraint if exists drive_time_range;
+alter table public.adoptiondrives add constraint drive_time_range check (
+  (starttime is null and endtime is null) or
+  (starttime is not null and endtime is not null and starttime < endtime and endtime < '24:00'::time)
+);
+
+create or replace function public.drive_has_ended(event_date date, end_time time)
+returns boolean language sql stable set search_path = '' as $$
+  select case when end_time is null then event_date < (now() at time zone 'Asia/Singapore')::date
+    else event_date + end_time <= (now() at time zone 'Asia/Singapore') end;
+$$;
+revoke all on function public.drive_has_ended(date,time) from public,anon,authenticated;
+grant execute on function public.drive_has_ended(date,time) to service_role;
+
+
+create or replace function public.validate_pickup_options(options jsonb, collection_date date)
+returns void language plpgsql set search_path = '' as $$
+declare item jsonb; singapore_now timestamp := now() at time zone 'Asia/Singapore';
+begin
+  if jsonb_typeof(options) is distinct from 'array' then
+    raise exception 'Choose two available pickup times.' using errcode = 'PT422';
+  end if;
+  if jsonb_array_length(options) <> 2 or collection_date is null or
+     (select count(distinct value->>'timeslot') from jsonb_array_elements(options)) <> 2 then
+    raise exception 'Choose two different times on one date.' using errcode = 'PT422';
+  end if;
+  for item in select value from jsonb_array_elements(options) loop
+    if jsonb_typeof(item) <> 'object' or item - array['appointmentdate','timeslot'] <> '{}'::jsonb or
+       (item->>'appointmentdate') is distinct from collection_date::text or
+       coalesce(item->>'timeslot','') not in ('09:00–10:00','10:00–11:00','11:00–12:00','12:00–13:00','13:00–14:00','14:00–15:00','15:00–16:00','16:00–17:00','17:00–18:00') then
+      raise exception 'Choose two hourly times on the same date, between 9am and 6pm SGT.' using errcode = 'PT422';
+    end if;
+    if collection_date + split_part(item->>'timeslot','–',1)::time <= singapore_now then
+      raise exception 'All proposed pickup times must be in the future.' using errcode = 'PT422';
+    end if;
+  end loop;
+end;
+$$;
+
+create or replace function public.book_collection_appointment(
+  customer_id uuid, book_id uuid, collection_location text, collection_date date, time_slot text
+) returns public.appointments language plpgsql set search_path = '' as $$
+declare selectedbook public.books; booking public.appointments;
+begin
+  select * into selectedbook from public.books where id = book_id for update;
+  if not found then raise exception 'book not found' using errcode = 'PT404'; end if;
+  if selectedbook.status <> 'reserved' or not exists (
+    select 1 from public.adoptionapplications where bookid = book_id and userid = customer_id and status = 'approved'
+  ) then raise exception 'approved application for a reserved book required'; end if;
+  if collection_date is null or collection_date < (now() at time zone 'Asia/Singapore')::date then raise exception 'collection date must be today or later' using errcode = 'PT422'; end if;
+  if selectedbook.mrtstationid is null or collection_location is distinct from selectedbook.collectionarea then
+    raise exception 'Pickup location must be the book’s MRT station.' using errcode = 'PT422';
+  end if;
+  insert into public.appointments(userid, bookid, booktitle, location, appointmentdate, timeslot)
+    values (customer_id, book_id, selectedbook.title, collection_location, collection_date, time_slot)
+    returning * into booking;
+  return booking;
+end;
+$$;
+
+create or replace function public.change_collection(appointment_id uuid, actor_id uuid, changes jsonb)
+returns public.appointments language plpgsql set search_path = '' as $$
+declare selectedbook public.books; booking public.appointments; book_id uuid; next_status text; choice jsonb;
+begin
+  select bookid into book_id from public.appointments where id = appointment_id;
+  select * into selectedbook from public.books where id = book_id for update;
+  select * into booking from public.appointments where id = appointment_id for update;
+  if not found then raise exception 'appointment not found' using errcode = 'PT404'; end if;
+  if selectedbook.status <> 'reserved' or booking.status not in ('pending confirmation','appointment confirmed') then
+    raise exception 'collection is no longer active' using errcode = 'PT409';
+  end if;
+  if not exists (select 1 from public.adoptionapplications where bookid = book_id and userid = booking.userid and status = 'approved') then
+    raise exception 'approved application required' using errcode = 'PT409';
+  end if;
+  if booking.userid = actor_id then
+    if changes - array['location','appointmentdate','pickupoptions'] <> '{}'::jsonb or
+       not (changes ?& array['location','appointmentdate','pickupoptions']) then
+      raise exception 'Provide a location, one date and two available times.' using errcode = 'PT422';
+    end if;
+    perform public.validate_pickup_options(changes->'pickupoptions', (changes->>'appointmentdate')::date);
+    if selectedbook.mrtstationid is null or changes->>'location' is distinct from selectedbook.collectionarea then
+      raise exception 'Pickup location must be the book’s MRT station.' using errcode = 'PT422';
+    end if;
+    booking.location := selectedbook.collectionarea;
+    booking.appointmentdate := (changes->>'appointmentdate')::date;
+    booking.pickupoptions := changes->'pickupoptions';
+    booking.timeslot := booking.pickupoptions->0->>'timeslot';
+    booking.proposalversion := gen_random_uuid();
+    booking.optionsby := 'customer';
+    booking.status := 'pending confirmation';
+  else
+    if not public.can_manage_book(actor_id, selectedbook.ownerid) then
+      raise exception 'appointment not found' using errcode = 'PT404';
+    end if;
+    if changes ? 'proposalversion' then
+      if changes - array['proposalversion','slot'] <> '{}'::jsonb or
+         booking.optionsby is distinct from 'customer' or booking.status <> 'pending confirmation' or
+         booking.proposalversion is distinct from (changes->>'proposalversion')::uuid or
+         jsonb_array_length(booking.pickupoptions) not in (2,3) or coalesce(changes->>'slot','') not in ('0','1','2')
+         or (changes->>'slot')::integer >= jsonb_array_length(booking.pickupoptions) then
+        raise exception 'These pickup times changed. Refresh before choosing.' using errcode = 'PT409';
+      end if;
+      choice := booking.pickupoptions->((changes->>'slot')::integer);
+      if not coalesce(public.pickup_start((choice->>'appointmentdate')::date, choice->>'timeslot') > (clock_timestamp() at time zone 'Asia/Singapore'), false) then
+        raise exception 'That pickup time has passed. Choose another time or ask for new availability.' using errcode = 'PT422';
+      end if;
+      booking.appointmentdate := (choice->>'appointmentdate')::date;
+      booking.timeslot := choice->>'timeslot';
+      booking.status := 'appointment confirmed';
+    else
+      next_status := changes->>'status';
+      if changes - 'status' <> '{}'::jsonb or next_status is null or
+         not ((next_status = 'appointment confirmed' and booking.status = 'pending confirmation' and booking.appointmentdate >= (now() at time zone 'Asia/Singapore')::date)
+           or (next_status = 'rejected' and booking.status = 'pending confirmation')
+           or (next_status = 'collected' and booking.status = 'appointment confirmed')) then
+        raise exception 'invalid collection transition' using errcode = 'PT409';
+      end if;
+      if next_status = 'appointment confirmed' and jsonb_array_length(booking.pickupoptions) > 0 then
+        raise exception 'Select one of the customer’s proposed pickup times.' using errcode = 'PT422';
+      end if;
+      if next_status = 'appointment confirmed' and
+         coalesce(public.pickup_start(booking.appointmentdate, booking.timeslot) > (clock_timestamp() at time zone 'Asia/Singapore'), false) = false then
+        raise exception 'The pickup time has passed or is incomplete. Ask the customer for new availability.' using errcode = 'PT422';
+      end if;
+      booking.status := next_status;
+      if next_status = 'collected' then update public.books set status = 'adopted', updatedat = now() where id = book_id; end if;
+    end if;
+  end if;
+  update public.appointments set status = booking.status, location = booking.location,
+    appointmentdate = booking.appointmentdate, timeslot = booking.timeslot,
+    pickupoptions = booking.pickupoptions, proposalversion = booking.proposalversion, optionsby = booking.optionsby, updatedat = now()
+    where id = appointment_id returning * into booking;
+  return booking;
+end;
+$$;
+
+create or replace function public.browse_customer_books(
+  search_term text default '', book_status text default null, book_subject text default null,
+  sort_by text default 'title', page_number bigint default 1, page_size integer default 24, station_ids uuid[] default null,
+  customer_id uuid default null, genre_group text default null, exclude_saved boolean default false
+) returns jsonb language plpgsql stable set search_path = '' as $$
+declare result jsonb; preferences text[];
+begin
+  select preferredgenres into preferences from public.users where id = customer_id and role = 'customer';
+  if not found then raise exception 'customer account required' using errcode = 'PT403'; end if;
+  if genre_group is not null and genre_group not in ('my','other') then
+    raise exception 'invalid genre group' using errcode = 'PT422';
+  end if;
+  if page_number is null or page_number < 1 or page_number > 9007199254740991
+     or page_size is null or page_size not between 1 and 100
+     or sort_by is null or sort_by not in ('title','author','newest','nearest')
+     or (book_status is not null and book_status not in ('available','reserved','adopted')) then
+    raise exception 'invalid catalogue filters' using errcode = 'PT422';
+  end if;
+  if (sort_by = 'nearest' and station_ids is null)
+     or cardinality(station_ids) > 500
+     or cardinality(station_ids) <> (select count(distinct id) from unnest(station_ids) id)
+     or exists (select 1 from unnest(station_ids) as filter(id) where not exists (select 1 from public.mrtstations s where s.id = filter.id)) then
+    raise exception 'invalid MRT station filter' using errcode = 'PT422';
+  end if;
+  with filtered as not materialized (
+    select b.* from public.books b
+    where (station_ids is null or b.mrtstationid = any(station_ids))
+      and (genre_group is null or (genre_group = 'my') = (b.subjects && preferences))
+      and (not exclude_saved or not exists (select 1 from public.watchlist w where w.userid = customer_id and w.bookid = b.id))
+      and (book_status is null or b.status = book_status)
+      and (book_subject is null or b.subjects @> array[book_subject])
+      and (coalesce(trim(search_term),'') = ''
+        or strpos(lower(b.title),lower(trim(search_term))) > 0
+        or strpos(lower(coalesce(b.isbn,'')),lower(trim(search_term))) > 0
+        or exists (select 1 from unnest(b.authors) author
+          where strpos(lower(author),lower(trim(search_term))) > 0))
+  ), pagebooks as (
+    select * from filtered
+    order by
+      case when sort_by = 'nearest' then array_position(station_ids,mrtstationid) end,
+      case when sort_by = 'title' then lower(title) end,
+      case when sort_by = 'author' then nullif(lower(authors[1]),'') end nulls last,
+      case when sort_by = 'newest' then createdat end desc,
+      id
+    limit page_size offset ((page_number - 1) * page_size)
+  ), paged as (
+    select b.id, b.title, b.authors, b.isbn, b.subjects, b.publicationyear,
+      b.description, b.coverurl, b.openlibraryid, b.source, b.status,
+      b.condition, coalesce(s.name,b.collectionarea) as collectionarea, b.mrtstationid,
+      case when s.id is null then null else jsonb_build_object('id',s.id,'name',s.name,'codes',s.codes,'lat',s.lat,'lng',s.lng,'selectable',s.selectable) end as mrtstation,
+      case when u.id is null then null else jsonb_build_object('name',u.name) end as owner,
+      row_number() over (order by
+        case when sort_by = 'nearest' then array_position(station_ids,b.mrtstationid) end,
+        case when sort_by = 'title' then lower(b.title) end,
+        case when sort_by = 'author' then nullif(lower(b.authors[1]),'') end nulls last,
+        case when sort_by = 'newest' then b.createdat end desc,
+        b.id) as position
+    from pagebooks b left join public.users u on u.id = b.ownerid left join public.mrtstations s on s.id = b.mrtstationid
+  )
+  select jsonb_build_object(
+    'books', coalesce((select jsonb_agg(to_jsonb(p) - 'sortcreatedat' - 'position' order by position) from paged p),'[]'::jsonb),
+    'total', (select count(*) from filtered)
+  ) into result;
+  return result;
+end;
+$$;
+
+revoke all on function public.browse_customer_books(text,text,text,text,bigint,integer,uuid[],uuid,text,boolean) from public,anon,authenticated;
+grant execute on function public.browse_customer_books(text,text,text,text,bigint,integer,uuid[],uuid,text,boolean) to service_role;
+
+create or replace function public.customer_shelf(customer_id uuid)
+returns jsonb language sql stable set search_path = '' as $$
+  select public.browse_customer_books(book_status => 'available', page_size => 100,
+    customer_id => customer_id, exclude_saved => true,
+    genre_group => case when exists(select 1 from public.users u where u.id = customer_id and cardinality(u.preferredgenres) > 0) then 'my' else null end)->'books';
+$$;
+revoke all on function public.customer_shelf(uuid) from public,anon,authenticated;
+grant execute on function public.customer_shelf(uuid) to service_role;
+
+create or replace function public.browse_drives(station_ids uuid[] default null, sort_by text default 'date', customer_id uuid default null)
+returns jsonb language plpgsql stable set search_path = '' as $$
+declare result jsonb;
+begin
+  if sort_by is null or sort_by not in ('date','nearest') or (sort_by = 'nearest' and station_ids is null)
+     or cardinality(station_ids) > 500
+     or cardinality(station_ids) <> (select count(distinct id) from unnest(station_ids) id)
+     or exists (select 1 from unnest(station_ids) f(id) where not exists (select 1 from public.mrtstations s where s.id = f.id)) then
+    raise exception 'invalid drive filters' using errcode = 'PT422';
+  end if;
+  if customer_id is not null and not exists (select 1 from public.users where id = customer_id and role = 'customer') then
+    raise exception 'customer account required' using errcode = 'PT403';
+  end if;
+  select coalesce(jsonb_agg(
+    jsonb_build_object('id',d.id,'title',d.title,'location',d.location,'eventdate',d.eventdate,'starttime',d.starttime,'endtime',d.endtime,
+      'description',d.description,'maxcapacity',d.maxcapacity,'status',d.status,'mrtstationid',d.mrtstationid,
+      'spotsleft',greatest(d.maxcapacity-cardinality(d.userids),0),
+      'mrtstation',case when s.id is null then null else jsonb_build_object('id',s.id,'name',s.name,'codes',s.codes,'lat',s.lat,'lng',s.lng,'selectable',s.selectable) end)
+    || case when customer_id is null then '{}'::jsonb else jsonb_build_object(
+      'registered',customer_id=any(d.userids),'attendees',cardinality(d.userids),'createdat',d.createdat,'updatedat',d.updatedat) end
+    order by case when sort_by='nearest' then array_position(station_ids,d.mrtstationid) end, d.eventdate,d.id
+  ),'[]'::jsonb) into result
+  from public.adoptiondrives d left join public.mrtstations s on s.id=d.mrtstationid
+  where station_ids is null or d.mrtstationid=any(station_ids);
+  return result;
+end;
+$$;
+
+create or replace function public.rsvp_adoption_drive(drive_id uuid, customer_id uuid)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  drive public.adoptiondrives;
+begin
+  if not exists (select 1 from public.users where id = customer_id and role = 'customer') then
+    raise exception 'customer account not found';
+  end if;
+  select * into drive from public.adoptiondrives where id = drive_id for update;
+  if not found then
+    return jsonb_build_object('result', 'missing');
+  end if;
+  if drive.status = 'cancelled' then
+    return jsonb_build_object('result', 'cancelled', 'title', drive.title);
+  end if;
+  if customer_id = any(drive.userids) then
+    return jsonb_build_object('result', 'registered', 'registered', true, 'drive', jsonb_build_object('status',drive.status,'spotsleft',greatest(drive.maxcapacity-cardinality(drive.userids),0)));
+  end if;
+  if drive.status = 'closed' or public.drive_has_ended(drive.eventdate,drive.endtime)
+     or cardinality(drive.userids) >= drive.maxcapacity then
+    return jsonb_build_object('result', 'closed', 'title', drive.title);
+  end if;
+  update public.adoptiondrives
+  set userids = array_append(userids, customer_id),
+      updatedat = now()
+  where id = drive_id returning * into drive;
+  return jsonb_build_object('result', 'success', 'registered', true, 'drive', jsonb_build_object('status',drive.status,'spotsleft',greatest(drive.maxcapacity-cardinality(drive.userids),0)));
+end;
+$$;
+
+create or replace function public.check_drive_capacity()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' then
+    if new.eventdate < (now() at time zone 'Asia/Singapore')::date then raise exception 'eventdate must be today or later' using errcode='PT422'; end if;
+  elsif new.eventdate is distinct from old.eventdate and new.eventdate < (now() at time zone 'Asia/Singapore')::date then
+    raise exception 'eventdate must be today or later' using errcode='PT422';
+  end if;
+  if tg_op = 'UPDATE' then
+    if new.status is distinct from old.status then new.closedbycapacity := false; end if;
+  end if;
+  if cardinality(new.userids) > new.maxcapacity then
+    raise exception 'capacity cannot be lower than the number of registrations';
+  end if;
+  if new.status = 'open' and cardinality(new.userids) = new.maxcapacity then
+    new.status := 'closed';
+    new.closedbycapacity := true;
+  elsif new.status = 'closed' and new.closedbycapacity
+      and cardinality(new.userids) < new.maxcapacity
+      and not public.drive_has_ended(new.eventdate,new.endtime) then
+    new.status := 'open';
+    new.closedbycapacity := false;
+  elsif new.status <> 'closed' then
+    new.closedbycapacity := false;
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function public.browse_admin_drives(search_term text default '', selected_status text default 'all', selected_view text default 'all', selected_date date default null, page_number bigint default 1, page_size integer default 15)
+returns jsonb language sql stable security invoker set search_path = '' as $$
+  with eligible as not materialized (
+    select d.* from public.adoptiondrives d
+  ), filtered as not materialized (
+    select d.* from eligible d left join public.mrtstations s on s.id=d.mrtstationid
+    where (selected_view='all' or (selected_view='past')=(public.drive_has_ended(d.eventdate,d.endtime) or d.status='cancelled'))
+      and (selected_status='all' or d.status=selected_status)
+      and (selected_date is null or d.eventdate=selected_date)
+      and (search_term='' or strpos(lower(concat_ws(' ',d.title,d.location,s.name)),lower(search_term))>0)
+  ), page_rows as (
+    select *,row_number() over(order by case when selected_view='past' then eventdate end desc, case when selected_view<>'past' then eventdate end asc,id) as seq from filtered
+    order by case when selected_view='past' then eventdate end desc, case when selected_view<>'past' then eventdate end asc,id
+    limit greatest(1,least(page_size,100)) offset (greatest(1,page_number)-1)*greatest(1,least(page_size,100))
+  )
+  select jsonb_build_object(
+    'drives',coalesce((select jsonb_agg((to_jsonb(p)-'seq') || jsonb_build_object('_id',p.id,'needsLocationUpdate',p.mrtstationid is null,'mrtstation',case when s.id is null then null else jsonb_build_object('id',s.id,'name',s.name,'codes',s.codes,'lat',s.lat,'lng',s.lng,'selectable',s.selectable) end) order by p.seq) from page_rows p left join public.mrtstations s on s.id=p.mrtstationid), '[]'::jsonb),
+    'total',(select count(*) from filtered),
+    'counts',(select jsonb_build_object('upcoming',count(*) filter(where not public.drive_has_ended(eventdate,endtime) and status<>'cancelled'),'past',count(*) filter(where public.drive_has_ended(eventdate,endtime) or status='cancelled')) from eligible),
+    'today',(now() at time zone 'Asia/Singapore')::date
+  );
+$$;
+
+notify pgrst, 'reload schema';

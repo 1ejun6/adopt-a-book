@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { api } from '@/lib/api';
 import { toast } from 'vue-sonner';
@@ -69,7 +70,7 @@ async function saveDetails() {
 
 <template>
   <Dialog :open="open" @update:open="value => { if (!saving) open = value; }">
-    <DialogTrigger asChild><Button class="w-full">Edit profile</Button></DialogTrigger>
+    <DialogTrigger asChild><Button><AppIcon name="edit" /><span class="sr-only">Edit profile</span></Button></DialogTrigger>
     <DialogContent class="max-w-md border" :showCloseButton="!saving"
       @escapeKeyDown="event => { if (saving) event.preventDefault(); }"
       @interactOutside="event => { if (saving) event.preventDefault(); }">
@@ -78,7 +79,7 @@ async function saveDetails() {
         <DialogDescription>your name, sign-in email and password</DialogDescription>
       </DialogHeader>
       <form class="p-5" :aria-busy="saving" @submit.prevent="saveDetails">
-        <p v-if="error" ref="errorMessage" class="rounded-lg bg-badge-rose p-3 text-destructive" role="alert" tabindex="-1">{{ error }}</p>
+        <p v-if="error" ref="errorMessage" class="rounded-lg bg-badge-purple p-3 text-destructive" role="alert" tabindex="-1">{{ error }}</p>
         <div class="space-y-4">
           <Field>
             <FieldLabel for="account-name">Full name</FieldLabel>
@@ -87,8 +88,7 @@ async function saveDetails() {
           <Field>
             <FieldLabel for="account-email">Email address</FieldLabel>
             <Input id="account-email" v-model="draft.email" type="email" autocomplete="email" maxlength="200"
-              aria-describedby="account-email-help" required :disabled="saving" />
-            <p id="account-email-help" class="text-xs text-muted-foreground">Use this email to sign in.</p>
+              required :disabled="saving" />
           </Field>
         </div>
         <section class="space-y-4">
@@ -97,7 +97,7 @@ async function saveDetails() {
             @click="passwordExpanded = !passwordExpanded">
             <span class="space-y-1">
               <span class="block font-medium">Change password</span>
-              <span class="block text-xs text-muted-foreground">{{ passwordChanged ? 'Password change added' : 'Optional · keep your current password' }}</span>
+              <span class="block text-sm text-muted-foreground">{{ passwordChanged ? 'Password change added' : 'Optional · keep your current password' }}</span>
             </span>
             <span aria-hidden="true" class="text-xl">{{ passwordExpanded ? '−' : '+' }}</span>
           </button>
@@ -118,10 +118,10 @@ async function saveDetails() {
           </div>
         </section>
         <div class="space-y-2 pt-1">
-          <Button type="submit" class="w-full" :disabled="!canSave">
-            {{ saving ? 'Saving…' : 'Save changes' }}
+          <Button type="submit" class="w-full" :disabled="!canSave" :loading="saving">
+            {{ saving ? 'saving…' : 'save' }}
           </Button>
-          <p class="text-center text-xs text-muted-foreground" role="status">
+          <p class="text-center text-sm text-muted-foreground" role="status">
             {{ saving ? 'Updating your account…' : changed || passwordChanged ? 'Changes ready to save' : 'No changes yet' }}
           </p>
         </div>

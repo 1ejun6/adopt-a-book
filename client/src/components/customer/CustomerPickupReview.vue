@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -31,19 +32,21 @@ const emit = defineEmits(['change-field', 'back', 'submit']);
       <dt class="text-muted-foreground">{{ field.label }}</dt>
       <dd class="[overflow-wrap:anywhere]">{{ field.value }}</dd>
       <dd>
-        <button
+        <Button
+          v-if="field.key !== 'location'"
+          variant="outline"
           type="button"
-          class="min-h-11 underline underline-offset-4"
+
           :aria-label="`Change ${field.label.toLowerCase()}`"
           :disabled="saving"
           @click="emit('change-field', field.key)"
-        >
-          Change
-        </button>
+         ><AppIcon name="edit" />
+          <span class="sr-only">Change</span>
+        </Button>
       </dd>
     </div>
   </dl>
-  <p class="text-xs text-muted-foreground">Singapore time (SGT)</p>
+  <p class="text-sm text-muted-foreground">Singapore time (SGT)</p>
   <section
     v-if="confirmed && appointment"
     class="space-y-1 rounded-lg border p-3 text-sm"
@@ -57,14 +60,14 @@ const emit = defineEmits(['change-field', 'back', 'submit']);
     {{
       confirmed
         ? 'Sending these changes replaces your current confirmation. Wait until the updated pickup is confirmed before you travel.'
-        : 'The team will choose one of your three times and confirm the pickup. Check My Adoptions before travelling.'
+        : 'The team will choose one of your two times and confirm the pickup. Check My Adoptions before travelling.'
     }}
   </p>
   <div class="adoption-actions">
     <Button type="button" variant="outline" :disabled="saving" @click="emit('back')"
-      >Edit details</Button
+      ><AppIcon name="edit" />Edit details</Button
     >
-    <Button type="button" :disabled="saving || uncertain || !eligible" @click="emit('submit')">
+    <Button type="button" :disabled="saving || uncertain || !eligible" @click="emit('submit')" :loading="saving"><AppIcon name="success" />
       {{ saving ? 'Sending…' : submitLabel }}
     </Button>
   </div>

@@ -3,11 +3,15 @@ const stations = require("./mrtstations");
 const { readall } = require("./query");
 const supabase = require("../supabase/supabase");
 
+const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(?::00)?$/, "use HH:MM Singapore time").transform(value => value.slice(0, 5));
+const schedule = z.object({ starttime: time, endtime: time }).refine(value => value.endtime > value.starttime, "end time must be after start time");
 const adoptiondriveschema = z.object({
   title: z.string().trim().min(1),
   location: z.string().trim().min(1),
   mrtstationid: z.uuid({ error: "choose an MRT station" }),
   eventdate: z.iso.date(),
+  starttime: time,
+  endtime: time,
   description: z.string().default(""),
   maxcapacity: z.coerce.number().int().positive().max(2147483647),
   userids: z.array(z.string().uuid()).default([]),
@@ -34,6 +38,7 @@ const getalldrives = async () => (await many(supabase.from("adoptiondrives").sel
 
 async function createdrive(drive) {
   const validateddrive = adoptiondriveschema.parse(drive);
+  schedule.parse(validateddrive);
   await stations.validatewrite(validateddrive.mrtstationid);
   const { data, error } = await supabase.from("adoptiondrives").insert(validateddrive).select(`*,${stations.relation}`).single();
   if (error) throw error;
@@ -46,9 +51,12 @@ async function getdrivebyid(id) {
 }
 async function updatedrive(id, drive) {
   const validateddrive = adoptiondriveupdateschema.parse(drive);
+  const existing = await getdrivebyid(id);
+  if (!existing) return null;
+  // Status-only actions may close/cancel legacy drives; saving schedule/content requires complete times.
+  if (Object.keys(drive).some(key => key !== "status")) schedule.parse({ ...existing, ...validateddrive });
   if (validateddrive.mrtstationid !== undefined) {
-    const current = await getdrivebyid(id);
-    await stations.validatewrite(validateddrive.mrtstationid, current?.mrtstationid);
+    await stations.validatewrite(validateddrive.mrtstationid, existing.mrtstationid);
   }
   const changes = Object.fromEntries(Object.entries(validateddrive).filter(([key]) => Object.hasOwn(drive, key) && drive[key] !== undefined));
   // Even setting an already closed drive to closed is an explicit admin choice.
@@ -63,7 +71,7 @@ async function rsvpdrive(id, userid) {
   return data;
 }
 
-const publicfields = `id,title,location,eventdate,description,maxcapacity,status,mrtstationid,${stations.relation}`;
+const publicfields = `id,title,location,eventdate,starttime,endtime,description,maxcapacity,status,mrtstationid,${stations.relation}`;
 async function publicdrives(id) {
   if (!id) return discovery();
   // Registration IDs stay on the server; only the remaining count is public.

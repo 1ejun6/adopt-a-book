@@ -51,12 +51,13 @@ async function register() {
 }
 </script>
 <template>
-    <section class="mx-auto w-full max-w-md py-5">
+    <section class="m-auto w-full max-w-md py-5 md:max-w-5xl md:py-8">
         <div class="space-y-5">
             <h1>Create account</h1>
             <form @submit.prevent="register">
                 <p v-if="errorMessage" role="alert" class="text-destructive">{{ errorMessage }}</p>
-                <fieldset :disabled="form.loading" class="space-y-4">
+                <fieldset :disabled="form.loading" class="grid items-start gap-6 md:grid-cols-2 md:gap-x-12">
+                <div class="min-w-0 space-y-4">
                 <Field>
                     <FieldLabel for="name">Name</FieldLabel>
                     <Input id="name" @blur="fieldFeedback" @invalid="fieldFeedback" @input="fieldFeedback" :aria-invalid="!!fieldErrors.name || undefined" :aria-describedby="fieldErrors.name ? 'name-feedback' : undefined" v-model="form.name" type="text" autocomplete="name"  required />
@@ -73,11 +74,17 @@ async function register() {
                 <p v-if="fieldErrors.password" id="password-feedback" class="text-sm text-destructive" role="alert">{{ fieldErrors.password }}</p>
                 </Field>
                 <p class="text-sm">Use at least 8 characters.</p>
-                <GenrePicker ref="genrePicker" v-model="form.preferredgenres" compact required :error="genreError" :disabled="form.loading" />
-                <Button type="submit" class="w-full " :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
+                </div>
+                <GenrePicker :showCount="false" ref="genrePicker" v-model="form.preferredgenres" class="register-genres" required :error="genreError" :disabled="form.loading" />
+                <div class="md:col-span-2 md:border-t md:pt-5">
+                    <Button type="submit" class="w-full" :disabled="form.loading" :loading="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
+                </div>
                 </fieldset>
             </form>
-            <RouterLink class="underline" :to="{ name: 'login', query: { redirect: route.query.redirect } }">Log in</RouterLink>
         </div>
     </section>
 </template>
+
+<style scoped>
+.register-genres { margin-block: 0; }
+</style>

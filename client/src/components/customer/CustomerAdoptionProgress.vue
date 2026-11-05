@@ -53,12 +53,13 @@ const labels = ['Choose', 'Request', 'Pickup', 'Collect'];
   display: flex;
   min-width: 0;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
   gap: 8px;
   border-top: 2px solid var(--border);
   padding-top: 8px;
   color: var(--muted-foreground);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 .adoption-progress li.complete,
 .adoption-progress li.current {

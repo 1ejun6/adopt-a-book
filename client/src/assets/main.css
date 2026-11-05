@@ -16,8 +16,8 @@
   /*@1ejun6 > @lee-hlmilk > for badges*/
   --color-badge-green: var(--badge-green);
   --color-badge-amber: var(--badge-amber);
-  --color-badge-rose: var(--badge-rose);
-  --color-badge-rose-foreground: var(--badge-rose-foreground);
+  --color-badge-purple: var(--badge-purple);
+  --color-badge-purple-foreground: var(--badge-purple-foreground);
   --color-badge-neutral: var(--badge-neutral);
 }
 
@@ -37,8 +37,8 @@ h1, h2, h3, h4, h5, h6 {
   /*@1ejun6 >  lee-hlmilk > for badges */
   --badge-green: #e3eee4;
   --badge-amber: #fff0d5;
-  --badge-rose: #f9e7e8;
-  --badge-rose-foreground: #8b2933;
+  --badge-purple: var(--primary);
+  --badge-purple-foreground: #514585;
   --badge-neutral: #f3ece4;
 }
 
@@ -66,10 +66,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer components {
-  .washi-tape-hover:hover,
-  .washi-tape-hover[data-active],
-  .washi-row[data-state='selected'] { background: var(--primary); }
-
   [role='tablist'] {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -98,7 +94,7 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.875rem;
     white-space: normal;
   }
-  [role='tab'][aria-selected='true'] { background: var(--badge-rose); }
+  [role='tab'][aria-selected='true'] { background: var(--primary); }
   form { @apply space-y-5; }
 }
 .dialog-body { @apply space-y-2.5 p-5; }

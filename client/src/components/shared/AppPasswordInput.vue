@@ -13,7 +13,7 @@ watch(model, value => { if (!value) visible.value = false; });
 <template>
   <div class="relative">
     <Input v-bind="$attrs" v-model="model" :type="visible ? 'text' : 'password'"
-      :disabled="disabled" class="pr-11" />
+      :disabled="disabled" clearButtonClass="right-11" />
     <button type="button" class="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-lg"
       :aria-label="`${visible ? 'Hide' : 'Show'} ${label}`" :aria-pressed="visible"
       :aria-controls="$attrs.id" :disabled="disabled" @click="visible = !visible">

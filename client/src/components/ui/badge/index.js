@@ -5,7 +5,7 @@ export { default as Badge } from './Badge.vue';
 const colors = {
   green: 'bg-badge-green',
   amber: 'bg-badge-amber',
-  rose: 'bg-badge-rose',
+  purple: 'bg-badge-purple',
   neutral: 'bg-badge-neutral',
 };
 

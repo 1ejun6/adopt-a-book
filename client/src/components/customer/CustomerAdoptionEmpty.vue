@@ -1,4 +1,5 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
 import { RouterLink } from 'vue-router';
 import { Button } from '@/components/ui/button';
 defineProps({
@@ -20,10 +21,10 @@ const emit = defineEmits(['refresh']);
     <p class="text-sm text-muted-foreground">{{ emptyCopy[1] }}</p>
     <template v-if="!emptyPickups">
       <Button v-if="searching" type="button" variant="outline" @click="search = ''"
-        >Clear search</Button
+        ><AppIcon name="close" /><span class="sr-only">Clear search</span></Button
       >
       <Button v-else-if="pickupError" type="button" variant="outline" @click="emit('refresh')"
-        >Retry pickup information</Button
+        ><AppIcon name="refresh" /><span class="sr-only">Retry pickup information</span></Button
       >
       <Button
         v-else-if="tab === 'active' && stage !== 'all' && emptyStageTarget"
@@ -33,7 +34,7 @@ const emit = defineEmits(['refresh']);
         >{{ emptyStageAction }}</Button
       >
       <Button v-else-if="tab === 'active'" asChild
-        ><RouterLink :to="{ name: 'customerBooks' }">Browse books</RouterLink></Button
+        ><RouterLink :to="{ name: 'customerBooks' }"><AppIcon name="book" />Browse books</RouterLink></Button
       >
     </template>
   </div>

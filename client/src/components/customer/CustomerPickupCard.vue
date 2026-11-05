@@ -55,7 +55,7 @@ const action = computed(() =>
       />
     </template>
     <template #status>
-      <Badge :variant="state.variant" class="text-xs font-normal">{{ state.label }}</Badge>
+      <Badge :variant="state.variant" class="text-sm font-normal">{{ state.label }}</Badge>
       <p v-if="unlinked || needsDetails" class="adoption-row__warning">
         {{ unlinked ? 'Needs checking' : 'Pickup details incomplete' }}
       </p>

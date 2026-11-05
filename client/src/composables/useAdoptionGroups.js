@@ -83,6 +83,13 @@ export function useAdoptionGroups({ records, appointments }) {
     arrange: stageGroups.value['needs-action'].filter((entry) => entryAction(entry) === 'arrange'),
     check: stageGroups.value['needs-action'].filter((entry) => entryAction(entry) === 'check'),
   }));
+  const entryWaiting = entry => entry.kind === 'request' && entry.record.code === 'pickup requested' ? 'confirmation' : 'approval';
+  const waitingGroups = computed(() => ({
+    approval: stageGroups.value.waiting.filter(entry => entryWaiting(entry) === 'approval'),
+    confirmation: stageGroups.value.waiting.filter(entry => entryWaiting(entry) === 'confirmation'),
+  }));
+  const waitingCounts = computed(() => ({ approval: waitingGroups.value.approval.length, confirmation: waitingGroups.value.confirmation.length }));
+  const defaultWaiting = computed(() => waitingCounts.value.approval ? 'approval' : 'confirmation');
   const actionCounts = computed(() => ({
     arrange: actionGroups.value.arrange.length,
     check: actionGroups.value.check.length,
@@ -98,6 +105,7 @@ export function useAdoptionGroups({ records, appointments }) {
   );
 
   return {
+    entryWaiting, waitingGroups, waitingCounts, defaultWaiting,
     entryAction,
     actionGroups,
     actionCounts,

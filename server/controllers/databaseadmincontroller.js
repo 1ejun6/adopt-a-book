@@ -27,6 +27,17 @@ async function base(req, res) {
   }
 }
 
+async function fix(req, res) {
+  try {
+    require("../utils/validation").rejectfields(req.body, []);
+    const result = await runsql("fix-customer-books.sql");
+    return res.json({ message: "customer books and shelf repair applied", result });
+  } catch (error) {
+    console.error("customer books repair failed >", error);
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not repair customer books and shelf") });
+  }
+}
+
 async function clear(req, res) {
   try {
     await runsql("clear.sql");
@@ -48,4 +59,4 @@ async function seed(req, res) {
   }
 }
 
-module.exports = { requirebasetoken, base, seed, clear };
+module.exports = { requirebasetoken, base, fix, seed, clear };

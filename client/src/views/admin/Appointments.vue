@@ -1,4 +1,7 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
+import AppCalendarButton from '@/components/shared/AppCalendarButton.vue';
+import { pickupEvent } from '@/lib/calendar';
 import { useAdminRecord } from '@/composables/useAdminRecord';
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -28,13 +31,14 @@ const appointmentFields = computed(() => [
     { label: 'Customer', value: selectedAppointment.value?.customer },
     { label: 'Email', value: selectedAppointment.value?.email },
     { label: 'Collection date', value: selectedAppointment.value?.appointmentdate ? formatDate(selectedAppointment.value.appointmentdate) : null },
-    { label: 'Time', value: selectedAppointment.value?.status === 'pending confirmation' && selectedAppointment.value?.optionsby === 'customer' ? 'Choose from the three times below' : selectedAppointment.value?.timeslot },
+    { label: 'Time', value: selectedAppointment.value?.status === 'pending confirmation' && selectedAppointment.value?.optionsby === 'customer' ? 'Choose from the proposed times below' : selectedAppointment.value?.timeslot },
     { label: 'Location', value: selectedAppointment.value?.location }
 ]);
 const detailsHint = computed(() => selectedAppointment.value ? actionHint([selectedAppointment.value], selectedAppointment.value.status === 'pending confirmation' ? 'appointment confirmed' : 'collected') : '');
 const detailsOpen = ref(false);
 const { detailError, detailLoading, refreshDetail } = useAdminRecord(selectedAppointment, detailsOpen, '/admin/appointments', 'appointment', { busy: () => saving.value });
 const saving = ref(false);
+const savingAction = ref('');
 const { confirm } = useConfirmation();
 
 const viewTabs = [
@@ -137,6 +141,7 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
     //@lee-hlmilk > a dashboard link can load details outside this page > retain that record for confirmation checks
     const current = targets.map(target => appointments.value.find(appointment => appointment.id === target.id) || (selectedAppointment.value?.id === target.id ? selectedAppointment.value : null));
     if (current.some(appointment => !appointment) || actionHint(current, status)) { toast.error('These appointments have changed. Select them again.'); return; }
+    savingAction.value = status;
     saving.value = true;
     let completed = 0;
     const failures = [];
@@ -151,7 +156,7 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
         if (failures.length) { toast.error(`${failures.length} ${failures.length === 1 ? 'update' : 'updates'} failed`, { description: failures.join('\n'), style: { whiteSpace: 'pre-line' } }); }
         await fetchAppointments();
         await refreshDetail();
-    } finally { saving.value = false; }
+    } finally { saving.value = false; savingAction.value = ''; }
 }
 
 watch(() => filters.view, () => {
@@ -202,8 +207,8 @@ fetchAppointments().then(loadAppointmentLink);
             <p v-if="confirmHint && collectHint" class="text-sm text-muted-foreground" role="status">
                 {{ selectionHint }}
             </p>
-            <Button :disabled="detailLoading || !!detailError || loading || saving || !!confirmHint" @click="updateAppointments('appointment confirmed')">Confirm</Button>
-            <Button variant="outline" :disabled="detailLoading || !!detailError || loading || saving || !!collectHint" @click="updateAppointments('collected')">Mark collected</Button>
+            <Button :disabled="detailLoading || !!detailError || loading || saving || !!confirmHint" @click="updateAppointments('appointment confirmed')" :loading="saving && savingAction === 'appointment confirmed'"><AppIcon name="success" />Confirm</Button>
+            <Button variant="outline" :disabled="detailLoading || !!detailError || loading || saving || !!collectHint" @click="updateAppointments('collected')" :loading="saving && savingAction === 'collected'"><AppIcon name="success" />Mark collected</Button>
         </template>
         <template #cellCustomer="{ row }">
             <p class="break-words lg:truncate">{{ row.customer }}</p>
@@ -213,7 +218,7 @@ fetchAppointments().then(loadAppointmentLink);
             <BookIdentity :title="row.booktitle" :author="row.book?.authors?.join(', ') || 'Unknown Author'" :cover="row.book?.coverurl" />
         </template>
         <template #cellCollection="{ row }">
-            <p>{{ formatDate(row.appointmentdate) }} · {{ row.status === 'pending confirmation' && row.optionsby === 'customer' ? 'Three times proposed' : row.timeslot }}</p>
+            <p>{{ formatDate(row.appointmentdate) }} · {{ row.status === 'pending confirmation' && row.optionsby === 'customer' ? 'Times proposed' : row.timeslot }}</p>
             <p class="text-muted-foreground">{{ row.location }}</p>
         </template>
         <template #cellStatus="{ value, row }"><StatusBadge :status="value" /><p v-if="value === 'pending confirmation' && pendingPickupState(row, currentTime) !== 'awaiting'" class="hidden text-sm text-destructive lg:block">Needs attention: no future pickup time or incomplete details</p><p v-else-if="value === 'pending confirmation' && row.pickupoptions?.length" class="hidden text-sm text-muted-foreground lg:block">Select a proposed time</p></template>
@@ -223,21 +228,22 @@ fetchAppointments().then(loadAppointmentLink);
         </template>
     </AdminList>
 
-    <AdminDetailsDialog :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedAppointment" :open="detailsOpen" title="Appointment details"
+    <AdminDetailsDialog :loading="detailLoading" :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedAppointment" :open="detailsOpen" title="Appointment details"
         :book="{ ...selectedAppointment.book, title: selectedAppointment.booktitle }" :status="selectedAppointment.status"
         :fields="appointmentFields" @update:open="!saving && (detailsOpen = $event)">
         <!--@lee-hlmilk > completed ||| inactive appointments are read-only > active pickups show the next step-->
         <p v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" class="text-muted-foreground">
             {{ detailsHint || (selectedAppointment.status === 'pending confirmation' ? 'Confirm after checking the requested date, time, and location.' : 'Mark collected only after the customer has physically received the book.') }}
         </p>
-        <AdminPickupOptions v-if="selectedAppointment.status === 'pending confirmation' && selectedAppointment.optionsby === 'customer' && selectedAppointment.pickupoptions?.length === 3 && selectedAppointment.book?.status === 'reserved'"
+        <AppCalendarButton :event="pickupEvent(selectedAppointment, selectedAppointment.booktitle, currentTime)" :disabled="detailLoading || !!detailError" />
+        <AdminPickupOptions v-if="selectedAppointment.status === 'pending confirmation' && selectedAppointment.optionsby === 'customer' && [2, 3].includes(selectedAppointment.pickupoptions?.length) && selectedAppointment.book?.status === 'reserved'"
             :disabled="detailLoading || !!detailError" :key="selectedAppointment.id" :appointment="selectedAppointment" v-model:saving="saving" @updated="pickupOptionsUpdated" />
         <template v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" #actions>
             <template v-if="selectedAppointment.status === 'pending confirmation'">
-                <Button type="button" variant="destructive" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])">Reject</Button>
-                <Button v-if="!selectedAppointment.pickupoptions?.length" type="button" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])">Confirm</Button>
+                <Button type="button" variant="destructive" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" />Reject</Button>
+                <Button v-if="!selectedAppointment.pickupoptions?.length" type="button" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])" :loading="saving && savingAction === 'appointment confirmed'"><AppIcon name="success" />Confirm</Button>
             </template>
-            <Button v-else type="button" class="w-full " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('collected', [selectedAppointment])">Mark collected</Button>
+            <Button v-else type="button" class="w-full " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('collected', [selectedAppointment])" :loading="saving && savingAction === 'collected'"><AppIcon name="success" />Mark collected</Button>
         </template>
     </AdminDetailsDialog>
 </template>

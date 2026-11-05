@@ -1,4 +1,6 @@
 <script setup>
+import AppIcon from '@/components/shared/AppIcon.vue';
+import { Button } from '@/components/ui/button';
 import { computed } from 'vue';
 import { Bookmark02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/vue';
@@ -13,6 +15,7 @@ const props = defineProps({
   error: { type: String, default: '' },
   saved: { type: Boolean, default: false },
   canSave: { type: Boolean, default: false },
+  saving: { type: Boolean, default: false },
   busy: { type: Boolean, default: false },
 });
 const open = defineModel('open', { type: Boolean, default: false });
@@ -63,21 +66,20 @@ const fields = computed(() => [
           </div>
         </div>
 
-        <div v-else-if="props.error" role="alert" class="space-y-3"><p>{{ props.error }}</p><button type="button" class="underline min-h-11" @click="emit('retry')">Retry book details</button></div>
+        <div v-else-if="props.error" role="alert" class="space-y-3"><p>{{ props.error }}</p><Button variant="outline" type="button" class="min-h-11" @click="emit('retry')" :loading="props.loading"><AppIcon name="refresh" /><span class="sr-only">Retry book details</span></Button></div>
         <div v-else class="space-y-4">
           <div class="flex items-start gap-2.5">
             <AppBookIdentity :title="props.book.title" :author="props.book.authors?.join(', ') || 'author not listed'"
               :cover="props.book.coverurl" coverClass="w-16" class="flex-1" wrap />
             <slot name="book-action" :book="props.book">
-            <button v-if="props.canSave || props.saved" type="button" class="washi-tape-hover min-h-11 min-w-11 shrink-0 rounded-lg p-2"
+            <Button variant="outline" :loading="props.saving" v-if="props.canSave || props.saved" type="button" class="border-0 bg-transparent hover:bg-transparent min-h-11 min-w-11 shrink-0 rounded-lg p-2"
               :disabled="!props.canSave || props.busy"
-              :title="props.saved ? 'Remove from saved books' : 'Save book'"
               :aria-label="props.saved ? 'Remove from saved books' : 'Save book'"
               :aria-pressed="props.saved"
               @click="emit('save', props.book)">
               <HugeiconsIcon :icon="Bookmark02Icon" class="size-6"
                 :class="{ 'fill-success-foreground text-success-foreground': props.saved }" aria-hidden="true" />
-            </button>
+            </Button>
             </slot>
           </div>
 
@@ -89,11 +91,17 @@ const fields = computed(() => [
 
           <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
             <div v-for="field in fields" :key="field.label" class="space-y-0.5">
-              <dt class="text-xs text-muted-foreground">{{ field.label }}</dt>
+              <dt class="text-sm text-muted-foreground">{{ field.label }}</dt>
               <dd>
-                <a v-if="field.label === 'collection'"
+                <template v-if="field.label === 'collection'">
+                <a
                   :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${field.value}, Singapore`)}`"
-                  target="_blank" rel="noopener noreferrer" class="underline underline-offset-4">{{ field.value }}</a>
+                  target="_blank" rel="noopener noreferrer"
+                  class="break-words rounded-sm underline underline-offset-4 hover:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                  :aria-label="`${field.value} on Google Maps (opens in a new tab)`">
+                  {{ field.value }} <span class="inline-block no-underline" aria-hidden="true">↗</span>
+                </a>
+                </template>
                 <template v-else>{{ field.value }}</template>
               </dd>
             </div>
@@ -102,7 +110,7 @@ const fields = computed(() => [
 
         <slot v-if="!props.loading && !props.error" name="details" :book="props.book" />
 
-        <DialogFooter v-if="!props.loading && !props.error && $slots.actions">
+        <DialogFooter v-if="!props.loading && !props.error && $slots.actions" :class="{ 'border-t-0 pt-0': $slots.details }">
           <slot name="actions" />
         </DialogFooter>
       </div>

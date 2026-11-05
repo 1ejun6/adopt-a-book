@@ -36,11 +36,12 @@ const {
 const loading = computed(() => applicationsLoading.value || appointmentsLoading.value);
 const refresh = () => adoptions.refresh();
 const grouping = useAdoptionGroups({ records, appointments });
-const { counts, stageCounts, actionCounts } = grouping;
+const { counts, stageCounts, actionCounts, waitingCounts } = grouping;
 const navigation = useAdoptionNavigation(grouping);
 const {
   stage,
   action,
+  waiting,
   tab,
   search,
   searching,
@@ -150,6 +151,8 @@ onMounted(refresh);
             @refresh="refresh"
           >
             <CustomerAdoptionResults
+              v-model:waiting="waiting"
+              :waitingCounts="waitingCounts"
               v-model:action="action"
               :actionCounts="actionCounts"
               v-model:page="page"

@@ -5,23 +5,30 @@ import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 const props = defineProps({
   books: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
+  showEmptyBooks: { type: Boolean, default: false },
   savedIds: { type: Set, default: () => new Set() },
 });
-const colourClasses = ['bg-badge-rose', 'bg-badge-neutral', 'bg-badge-amber', 'bg-badge-green', 'bg-primary'];
+const colourClasses = ['bg-badge-purple', 'bg-badge-neutral', 'bg-badge-amber', 'bg-badge-green', 'bg-primary'];
 defineEmits(['select']);
 </script>
 
 <template>
   <!--@ChitanyaBharathi > books in a row > bottom border is shelf-->
-  <div v-if="props.loading"
+  <div v-if="props.loading && !props.books.length"
     class="@container mx-auto grid w-full max-w-xl grid-cols-5 gap-[3%] border-b-10" role="status" aria-label="Loading books">
     <div v-for="index in 5" :key="index" class="rounded-[6px] bg-border/60"
       aria-hidden="true">
       <img :src="bookspine" alt="" width="80" height="280" class="w-full" />
     </div>
   </div>
+  <div v-else-if="!props.books.length && props.showEmptyBooks"
+    class="@container mx-auto grid w-full max-w-xl grid-cols-5 gap-[3%] border-b-10" aria-hidden="true">
+    <div v-for="(colour, index) in colourClasses" :key="index" class="min-w-0 rounded-[6px]" :class="colour">
+      <img :src="bookspine" alt="" width="80" height="280" class="w-full" />
+    </div>
+  </div>
   <div v-else-if="!props.books.length"><slot name="empty">No books available yet</slot></div>
-  <div v-else-if="props.books.length"
+  <div v-else-if="props.books.length" :aria-busy="props.loading"
     class="@container mx-auto grid w-full max-w-xl grid-cols-5 gap-[3%] border-b-10">
     <button type="button" v-for="(book, index) in props.books" :key="book.id" :class="colourClasses[index % colourClasses.length]"
       class="book-spine relative min-w-0 rounded-[6px]" :aria-label="`${book.title} by ${(book.authors || []).join(', ')}${savedIds.has(book.id) ? ', saved' : ''}`" aria-haspopup="dialog"
@@ -31,9 +38,9 @@ defineEmits(['select']);
       <div class="absolute inset-x-[5%] top-[10%] bottom-[10%] flex justify-center">
         <!--@1ejun6 > leaves extra space above and below text-->
         <span :title="(book.authors || []).join(', ')"
-          class="truncate text-[clamp(0.625rem,2.5cqw,0.875rem)] [writing-mode:vertical-rl]">{{ (book.authors ||
+          class="truncate text-sm [writing-mode:vertical-rl]">{{ (book.authors ||
             []).join(', ') }}</span>
-        <span :title="book.title" class="font-heading truncate text-[clamp(0.75rem,4.2cqw,1.5rem)] [writing-mode:vertical-rl]">{{
+        <span :title="book.title" class="font-heading truncate text-[clamp(0.875rem,4.2cqw,1.5rem)] [writing-mode:vertical-rl]">{{
           book.title }}</span>
       </div>
       <!--@1ejun6 > bottom-10 lifts 224px-wide > left-1/2 & -translate-x-1/2 center it over spine-->

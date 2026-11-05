@@ -41,9 +41,9 @@ function handleInteractOutside(event) {
 
 <template>
   <DialogPortal>
-    <DialogOverlay class="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4">
+    <DialogOverlay class="fixed inset-0 z-50 grid items-center overflow-y-auto bg-black/50 p-4">
       <DialogContent @interactOutside="handleInteractOutside" :class="cn(
-        'relative mx-auto w-full max-w-3xl [overflow-wrap:anywhere] bg-background text-sm rounded-lg',
+        'relative mx-auto w-full max-w-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto [overflow-wrap:anywhere] bg-background text-sm rounded-lg',
         props.class,
       )
         " v-bind="{ ...$attrs, ...forwarded }" @pointerDownOutside="
@@ -61,7 +61,7 @@ function handleInteractOutside(event) {
         <slot />
 
         <DialogClose class="absolute top-3 right-3 grid size-11 place-items-center">
-          <HugeiconsIcon :icon="Cancel01Icon" class="size-6" aria-hidden="true" />
+          <HugeiconsIcon :icon="Cancel01Icon" class="size-4" aria-hidden="true" />
           <span class="sr-only">Close</span>
         </DialogClose>
       </DialogContent>

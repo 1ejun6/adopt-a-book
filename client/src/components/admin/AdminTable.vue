@@ -59,9 +59,9 @@ function handleRowClick(row) {
 </script>
 
 <template>
-  <div class="min-w-0">
+  <div class="min-w-0" :aria-busy="isLoading">
     <!--@lee-hlmilk > loading placeholders-->
-    <div v-if="isLoading" class="border p-5" role="status" aria-busy="true">
+    <div v-if="isLoading && !rows.length" class="border p-5" role="status" aria-busy="true">
       <!--@lee-hlmilk > placeholder header & placeholder rows-->
       <!--@1ejun6 > padding bottom > first row; padding for top & bottom > remaining rows-->
       <div v-for="row in 5" :key="row" class="flex items-center gap-5 border-b"
@@ -128,7 +128,7 @@ function handleRowClick(row) {
 
           <TableBody>
             <TableRow v-for="row in rows" :key="row.id" :data-state="rowSelected(row.id) ? 'selected' : undefined"
-              :class="props.rowAction !== 'none' && 'washi-row washi-tape-hover'" @click="handleRowClick(row)">
+              :class="props.rowAction !== 'none' && 'data-[state=selected]:bg-primary hover:bg-primary data-[active]:bg-primary'" @click="handleRowClick(row)">
               <TableCell v-if="props.selectionColumn" class="text-center"
                 :data-active="rowSelected(row.id) ? true : undefined" @click.stop="toggleRowSelection(row.id)">
                 <Checkbox :disabled="props.disabled" v-if="props.selectable" class="mx-auto" :modelValue="rowSelected(row.id)" :aria-label="`Select ${row.title || row.id}`" @click.stop

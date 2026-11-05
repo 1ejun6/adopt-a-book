@@ -25,7 +25,7 @@ function selectDate(date) {
     <div class="flex w-full gap-2.5 sm:w-56">
         <Popover :open="open" @update:open="open = $event">
             <PopoverTrigger asChild>
-                <Button type="button" variant="outline" :aria-label="props.label" class="min-w-0 flex-1 gap-2.5 text-left ">
+                <Button type="button" variant="outline" :aria-label="props.label" class="min-w-0  gap-2.5 text-left">
                     <span class="min-w-0 flex-1 truncate" :class="!props.modelValue && 'text-muted-foreground'">{{ props.modelValue ? props.modelValue.split('-').reverse().join('/') : 'dd/mm/yyyy' }}</span>
                     <HugeiconsIcon :icon="Calendar03Icon" class="size-4 shrink-0" aria-hidden="true" />
                 </Button>

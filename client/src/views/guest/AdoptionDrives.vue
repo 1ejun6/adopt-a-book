@@ -33,12 +33,13 @@ function opendrive(drive) {
 
 <template>
   <AppAdoptionDriveList :drives="groups[tab]" :loading="loading" :loaderror="loaderror"
-    :emptyTitle="`no ${tab} adoption drives`" @open="opendrive" @retry="fetchdrives(true)">
+    :history="tab === 'past'"
+    :emptyTitle="tab === 'past' ? 'no past or cancelled adoption drives' : 'no upcoming adoption drives'" @open="opendrive" @retry="fetchdrives(true)">
     <template #tabs>
       <Tabs v-model="tab">
         <TabsList>
           <TabsTrigger v-for="item in tabs" :key="item" :value="item" class="gap-2.5">
-            {{ item === 'past' ? 'Past / cancelled' : item }}
+            {{ item === 'past' ? 'History/Cancelled' : item }}
             <Badge v-if="!loading" class="bg-primary tabular-nums">{{ groups[item].length }}</Badge>
           </TabsTrigger>
         </TabsList>
