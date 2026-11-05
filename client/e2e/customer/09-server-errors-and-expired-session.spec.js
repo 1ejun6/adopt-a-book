@@ -1,15 +1,29 @@
 import { foundCount, guestNavLinks, isApi, json, nextResponse, toast, upcomingDrives } from '../support/guest.js'
 import {
-  test, expect, bookCards, isCatalogue, navLinks, nextCatalogue, openBrowseBooks, saveButton,
+  test, expect, bookCards, deleteCustomer, isCatalogue, logIn, navLinks, nextCatalogue, openBrowseBooks, registerCustomer, saveButton,
 } from '../support/customer.js'
 
 const serverDown = json({ error: 'server unavailable > please try again' }, 503)
 const isWatchlist = isApi('/watchlist')
 
+let customer
+//@brod > registers a single customer for this suite instead of 8 separate registrations
+test.beforeAll(async ({ request }) => {
+  customer = await registerCustomer(request)
+})
+test.beforeEach(async ({ page }) => {
+  await logIn(page.request, customer)
+})
+test.afterAll(async ({ request }) => {
+  if (customer?.id) {
+    await deleteCustomer(request, customer.id)
+  }
+})
+
 //@ChitanyaBharathi > journey 2.9 > 🔌 the server is having trouble > the customer recovers without reloading
 test.describe('🔌 customer recovers when the server is down', () => {
   // 1. opens Browse Books while /books is down
-  test('browse books', async ({ page, customer }) => {
+  test('browse books', async ({ page }) => {
     await page.route(isCatalogue, serverDown)
     await page.goto('/customer/books')
     const error = toast(page, 'server unavailable')
@@ -24,7 +38,7 @@ test.describe('🔌 customer recovers when the server is down', () => {
   })
 
   // 2. opens Browse Books while only /watchlist is down
-  test('browse books without the watchlist', async ({ page, customer }) => {
+  test('browse books without the watchlist', async ({ page }) => {
     await page.route(isWatchlist, serverDown)
     const { books } = await openBrowseBooks(page)
     const firstSave = saveButton(bookCards(page).first())
@@ -37,7 +51,7 @@ test.describe('🔌 customer recovers when the server is down', () => {
   })
 
   // 3. opens Watchlist while the server is down
-  test('watchlist', async ({ page, customer }) => {
+  test('watchlist', async ({ page }) => {
     await page.route(isWatchlist, serverDown)
     await page.goto('/customer/watchlist')
     const error = page.getByRole('alert').filter({ hasText: /couldn.t load your watchlist/ })
@@ -49,7 +63,7 @@ test.describe('🔌 customer recovers when the server is down', () => {
   })
 
   // 4. opens My Adoptions while the server is down
-  test('my adoptions', async ({ page, customer }) => {
+  test('my adoptions', async ({ page }) => {
     await page.route(isApi('/applications'), serverDown)
     await page.goto('/customer/adoption')
     await expect(page.getByText('server unavailable')).toBeVisible()
@@ -60,7 +74,7 @@ test.describe('🔌 customer recovers when the server is down', () => {
   })
 
   // 5. opens Account while the server is down
-  test('account', async ({ page, customer }) => {
+  test('account', async ({ page }) => {
     await page.route(isApi('/customer/profile'), serverDown)
     await page.goto('/customer/account')
     const error = page.getByRole('alert').filter({ hasText: /couldn.t load your details/ })
@@ -72,7 +86,7 @@ test.describe('🔌 customer recovers when the server is down', () => {
   })
 
   // 6. opens Adoption Drives while the server is down
-  test('adoption drives', async ({ page, customer }) => {
+  test('adoption drives', async ({ page }) => {
     await page.route(isApi('/customer/drives'), serverDown)
     await page.goto('/customer/drives')
     const error = toast(page, 'server unavailable')
@@ -87,7 +101,7 @@ test.describe('🔌 customer recovers when the server is down', () => {
   })
 
   // 7. opens a book whose details fail to load
-  test('book details', async ({ page, customer }) => {
+  test('book details', async ({ page }) => {
     const { books } = await openBrowseBooks(page)
     const isDetails = isApi(`/books/${books[0].id}`)
     await page.route(isDetails, serverDown)
@@ -105,7 +119,7 @@ test.describe('🔌 customer recovers when the server is down', () => {
 })
 
 //@brod > no faking needed > clearing cookies simulates session expiry > navigating to protected page redirects to login
-test('customer whose session expires is sent to login', async ({ page, context, customer }) => {
+test('customer whose session expires is sent to login', async ({ page, context }) => {
   await page.goto('/customer/watchlist')
   await expect(page.getByRole('heading', { name: 'My Watchlist' })).toBeVisible()
 

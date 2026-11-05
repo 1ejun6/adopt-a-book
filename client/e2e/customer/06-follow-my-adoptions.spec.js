@@ -37,10 +37,10 @@ test('customer with approved requests checks their next step', async ({ page, de
   await expect(page.getByRole('tab', { name: /^History\s+\d+/ })).toHaveAttribute('data-state', 'active')
 })
 
-//@brod > 🔌 statuses the seed can't make > a fresh account sees active and history states
+//@brod > 🔌 statuses the seed can't make > uses mockCustomer fixture to avoid unnecessary DB account registrations
 test.describe('🔌 requests the seed does not have', () => {
   // 5. has one request in each status
-  test('each status lands in the right section', async ({ page, customer }) => {
+  test('each status lands in the right section', async ({ page, mockCustomer }) => {
     const apps = ['pending', 'approved', 'rejected', 'withdrawn'].map(status => fakeApplication(status))
     const collectedApp = fakeApplication('approved', {
       bookid: { id: '00000000-0000-4000-a000-000000000999', title: 'collected book 5', authors: ['someone'], status: 'reserved' },
@@ -72,7 +72,7 @@ test.describe('🔌 requests the seed does not have', () => {
   })
 
   // 6. has requests from different days
-  test('each section lists newest first', async ({ page, customer }) => {
+  test('each section lists newest first', async ({ page, mockCustomer }) => {
     const apps = [
       fakeApplication('pending', { createdat: daysAgo(10), bookid: { id: 'b1', title: 'oldest request', authors: [] } }),
       fakeApplication('pending', { createdat: daysAgo(1), bookid: { id: 'b2', title: 'newest request', authors: [] } }),
@@ -89,7 +89,7 @@ test.describe('🔌 requests the seed does not have', () => {
   })
 
   // 7. has a request whose book was deleted
-  test('a request without its book still shows', async ({ page, customer }) => {
+  test('a request without its book still shows', async ({ page, mockCustomer }) => {
     await page.route(isApi('/applications'), json({ adoptionapplications: [fakeApplication('pending', { bookid: null })] }))
     await page.route(isApi('/appointments'), json({ appointments: [] }))
     await page.goto('/customer/adoption')

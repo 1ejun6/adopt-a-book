@@ -1,6 +1,6 @@
 import { test as base, expect } from '@playwright/test'
-import { clientUrl, demoCustomer, serverUrl } from './env.js'
-import { isApi, nextResponse } from './guest.js'
+import { clientUrl, demoCustomer, serverUrl, supabaseServiceRoleKey, supabaseUrl } from './env.js'
+import { isApi, json, nextResponse } from './guest.js'
 
 //@ChitanyaBharathi > journeys log in through the api > only the steps that test the login form type into it
 
@@ -17,30 +17,69 @@ let accountNumber = 0
 //@ChitanyaBharathi > a brand new customer > empty watchlist, no requests, no rsvps
 //@brod > retries on rate limits so parallel workers do not fail registration
 export async function registerCustomer(request, name = 'Book Reader') {
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     try {
       accountNumber += 1
       const email = `e2e-customer-${Date.now()}-${accountNumber}-${Math.random().toString(36).slice(2, 8)}@example.com`
       const result = await callApi(request, 'POST', '/register', { name, email, password: customerPassword })
       return { id: result?.user?.id, name, email, password: customerPassword }
     } catch (err) {
-      if (attempt === 2) throw err
-      await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)))
+      if (attempt === 4 || (!err.message.includes('429') && !err.message.includes('500') && !err.message.includes('503'))) throw err
+      await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
     }
   }
 }
 
 //@ChitanyaBharathi > page.request shares cookies with the page > call this before the first page.goto()
+//@brod > retries with backoff on 429 rate limits so parallel workers do not fail login
 export async function logIn(request, { email, password }) {
-  return callApi(request, 'POST', '/login', { email, password })
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      return await callApi(request, 'POST', '/login', { email, password })
+    } catch (err) {
+      if (attempt === 4 || (!err.message.includes('429') && !err.message.includes('500') && !err.message.includes('503'))) throw err
+      await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+    }
+  }
+}
+
+//@brod > deletes a customer account from Supabase Auth & PostgreSQL on test teardown
+export async function deleteCustomer(request, userId) {
+  if (!supabaseUrl || !supabaseServiceRoleKey || !userId) return
+  try {
+    const response = await request.fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        apikey: supabaseServiceRoleKey,
+        Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      },
+    })
+    return response.ok()
+  } catch {
+    // Teardown best-effort cleanup
+  }
+}
+
+export const fakeCustomer = {
+  id: '00000000-0000-4000-b000-000000000001',
+  name: 'Mock Customer',
+  email: 'mock-customer@example.com',
+  role: 'customer',
 }
 
 export const test = base.extend({
   //@ChitanyaBharathi > fresh account, already logged in
+  //@brod > automatically deletes the test account on teardown so the DB is not flooded
   customer: async ({ page }, use) => {
     const customer = await registerCustomer(page.request)
     await logIn(page.request, customer)
-    await use(customer)
+    try {
+      await use(customer)
+    } finally {
+      if (customer?.id) {
+        await deleteCustomer(page.request, customer.id)
+      }
+    }
   },
   //@ChitanyaBharathi > the seeded demo customer, already logged in > read only, never log them out
   //@brod > skip gracefully if credentials are not configured in root .env
@@ -49,8 +88,15 @@ export const test = base.extend({
     await logIn(page.request, demoCustomer)
     await use(demoCustomer)
   },
+  //@brod > mock customer session > zero DB registrations, zero network auth calls
+  mockCustomer: async ({ page }, use) => {
+    await page.route(isApi('/session'), json({ user: fakeCustomer }))
+    await page.route(isApi('/watchlist'), json({ watchlist: [] }))
+    await page.route(isApi('/customer/profile'), json({ user: fakeCustomer }))
+    await use(fakeCustomer)
+  },
 })
-export { expect }
+export { expect, demoCustomer }
 
 //@brod > pickups was merged into my adoptions > 5 customer links in the navbar
 export const customerNavLinks = ['Browse Books', 'Watchlist', 'My Adoptions', 'Adoption Drives', 'Account']

@@ -9,7 +9,8 @@ const has = (key, value) => url => url.searchParams.get(key) === value
 const lacks = key => url => !url.searchParams.get(key)
 
 //@ChitanyaBharathi > journey 2.2 > a customer looks for a book &&& narrows the list down
-test('customer searches, filters and sorts the catalogue', async ({ page, customer }) => {
+//@brod > uses seeded demoCustomer from .env so no new DB account is created
+test('customer searches, filters and sorts the catalogue', async ({ page, demoCustomer }) => {
   // 1. opens Browse Books
   const first = await openBrowseBooks(page)
   await expect(page.getByRole('heading', { name: 'Find your next read' })).toBeVisible()
@@ -84,7 +85,8 @@ test('customer searches, filters and sorts the catalogue', async ({ page, custom
 })
 
 //@ChitanyaBharathi > 🔌 the location lookup needs a OneMap token > fake it &&& let /books answer for real
-test('customer filters the catalogue by a place', async ({ page, customer }) => {
+//@brod > uses seeded demoCustomer from .env so no new DB account is created
+test('customer filters the catalogue by a place', async ({ page, demoCustomer }) => {
   const { books, total } = await openBrowseBooks(page)
   const book = books.find(item => item.mrtstationid)
   if (!book) { throw new Error('no book on the first page has an MRT station > seed the database') }

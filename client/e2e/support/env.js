@@ -11,3 +11,6 @@ export const baseToken = env.basetoken
 export const shouldSeed = env.e2e_seed === 'true'
 //@ChitanyaBharathi > the seeded demo customer > only journey 2.6 logs in as them
 export const demoCustomer = { email: env.e2e_customer_email, password: env.e2e_customer_password }
+//@brod > Supabase Admin credentials for automatic teardown of test accounts
+export const supabaseUrl = env.supabaseurl ? new URL(env.supabaseurl).origin : ''
+export const supabaseServiceRoleKey = env.supabaseservicerolekey || env.supabasesecretkey || ''

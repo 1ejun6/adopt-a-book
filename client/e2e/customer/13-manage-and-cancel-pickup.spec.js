@@ -2,7 +2,8 @@ import { isApi, json, nextResponse, singaporeDate } from '../support/guest.js'
 import { test, expect, adoptionRow, fakeApplication, fakeAppointment } from '../support/customer.js'
 
 //@brod > journey 2.13 > customer reschedules, downloads calendar invite, and cancels a pickup
-test('customer manages an existing pickup and cancels it', async ({ page, customer }) => {
+//@brod > uses mockCustomer fixture to avoid unnecessary DB account registrations
+test('customer manages an existing pickup and cancels it', async ({ page, mockCustomer }) => {
   const tomorrow = singaporeDate(2)
   const app = fakeApplication('approved', {
     bookid: {
@@ -161,7 +162,7 @@ test('confirmed pickup allows calendar download and shows change warning', async
 })
 
 //@brod > 🔌 9. tests admin declined pickup flow: surfaces in Needs action, shows declined attempt in history, allows re-proposing time
-test('customer sees an admin-declined pickup under Needs action and can re-propose a time', async ({ page, customer }) => {
+test('customer sees an admin-declined pickup under Needs action and can re-propose a time', async ({ page, mockCustomer }) => {
   const tomorrow = singaporeDate(2)
   const app = fakeApplication('approved', {
     bookid: {

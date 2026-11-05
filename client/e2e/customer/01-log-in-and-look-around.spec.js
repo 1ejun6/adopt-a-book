@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { guestNavLinks, isApi, toast } from '../support/guest.js'
-import { customerNavLinks, logInThroughForm, navLinks, registerCustomer, slowly } from '../support/customer.js'
+import { customerNavLinks, demoCustomer, logInThroughForm, navLinks, slowly } from '../support/customer.js'
 
 //@brod > pickups is now part of my adoptions > canonical path is /customer/adoption
 const pages = [
@@ -12,13 +12,14 @@ const pages = [
 ]
 
 //@ChitanyaBharathi > journey 2.1 > a new customer logs in &&& checks what they can &&& can't reach
+//@brod > uses seeded demoCustomer from .env so no new DB account is created
 test('customer logs in and finds their way around', async ({ page }) => {
-  const customer = await registerCustomer(page.request)
+  test.skip(!demoCustomer.email || !demoCustomer.password, 'journey 2.1 needs e2e_customer_email and e2e_customer_password in the root .env')
 
   // 1. logs in with their email &&& password (through the login form)
   await page.route(isApi('/login'), slowly())
   await page.goto('/login')
-  await logInThroughForm(page, customer)
+  await logInThroughForm(page, demoCustomer)
   await expect(page.getByRole('button', { name: 'Logging in…' })).toBeVisible()
   await expect(toast(page, 'login successful')).toBeVisible()
   await expect(page).toHaveURL('/customer')

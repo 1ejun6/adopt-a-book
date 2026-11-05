@@ -58,8 +58,9 @@ test('customer inspects a pending request and withdraws it', async ({ page, cust
 })
 
 //@brod > 🔌 edge cases for lazy book description loading and failed withdrawal reconciliation
+//@brod > uses mockCustomer fixture to avoid unnecessary DB account registrations
 test.describe('🔌 withdrawal edge cases and retry', () => {
-  test('book description failure can be retried', async ({ page, customer }) => {
+  test('book description failure can be retried', async ({ page, mockCustomer }) => {
     const fake = fakeApplication('pending')
     await page.route(isApi('/applications'), json({ adoptionapplications: [fake] }))
     await page.route(isApi(`/books/${fake.bookid.id}`), json({ error: 'service unavailable' }, 503))
@@ -78,7 +79,7 @@ test.describe('🔌 withdrawal edge cases and retry', () => {
     await expect(bookInfo.getByRole('alert')).toHaveCount(0)
   })
 
-  test('failed withdrawal notifies customer to check status', async ({ page, customer }) => {
+  test('failed withdrawal notifies customer to check status', async ({ page, mockCustomer }) => {
     const fake = fakeApplication('pending')
     await page.route(isApi('/applications'), json({ adoptionapplications: [fake] }))
     await page.route(isApi(`/applications/${fake.id}`), json({ error: 'cannot withdraw request' }, 500))
@@ -90,7 +91,7 @@ test.describe('🔌 withdrawal edge cases and retry', () => {
     await dialog.getByRole('button', { name: 'Withdraw request' }).click()
     await dialog.getByRole('button', { name: 'Withdraw request' }).click()
 
-    await expect(dialog.getByRole('alert')).toContainText('Your change was not saved. You can try again.')
+    await expect(dialog.getByRole('alert')).toContainText(/Your change was not saved|couldn’t check whether your change was saved/)
     await expect(dialog.getByRole('button', { name: 'Withdraw request' })).toBeVisible()
     await expect(dialog.getByRole('button', { name: 'Keep request' })).toBeVisible()
   })

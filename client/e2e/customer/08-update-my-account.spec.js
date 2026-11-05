@@ -1,5 +1,5 @@
 import { toast } from '../support/guest.js'
-import { test, expect, bookCards, logInThroughForm, registerCustomer } from '../support/customer.js'
+import { test, expect, bookCards, deleteCustomer, logInThroughForm, registerCustomer } from '../support/customer.js'
 
 const newPassword = 'e2e-New-Password-456'
 
@@ -81,13 +81,19 @@ test('customer updates their name and password', async ({ page, customer }) => {
 
   // 10. changes their email to one another account already uses
   const other = await registerCustomer(page.request, 'Someone Else')
-  await banner.getByRole('link', { name: 'Account' }).click()
-  const editEmailInput = page.locator('#profile-panel').getByLabel('Email address')
-  await editEmailInput.fill(other.email)
-  await page.locator('#profile-panel').getByRole('button', { name: 'Update' }).click()
-  await expect(page.locator('#profile-panel').getByRole('alert')).toContainText(/user already exists|email already exists/)
+  try {
+    await banner.getByRole('link', { name: 'Account' }).click()
+    const editEmailInput = page.locator('#profile-panel').getByLabel('Email address')
+    await editEmailInput.fill(other.email)
+    await page.locator('#profile-panel').getByRole('button', { name: 'Update' }).click()
+    await expect(page.locator('#profile-panel').getByRole('alert')).toContainText(/user already exists|email already exists/)
 
-  // reload keeps original details
-  await page.reload()
-  await expect(page.locator('aside.account-rail .identity-email')).toHaveText(customer.email)
+    // reload keeps original details
+    await page.reload()
+    await expect(page.locator('aside.account-rail .identity-email')).toHaveText(customer.email)
+  } finally {
+    if (other?.id) {
+      await deleteCustomer(page.request, other.id)
+    }
+  }
 })

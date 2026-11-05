@@ -2,9 +2,10 @@ import { isApi, json, singaporeDate } from '../support/guest.js'
 import { test, expect, adoptionRow, adoptionRows, fakeApplication, fakeAppointment } from '../support/customer.js'
 
 //@brod > journey 2.14 > searching, pagination, deep-linking, and handling pickup warnings in My Adoptions
+//@brod > uses mockCustomer fixture to avoid unnecessary DB account registrations
 test.describe('my adoptions search, pagination, and deep-linking', () => {
   // 1. pagination across 12 active records
-  test('customer paginates through active adoptions', async ({ page, customer }) => {
+  test('customer paginates through active adoptions', async ({ page, mockCustomer }) => {
     const apps = Array.from({ length: 12 }, (_, i) => fakeApplication('pending', {
       bookid: {
         id: `00000000-0000-4000-a000-${String(i + 1).padStart(12, '0')}`,
@@ -27,7 +28,7 @@ test.describe('my adoptions search, pagination, and deep-linking', () => {
   })
 
   // 2 & 3. search and empty search recovery
-  test('customer searches adoptions and clears search', async ({ page, customer }) => {
+  test('customer searches adoptions and clears search', async ({ page, mockCustomer }) => {
     const targetApp = fakeApplication('pending', {
       bookid: { id: '00000000-0000-4000-a000-000000000777', title: 'Special Target Book', authors: ['Target'] },
     })
@@ -61,7 +62,7 @@ test.describe('my adoptions search, pagination, and deep-linking', () => {
   })
 
   // 4 & 5. query deep-linking and missing record notice
-  test('deep-links open matching dialogs and invalid id shows notice', async ({ page, customer }) => {
+  test('deep-links open matching dialogs and invalid id shows notice', async ({ page, mockCustomer }) => {
     const app = fakeApplication('pending', {
       id: '00000000-0000-4000-9000-000000000555',
       bookid: { id: '00000000-0000-4000-a000-000000000555', title: 'Linked Pending Book', authors: ['Author'] },
@@ -87,7 +88,7 @@ test.describe('my adoptions search, pagination, and deep-linking', () => {
 //@brod > 🔌 tests edge cases: overdue pickups, unlinked records, and pickup API failures
 test.describe('🔌 pickup edge cases and error states', () => {
   // 6. overdue, incomplete, and unlinked appointments
-  test('overdue and unlinked pickup records surface appropriate warnings', async ({ page, customer }) => {
+  test('overdue and unlinked pickup records surface appropriate warnings', async ({ page, mockCustomer }) => {
     const overdueApp = fakeApplication('approved', {
       bookid: {
         id: '00000000-0000-4000-a000-000000000401',
@@ -131,7 +132,7 @@ test.describe('🔌 pickup edge cases and error states', () => {
   })
 
   // 7. partial failure when /appointments is down
-  test('pickup service failure displays retry banner and restores on retry', async ({ page, customer }) => {
+  test('pickup service failure displays retry banner and restores on retry', async ({ page, mockCustomer }) => {
     const app = fakeApplication('approved', {
       bookid: {
         id: '00000000-0000-4000-a000-000000000601',

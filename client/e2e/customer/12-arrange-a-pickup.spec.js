@@ -2,7 +2,8 @@ import { isApi, json, nextResponse, singaporeDate } from '../support/guest.js'
 import { test, expect, adoptionRow, fakeApplication, fakeAppointment } from '../support/customer.js'
 
 //@brod > journey 2.12 > a customer proposes a pickup location, date, and time for an approved book
-test('customer arranges a pickup for an approved book', async ({ page, customer }) => {
+//@brod > uses mockCustomer fixture to avoid unnecessary DB account registrations
+test('customer arranges a pickup for an approved book', async ({ page, mockCustomer }) => {
   const approvedApp = fakeApplication('approved', {
     bookid: {
       id: '00000000-0000-4000-a000-000000000099',

@@ -68,9 +68,10 @@ test('customer rsvps to a drive and cancels it', async ({ page, customer }) => {
   await expect(foundCount(page, upcoming.length)).toBeVisible()
 })
 
+//@brod > 🔌 drives the seed does not have > uses mockCustomer fixture to avoid unnecessary DB account registrations
 test.describe('🔌 drives the seed does not have', () => {
   // 7. opens a drive with 0 slots left
-  test('a full drive says so instead of offering rsvp', async ({ page, customer }) => {
+  test('a full drive says so instead of offering rsvp', async ({ page, mockCustomer }) => {
     await serveCustomerDrives(page, [fakeDrive({ title: 'full swap', spotsleft: 0 })])
     await page.goto('/customer/drives')
     await tab(page, 'upcoming').click()
@@ -81,7 +82,7 @@ test.describe('🔌 drives the seed does not have', () => {
   })
 
   // 8. clicks rsvp but the drive closed in the meantime
-  test('a drive that closed in the meantime cannot be joined', async ({ page, customer }) => {
+  test('a drive that closed in the meantime cannot be joined', async ({ page, mockCustomer }) => {
     const drive = fakeDrive({ title: 'closing swap' })
     await serveCustomerDrives(page, [drive])
     await page.route(isApi(`/drives/${drive.id}/rsvp`), json({ error: 'drive is closed or cancelled' }, 409))
