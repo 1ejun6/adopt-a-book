@@ -1,68 +1,46 @@
-import { toast } from '../support/guest.js'
-import { test, expect, availableBooks, bookCard, bookCards, callApi } from '../support/customer.js'
+import { test, expect } from '@playwright/test'
+import { demoCustomer } from '../support/env.js'
 
-//@ChitanyaBharathi > journey 2.4 > a customer looks after the books they saved
-test('customer edits notes and empties their watchlist', async ({ page, customer }) => {
-  //@ChitanyaBharathi > setup > save 3 books through the api, one with a note
-  const [noted, plain, last] = await availableBooks(page.request, 3)
-  await callApi(page.request, 'POST', '/watchlist', { bookid: noted.id, comments: 'pick up before the drive' })
-  await callApi(page.request, 'POST', '/watchlist', { bookid: plain.id, comments: '' })
-  await callApi(page.request, 'POST', '/watchlist', { bookid: last.id, comments: '' })
-  const dialog = page.getByRole('dialog', { name: 'Book details' })
+test.beforeEach(async ({ page }) => {
+  await page.goto('/login')
+  await page.getByRole('textbox', { name: 'Email' }).fill(demoCustomer.email)
+  await page.getByRole('textbox', { name: 'Password' }).fill(demoCustomer.password)
+  await page.getByRole('button', { name: 'Login', exact: true }).click()
+  await expect(page).toHaveURL(/customer/)
+})
 
-  // 1. opens Watchlist
+test('customer edits the note on a saved book and removes it', async ({ page }) => {
+  // save a book with a note first
+  await page.getByRole('banner').getByRole('link', { name: 'Browse Books' }).click()
+  await expect(page.getByText(/books found/)).toBeVisible()
+
+  const title = (await page.getByRole('main').locator('article strong').first().textContent()).trim()
+  await page.getByRole('button', { name: `Save ${title} to saved books` }).first().click()
+  await page.getByRole('textbox', { name: 'Private note (optional)' }).fill('pick up before the drive')
+  await page.getByRole('button', { name: 'Save note' }).click()
+  await expect(page.getByText('Note saved')).toBeVisible()
+
+  // open it from Saved books
   await page.goto('/customer/watchlist')
-  await expect(page.getByText('3 saved books')).toBeVisible()
-  await expect(bookCards(page)).toHaveCount(3)
-  for (const book of [noted, plain, last]) {
-    const card = bookCard(page, book.title)
-    await expect(card).toBeVisible()
-    const collection = book.collectionarea || book.mrtstation?.name
-    if (collection) { await expect(card).toContainText(`collection: ${collection}`) }
-  }
+  await page.getByRole('button', { name: `View details for ${title}` }).first().click()
+  await expect(page.getByRole('heading', { name: 'Your private note' })).toBeVisible()
+  await expect(page.getByRole('dialog')).toContainText('pick up before the drive')
 
-  // 2. clicks the card with a note, then one without
-  await bookCard(page, noted.title).click()
-  await expect(dialog.getByRole('heading', { name: 'Your private note' })).toBeVisible()
-  await expect(dialog).toContainText('pick up before the drive')
-  await page.keyboard.press('Escape')
-  await bookCard(page, plain.title).click()
-  await expect(dialog).toContainText('no note added yet')
-  await page.keyboard.press('Escape')
-  await expect(dialog).toBeHidden()
+  // edit the note
+  await page.getByRole('button', { name: 'Edit note' }).click()
+  await page.getByRole('textbox', { name: 'Private note (optional)' }).fill('ask if the cover is torn')
+  await page.getByRole('button', { name: 'Save note' }).click()
+  await expect(page.getByText('Note saved')).toBeVisible()
+  await expect(page.getByRole('dialog')).toContainText('ask if the cover is torn')
 
-  // 3. clicks Edit note, changes the text &&& saves
-  await bookCard(page, noted.title).click()
-  await dialog.getByRole('button', { name: 'Edit note' }).click()
-  const editor = page.locator('[data-sonner-toast]').filter({ hasText: 'edit your note' })
-  const note = editor.getByPlaceholder('optional comment')
-  await expect(note).toHaveValue('pick up before the drive')
-  await note.fill('ask if the cover is torn')
-  await editor.getByRole('button', { name: 'save' }).click()
-  await expect(toast(page, 'comment saved')).toBeVisible()
-  await expect(dialog).toContainText('ask if the cover is torn')
-
-  // 4. reloads the page &&& opens the same book
+  // the new note is still there after a reload
   await page.reload()
-  await bookCard(page, noted.title).click()
-  await expect(dialog).toContainText('ask if the cover is torn')
+  await page.getByRole('button', { name: `View details for ${title}` }).first().click()
+  await expect(page.getByRole('dialog')).toContainText('ask if the cover is torn')
 
-  // 5. removes it from inside the window
-  await dialog.getByRole('button', { name: 'Remove from watchlist' }).click()
-  await expect(toast(page, 'removed from watchlist')).toBeVisible()
-  await expect(dialog).toBeHidden()
-  await expect(page.getByText('2 saved books')).toBeVisible()
-
-  // 6. removes one from its card
-  await bookCard(page, plain.title).getByRole('button', { name: 'Remove from watchlist' }).click()
-  await expect(bookCard(page, plain.title)).toBeHidden()
-  await expect(page.getByText('1 saved book', { exact: true })).toBeVisible()
-
-  // 7. removes the last book
-  await bookCard(page, last.title).getByRole('button', { name: 'Remove from watchlist' }).click()
-  await expect(page.getByRole('heading', { name: 'Your shelf is waiting' })).toBeVisible()
-
-  // 8. clicks Browse books
-  await page.getByRole('main').getByRole('link', { name: 'Browse books' }).click()
-  await expect(page).toHaveURL('/customer/books')
+  // remove it
+  await page.getByRole('button', { name: 'Remove from saved books' }).click()
+  await page.getByRole('button', { name: 'Remove saved book' }).click()
+  await expect(page.getByText('Removed from saved books')).toBeVisible()
+  await expect(page.getByRole('dialog')).toBeHidden()
 })

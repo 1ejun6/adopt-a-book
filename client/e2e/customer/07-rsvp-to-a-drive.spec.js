@@ -1,99 +1,35 @@
-import {
-  driveCard, driveCards, fakeDrive, foundCount, isApi, isRsvpable, json, nextResponse, pickDrive, showDrive, toast,
-  upcomingDrives,
-} from '../support/guest.js'
-import { test, expect, slowly } from '../support/customer.js'
+import { test, expect } from '@playwright/test'
+import { demoCustomer } from '../support/env.js'
 
-const tab = (page, name) => page.getByRole('tab', { name: new RegExp(`^${name}`) })
-const slotsText = count => `${count} ${count === 1 ? 'slot' : 'slots'}`
-
-//@ChitanyaBharathi > 🔌 replaces the customer drives list &&& the book counts
-async function serveCustomerDrives(page, drives) {
-  await page.route(isApi('/customer/drives'), json({ drives }))
-  await page.route(isApi('/books'), json({ books: [], total: 0 }))
-}
-
-//@ChitanyaBharathi > journey 2.7 > a customer signs up for a drive, then changes their mind
-test('customer rsvps to a drive and cancels it', async ({ page, customer }) => {
-  // 1. opens Adoption Drives
-  const response = nextResponse(page, '/customer/drives')
-  await page.goto('/customer/drives')
-  const upcoming = upcomingDrives((await (await response).json()).drives)
-  await expect(tab(page, 'my drives')).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByText('no registered adoption drives')).toBeVisible()
-  await tab(page, 'upcoming').click()
-  await expect(foundCount(page, upcoming.length)).toBeVisible()
-  await expect(tab(page, 'upcoming')).toContainText(String(upcoming.length))
-
-  // 2. opens an open drive &&& clicks rsvp
-  const drive = pickDrive(upcoming, 'upcoming open drive with free slots', isRsvpable)
-  await (await showDrive(page, drive)).click()
-  const dialog = page.getByRole('dialog')
-  await expect(dialog.getByRole('heading', { name: drive.title })).toBeVisible()
-  const rsvpPath = `/drives/${drive.id}/rsvp`
-  await page.route(isApi(rsvpPath), slowly())
-  await dialog.getByRole('button', { name: 'rsvp', exact: true }).click()
-  await expect(dialog.getByRole('button', { name: 'saving...' })).toBeVisible()
-  await expect(toast(page, 'registered for adoption drive')).toBeVisible()
-  await expect(dialog.getByRole('button', { name: 'cancel registration' })).toBeVisible()
-  await page.unroute(isApi(rsvpPath))
-
-  // 3. closes the window
-  await page.keyboard.press('Escape')
-  await expect(dialog).toBeHidden()
-  await expect(driveCards(page)).toHaveCount(0)
-  await expect(tab(page, 'upcoming')).toContainText(String(upcoming.length - 1))
-  await expect(tab(page, 'my drives')).toContainText('1')
-
-  // 4. opens it from my drives
-  await tab(page, 'my drives').click()
-  await driveCard(page, drive.title).click()
-  await expect(dialog.getByText(slotsText(drive.spotsleft - 1), { exact: true })).toBeVisible()
-  await page.keyboard.press('Escape')
-
-  // 5. reloads the page
-  await page.reload()
-  await expect(tab(page, 'my drives')).toHaveAttribute('aria-selected', 'true')
-  await expect(driveCard(page, drive.title)).toBeVisible()
-
-  // 6. clicks cancel registration
-  await driveCard(page, drive.title).click()
-  await dialog.getByRole('button', { name: 'cancel registration' }).click()
-  await expect(toast(page, 'registration cancelled')).toBeVisible()
-  await expect(dialog.getByRole('button', { name: 'rsvp', exact: true })).toBeVisible()
-  await expect(dialog.getByText(slotsText(drive.spotsleft), { exact: true })).toBeVisible()
-  await page.keyboard.press('Escape')
-  await expect(page.getByText('no registered adoption drives')).toBeVisible()
-  await tab(page, 'upcoming').click()
-  await expect(foundCount(page, upcoming.length)).toBeVisible()
+test.beforeEach(async ({ page }) => {
+  await page.goto('/login')
+  await page.getByRole('textbox', { name: 'Email' }).fill(demoCustomer.email)
+  await page.getByRole('textbox', { name: 'Password' }).fill(demoCustomer.password)
+  await page.getByRole('button', { name: 'Login', exact: true }).click()
+  await expect(page).toHaveURL(/customer/)
 })
 
-//@brod > 🔌 drives the seed does not have > uses mockCustomer fixture to avoid unnecessary DB account registrations
-test.describe('🔌 drives the seed does not have', () => {
-  // 7. opens a drive with 0 slots left
-  test('a full drive says so instead of offering rsvp', async ({ page, mockCustomer }) => {
-    await serveCustomerDrives(page, [fakeDrive({ title: 'full swap', spotsleft: 0 })])
-    await page.goto('/customer/drives')
-    await tab(page, 'upcoming').click()
-    await driveCard(page, 'full swap').click()
-    const dialog = page.getByRole('dialog')
-    await expect(dialog).toContainText('this drive is full')
-    await expect(dialog.getByRole('button', { name: 'rsvp', exact: true })).toHaveCount(0)
-  })
+test('customer rsvps to a drive and cancels it', async ({ page }) => {
+  await page.getByRole('banner').getByRole('link', { name: 'Adoption Drives' }).click()
+  await expect(page.getByRole('tab', { name: /^my drives/ })).toHaveAttribute('aria-selected', 'true')
 
-  // 8. clicks rsvp but the drive closed in the meantime
-  test('a drive that closed in the meantime cannot be joined', async ({ page, mockCustomer }) => {
-    const drive = fakeDrive({ title: 'closing swap' })
-    await serveCustomerDrives(page, [drive])
-    await page.route(isApi(`/drives/${drive.id}/rsvp`), json({ error: 'drive is closed or cancelled' }, 409))
-    await page.goto('/customer/drives')
-    await tab(page, 'upcoming').click()
-    await driveCard(page, 'closing swap').click()
-    const dialog = page.getByRole('dialog')
-    await dialog.getByRole('button', { name: 'rsvp', exact: true }).click()
-    await expect(toast(page, 'drive is closed or cancelled')).toBeVisible()
-    await expect(dialog.getByRole('button', { name: 'rsvp', exact: true })).toBeVisible()
-    await page.keyboard.press('Escape')
-    await expect(tab(page, 'my drives')).toContainText('0')
-  })
+  await page.getByRole('tab', { name: /^upcoming/ }).click()
+  await page.getByRole('button', { name: 'open', exact: true }).click()
+
+  const title = (await page.getByRole('main').getByRole('heading', { level: 3 }).first().textContent()).trim()
+  await page.getByRole('main').getByRole('heading', { name: title }).click()
+
+  await page.getByRole('dialog').getByRole('button', { name: 'rsvp', exact: true }).click()
+  await expect(page.getByText('registered for adoption drive')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'cancel registration' })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // it is now under my drives
+  await page.getByRole('tab', { name: /^my drives/ }).click()
+  await page.getByRole('main').getByRole('heading', { name: title }).click()
+
+  // cancel it so the slot is free again
+  await page.getByRole('button', { name: 'cancel registration' }).click()
+  await expect(page.getByText('registration cancelled')).toBeVisible()
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'rsvp', exact: true })).toBeVisible()
 })

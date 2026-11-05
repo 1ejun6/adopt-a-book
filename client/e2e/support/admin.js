@@ -24,7 +24,7 @@ export const APPLICATIONS = '/admin/applications'
 export const APPOINTMENTS = '/admin/appointments'
 export const DRIVES = '/admin/drives'
 
-export const adminNavLinks = ['Home', 'Book Inventory', 'Adoption Applications', 'Appointments', 'Drives']
+export const adminNavLinks = ['Dashboard', 'Book Inventory', 'Adoption Applications', 'Appointments', 'Drives']
 export const PAGE_SIZE = 15
 
 //@ChitanyaBharathi > customers offer three of the hourly slots (09:00–18:00) on one day &&& the admin confirms one of them

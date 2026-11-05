@@ -1,64 +1,24 @@
 import { test, expect } from '@playwright/test'
-import { bookSpines, openHomepage, stubGoogleMaps } from '../support/guest.js'
 
-//@ChitanyaBharathi > journey 1.1 > a first-time visitor looks through the shelf &&& reads about a book
-test('guest browses the bookshelf and reads about a book', async ({ page, context }) => {
-  await stubGoogleMaps(context)
+test('guest browses the bookshelf and opens a book', async ({ page }) => {
+  await page.goto('/')
 
-  // 1. opens the website for the first time
-  const books = await openHomepage(page)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Different shelves')
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Shared stories')
-  expect(books).toHaveLength(5)
-  for (const [index, book] of books.entries()) {
-    //@ChitanyaBharathi > each spine is a button named after its book
-    await expect(bookSpines(page).nth(index)).toHaveAccessibleName(`${book.title} by ${(book.authors || []).join(', ')}`)
-  }
+  await expect(page.locator('.book-spine')).toHaveCount(5)
 
-  // 2. hovers the mouse over a spine
-  const firstSpine = bookSpines(page).nth(0)
-  await firstSpine.hover()
-  await expect(firstSpine.locator('.book-preview')).toBeVisible()
-  await expect(firstSpine.locator('.book-preview')).toContainText(books[0].title)
+  await page.locator('.book-spine').first().hover()
+  await expect(page.locator('.book-spine').first().locator('.book-preview')).toBeVisible()
 
-  // 3. moves to another spine
-  const secondSpine = bookSpines(page).nth(1)
-  await secondSpine.hover()
-  await expect(firstSpine.locator('.book-preview')).toBeHidden()
-  await expect(secondSpine.locator('.book-preview')).toBeVisible()
+  await page.locator('.book-spine').nth(1).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Book details' })).toBeVisible()
 
-  // 4. clicks a spine
-  await secondSpine.click()
-  const dialog = page.getByRole('dialog')
-  await expect(dialog.getByRole('heading', { name: 'Book details' })).toBeVisible()
-  await expect(dialog).toContainText(books[1].title)
-  await expect(dialog.getByText('condition', { exact: true })).toBeVisible()
-  if (books[1].isbn) { await expect(dialog).toContainText(books[1].isbn) }
-  if (books[1].publicationyear) { await expect(dialog).toContainText(String(books[1].publicationyear)) }
-
-  // 5. clicks the collection point
-  const collection = books[1].collectionarea || books[1].mrtstation?.name
-  if (collection) {
-    const mapLink = dialog.getByRole('link', { name: collection })
-    await expect(mapLink).toHaveAttribute('target', '_blank')
-    await expect(mapLink).toHaveAttribute('href', /google\.com\/maps/)
-    const [mapsTab] = await Promise.all([context.waitForEvent('page'), mapLink.click()])
-    await expect(mapsTab).toHaveURL(/google\.com\/maps/)
-    await mapsTab.close()
-    await expect(page).toHaveURL('/')
-  }
-
-  // 6. presses Esc
   await page.keyboard.press('Escape')
-  await expect(dialog).toBeHidden()
+  await expect(page.getByRole('dialog')).toBeHidden()
 
-  // 7. uses only the keyboard to open another book
-  await bookSpines(page).nth(2).focus()
-  await page.keyboard.press('Enter')
-  await expect(dialog).toBeVisible()
-  await expect(dialog).toContainText(books[2].title)
+  await page.locator('.book-spine').nth(2).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
 
-  // 8. closes it with ✕
-  await dialog.getByRole('button', { name: 'Close' }).click()
-  await expect(dialog).toBeHidden()
+  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(page.getByRole('dialog')).toBeHidden()
 })

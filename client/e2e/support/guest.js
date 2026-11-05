@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { serverUrl } from './env.js'
+import { apiPath } from './env.js'
 
 //@ChitanyaBharathi > journeys never assume which drives \ books exist > they read what the server sends &&& check against that
 
@@ -12,7 +12,7 @@ export const DRIVES_PER_PAGE = 10
 const matchers = new Map()
 export function isApi(path) {
   if (!matchers.has(path)) {
-    matchers.set(path, url => url.origin === serverUrl && url.pathname === path)
+    matchers.set(path, url => apiPath(url) === path)
   }
   return matchers.get(path)
 }
@@ -35,7 +35,8 @@ export function trackApiRequests(page) {
   const requests = []
   page.on('request', request => {
     const url = new URL(request.url())
-    if (url.origin === serverUrl) { requests.push({ method: request.method(), path: url.pathname, query: url.searchParams }) }
+    const path = apiPath(url)
+    if (path) { requests.push({ method: request.method(), path, query: url.searchParams }) }
   })
   return {
     requests,

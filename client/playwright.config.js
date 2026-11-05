@@ -4,15 +4,18 @@ import { defineConfig, devices } from '@playwright/test'
 import { loadEnv } from 'vite'
 
 const workspaceRoot = fileURLToPath(new URL('../', import.meta.url))
-const { clienturl, serverurl } = loadEnv('development', workspaceRoot, '')
+const { clienturl, serverurl, e2e_url } = loadEnv('development', workspaceRoot, '')
 
-if (!clienturl) { throw new Error('clienturl must be set in the root .env file') }
-if (!serverurl) { throw new Error('serverurl must be set in the root .env file') }
+//@ChitanyaBharathi > e2e_url in the root .env → test that deployed site, nothing starts locally > remove it to test localhost
+const deployedUrl = e2e_url ? new URL(e2e_url) : null
 
-const clientUrl = new URL(clienturl)
+if (!deployedUrl && !clienturl) { throw new Error('clienturl must be set in the root .env file') }
+if (!deployedUrl && !serverurl) { throw new Error('serverurl must be set in the root .env file') }
+
+const clientUrl = deployedUrl || new URL(clienturl)
 const clientPort = Number(clientUrl.port)
 
-if (!clientPort) { throw new Error('clienturl in the root .env file must include a port') }
+if (!deployedUrl && !clientPort) { throw new Error('clienturl in the root .env file must include a port') }
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -36,8 +39,6 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
-  //@ChitanyaBharathi > logs the demo admin in once &&& sweeps leftover temporary admins > never resets the database
-  globalSetup: './e2e/support/global-setup.js',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
@@ -53,20 +54,32 @@ export default defineConfig({
   },
 
   //@ChitanyaBharathi > chrome only for now > phone-sized journeys switch device inside their own file
+  //@ChitanyaBharathi > customer &&& admin tests share one real account each from the .env > run them one at a time
   projects: [
     {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-      },
+      name: 'guest',
+      testMatch: 'guest/**/*.spec.js',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'customer',
+      testMatch: 'customer/**/*.spec.js',
+      workers: 1,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'admin',
+      testMatch: 'admin/**/*.spec.js',
+      workers: 1,
+      use: { ...devices['Desktop Chrome'] },
     },
   ],
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   // outputDir: 'test-results/',
 
-  //@ChitanyaBharathi > journeys need the real backend too > start express before vite
-  webServer: [
+  //@ChitanyaBharathi > journeys need the real backend too > start express before vite > skipped for a deployed site
+  webServer: deployedUrl ? undefined : [
     {
       command: 'node server.js',
       cwd: fileURLToPath(new URL('../server', import.meta.url)),

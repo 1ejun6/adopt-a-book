@@ -101,14 +101,16 @@ export const test = base.extend({
 export { expect, demoCustomer }
 
 //@brod > pickups was merged into my adoptions > 5 customer links in the navbar
-export const customerNavLinks = ['Browse Books', 'Watchlist', 'My Adoptions', 'Adoption Drives', 'Account']
+//@ChitanyaBharathi > the watchlist is called "Saved books" everywhere now
+export const customerNavLinks = ['Browse Books', 'Saved books', 'My Adoptions', 'Adoption Drives', 'Account']
 export const navLinks = page => page.getByRole('banner').getByRole('link').filter({ hasNotText: 'Adopt a Book' })
 
 //@ChitanyaBharathi > browse books asks for 16 per page > the drive cards ask for 1 \ 5
 export const PAGE_SIZE = 16
 export const isCatalogue = url => isApi('/books')(url) && url.searchParams.get('limit') === String(PAGE_SIZE)
 
-export const bookCards = page => page.getByRole('main').locator('article[aria-haspopup="dialog"]')
+//@ChitanyaBharathi > a card is an <article> holding a "View details for <title>" button > skeleton cards have none
+export const bookCards = page => page.getByRole('main').locator('article').filter({ has: page.getByRole('button', { name: /^View details for / }) })
 export const bookCard = (page, title) => bookCards(page).filter({ has: page.getByText(title, { exact: true }) }).first()
 export const bookTitles = page => bookCards(page).locator('strong')
 export const booksFound = (page, count) => page.getByText(new RegExp(`^\\s*${count}\\s+books\\s+found\\s*$`))
@@ -116,7 +118,8 @@ export const booksFound = (page, count) => page.getByText(new RegExp(`^\\s*${cou
 export const searchBox = page => page.getByRole('searchbox', { name: /Search by title/i })
 export const genreSelect = page => page.locator('select').filter({ has: page.locator('option', { hasText: 'All genres' }) })
 export const bookSortSelect = page => page.locator('select').filter({ has: page.locator('option', { hasText: 'Title A–Z' }) })
-export const saveButton = card => card.getByRole('button', { name: /^(Save to|Remove from) watchlist$/ })
+//@ChitanyaBharathi > named "Save <title> to saved books" \ "Remove <title> from saved books"
+export const saveButton = card => card.getByRole('button', { name: /^(Save .+ to|Remove .+ from) saved books$/ })
 
 //@ChitanyaBharathi > waits for the next browse books response that passes the check
 export function nextCatalogue(page, check = () => true) {

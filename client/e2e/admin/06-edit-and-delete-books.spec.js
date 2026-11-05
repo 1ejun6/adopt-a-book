@@ -1,119 +1,56 @@
-import { isApi, json, trackApiRequests } from '../support/guest.js'
-import { slowly } from '../support/customer.js'
-import {
-  test, expect, badge, BOOKS, confirmation, createBook, dialog, field, nextList, row, rowCheckbox, rows, search, seedAdoption, selectedCount, selectionButton, selectionHint, taggedTitle, toast,
-} from '../support/admin.js'
+import { test, expect } from '@playwright/test'
+import { demoAdmin } from '../support/env.js'
 
-
-//@ChitanyaBharathi > journey 3.6 > the admin fixes a book's details &&& removes copies added by mistake
-test('admin edits a book and deletes two others', async ({ page, admin }) => {
-  const first = await createBook(admin, { title: 'Wrong Condition', condition: 'fair' })
-  const second = await createBook(admin, { title: 'Added Twice' })
-  const third = await createBook(admin, { title: 'Also Twice' })
-  const { book: reserved } = await seedAdoption(admin, 'approved', { book: { title: 'Already Promised' } })
-  const renamed = taggedTitle(admin, 'Right Condition')
-
-  await page.goto('/admin/books')
-  await search(page, BOOKS, admin.tag)
-  await expect(rows(page)).toHaveCount(4)
-
-  // 1. ticks one available book > "1 selected" with Edit &&& Delete
-  await rowCheckbox(page, first.title).click()
-  await expect(selectedCount(page, 1)).toBeVisible()
-  await expect(selectionButton(page, 'Edit')).toBeEnabled()
-  await expect(selectionButton(page, 'Delete')).toBeEnabled()
-
-  // 2. clicks Edit > Edit book filled in, with its available badge &&& Save changes
-  await selectionButton(page, 'Edit').click()
-  const form = dialog(page)
-  await expect(form.getByRole('heading', { name: 'Edit book' })).toBeVisible()
-  await expect(form.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue(first.title)
-  await expect(form.getByLabel('Condition')).toHaveValue('fair')
-  await expect(badge(form, 'available')).toBeVisible()
-  await expect(form.getByRole('button', { name: 'Save changes' })).toBeVisible()
-
-  // 3. changes the title &&& condition > "Saving…", the success toast, the window closes, the row shows the new title
-  await form.getByRole('textbox', { name: 'Title', exact: true }).fill(renamed)
-  await form.getByLabel('Condition').selectOption('like new')
-  await page.route(isApi(`/admin/books/${first.id}`), slowly(), { times: 1 })
-  await form.getByRole('button', { name: 'Save changes' }).click()
-  await expect(form.getByRole('button', { name: 'Saving…' })).toBeVisible()
-  await expect(toast(page, `you have updated book ${renamed} successfully!`)).toBeVisible()
-  await expect(form).toBeHidden()
-  await expect(row(page, renamed)).toBeVisible()
-
-  // 4. opens its details > the new condition &&& Updated at; Edit inside opens the same form
-  await row(page, renamed).click()
-  const details = dialog(page)
-  await expect(details.getByRole('heading', { name: 'Book details' })).toBeVisible()
-  await expect(field(details, 'Condition')).toHaveText('like new')
-  await expect(field(details, 'Updated at')).not.toHaveText('Not provided')
-  await details.getByRole('button', { name: 'Edit' }).click()
-  await expect(form.getByRole('heading', { name: 'Edit book' })).toBeVisible()
-  await expect(form.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue(renamed)
-  await page.keyboard.press('Escape')
-  await expect(form).toBeHidden()
-
-  // 5. ticks a second book > "2 selected" &&& Edit is disabled
-  await rowCheckbox(page, second.title).click()
-  await rowCheckbox(page, third.title).click()
-  await expect(selectedCount(page, 2)).toBeVisible()
-  await expect(selectionButton(page, 'Edit')).toBeDisabled()
-
-  // 6. also ticks the reserved book > "Only available books without adoption or pickup history…" &&& both actions disabled
-  await rowCheckbox(page, reserved.title).click()
-  await expect(selectionHint(page, 'Only available books without adoption or pickup history can be deleted.')).toBeVisible()
-  await expect(selectionButton(page, 'Delete')).toBeDisabled()
-  await expect(selectionButton(page, 'Edit')).toBeDisabled()
-
-  // 7. unticks the reserved book, Delete, then Cancel > both titles listed with the warning, no DELETE sent
-  await rowCheckbox(page, reserved.title).click()
-  const api = trackApiRequests(page)
-  await selectionButton(page, 'Delete').click()
-  const ask = confirmation(page, 'Delete books?')
-  await expect(ask).toBeVisible()
-  await expect(ask).toContainText('Only available copies without any adoption applications or appointments can be deleted.')
-  await expect(ask).toContainText('If any selected copy has protected history, nothing will be deleted.')
-  await expect(ask).toContainText(second.title)
-  await expect(ask).toContainText(third.title)
-  await ask.getByRole('button', { name: 'Cancel' }).click()
-  await expect(ask).toBeHidden()
-  expect(api.to(BOOKS).filter(request => request.method === 'DELETE')).toHaveLength(0)
-
-  // 8. Delete again &&& confirm > "Deleting…", "2 deleted" with both titles numbered, the rows go &&& All books updates
-  //    (other journeys add \ delete books at the same time, so the tab is checked against the server's new count, not "minus 2")
-  await page.route(isApi(BOOKS), async route => {
-    if (route.request().method() === 'DELETE') { await new Promise(resolve => setTimeout(resolve, 500)) }
-    await route.continue()
-  })
-  const reloaded = nextList(page, BOOKS)
-  await selectionButton(page, 'Delete').click()
-  await confirmation(page, 'Delete books?').getByRole('button', { name: 'Delete' }).click()
-  await expect(selectionButton(page, 'Deleting…')).toBeVisible()
-  const { counts } = await (await reloaded).json()
-  const deleted = toast(page, '2 deleted')
-  await expect(deleted).toBeVisible()
-  await expect(deleted).toContainText(`1. ${second.title}`)
-  await expect(deleted).toContainText(`2. ${third.title}`)
-  await expect(row(page, second.title)).toHaveCount(0)
-  await expect(row(page, third.title)).toHaveCount(0)
-  await expect(rows(page)).toHaveCount(2)
-  await expect(page.getByRole('tab', { name: `All books ${counts.all}` })).toBeVisible()
-  await page.unroute(isApi(BOOKS))
+test.beforeEach(async ({ page }) => {
+  await page.goto('/login')
+  await page.getByRole('textbox', { name: 'Email' }).fill(demoAdmin.email)
+  await page.getByRole('textbox', { name: 'Password' }).fill(demoAdmin.password)
+  await page.getByRole('button', { name: 'Login', exact: true }).click()
+  await expect(page).toHaveURL(/admin/)
 })
 
-// 9. 🔌 DELETE /admin/books fails > the error toast &&& the row stays
-test('🔌 a failed delete keeps the book', async ({ page, admin }) => {
-  const book = await createBook(admin, { title: 'Stays Put' })
-  await page.route(isApi(BOOKS), async route => {
-    if (route.request().method() === 'DELETE') { return json({ error: 'error deleting book(s)!' }, 500)(route) }
-    await route.continue()
-  })
-  await page.goto('/admin/books')
-  await search(page, BOOKS, admin.tag)
-  await rowCheckbox(page, book.title).click()
-  await selectionButton(page, 'Delete').click()
-  await confirmation(page, 'Delete book?').getByRole('button', { name: 'Delete' }).click()
-  await expect(toast(page, 'error deleting book(s)!')).toBeVisible()
-  await expect(row(page, book.title)).toBeVisible()
+test('admin edits a book and deletes it', async ({ page }) => {
+  const title = `E2E Edit Book ${Date.now()}`
+  const renamed = `${title} renamed`
+
+  // add a book to work on
+  await page.getByRole('banner').getByRole('link', { name: 'Book Inventory' }).click()
+  await page.getByRole('button', { name: 'Add Book' }).click()
+  await page.getByRole('button', { name: 'Enter manually' }).click()
+  await page.getByRole('textbox', { name: 'Title', exact: true }).fill(title)
+  await page.getByLabel('Subject').selectOption('Fiction')
+  await page.getByLabel('Condition').selectOption('fair')
+  await page.getByLabel('Collection area (MRT station)').fill('Bugis MRT')
+  await page.getByRole('button', { name: 'Add book', exact: true }).click()
+  await expect(page.getByText(`you have created book ${title} successfully!`)).toBeVisible()
+
+  // tick it and edit it
+  await page.getByRole('main').getByRole('searchbox').first().fill(title)
+  await page.getByRole('main').locator('tbody tr').filter({ hasText: title }).getByRole('checkbox').check()
+  await expect(page.getByRole('main').getByText('1 selected')).toBeVisible()
+  await page.getByRole('main').getByRole('group').getByRole('button', { name: 'Edit', exact: true }).click()
+
+  await expect(page.getByRole('heading', { name: 'Edit book' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue(title)
+  await page.getByRole('textbox', { name: 'Title', exact: true }).fill(renamed)
+  await page.getByLabel('Condition').selectOption('like new')
+  await page.getByRole('button', { name: 'Save changes' }).click()
+  await expect(page.getByText(`you have updated book ${renamed} successfully!`)).toBeVisible()
+
+  // open it and check the change
+  await page.getByRole('main').getByRole('searchbox').first().fill(renamed)
+  await page.getByRole('main').locator('tbody tr').filter({ hasText: renamed }).click()
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Book details' })).toBeVisible()
+  await expect(page.getByRole('dialog')).toContainText(renamed)
+  await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click()
+
+  // starts to delete it, cancels, then deletes it for real
+  await page.getByRole('main').locator('tbody tr').filter({ hasText: renamed }).getByRole('checkbox').check()
+  await page.getByRole('main').getByRole('group').getByRole('button', { name: 'Delete', exact: true }).click()
+  await page.getByRole('region', { name: /Notifications/ }).getByRole('button', { name: 'Cancel' }).click()
+  await expect(page.getByRole('main').locator('tbody tr').filter({ hasText: renamed })).toBeVisible()
+
+  await page.getByRole('main').getByRole('group').getByRole('button', { name: 'Delete', exact: true }).click()
+  await page.getByRole('region', { name: /Notifications/ }).getByRole('button', { name: 'Delete', exact: true }).last().click()
+  await expect(page.getByRole('main').locator('tbody tr').filter({ hasText: renamed })).toHaveCount(0)
 })

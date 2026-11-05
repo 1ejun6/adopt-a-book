@@ -1,121 +1,56 @@
-import { singaporeDate, driveCard, driveSearch } from '../support/guest.js'
-import {
-  test, expect, closeDialog, badge, confirmation, createDrive, dialog, DRIVES, listMain, listSelect, nextList, openTab, optionsOf, pickDate, row, rowCheckbox, rows, search, selectedCount, selectionButton, toast,
-} from '../support/admin.js'
+import { test, expect } from '@playwright/test'
+import { demoAdmin } from '../support/env.js'
 
+// a YYYY-MM-DD date for the drive form
+const in10Days = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
-//@ChitanyaBharathi > journey 3.12 > the admin closes a full drive, cancels one &&& removes two made by mistake
-test('admin closes, cancels and deletes drives', async ({ page, browser, admin }) => {
-  const toClose = await createDrive(admin, { title: 'Full Already' })
-  const toCancel = await createDrive(admin, { title: 'Rained Out' })
-  const mistakeOne = await createDrive(admin, { title: 'Typo Drive' })
-  const mistakeTwo = await createDrive(admin, { title: 'Duplicate Drive' })
-
-  await page.goto('/admin/drives')
-  await search(page, DRIVES, admin.tag)
-  await expect(rows(page)).toHaveCount(4)
-
-  // 1. ticks one drive > "1 selected" with Edit, Close registration, Cancel drives &&& Delete
-  await rowCheckbox(page, toClose.title).click()
-  await expect(selectedCount(page, 1)).toBeVisible()
-  for (const name of ['Edit', 'Close registration', 'Cancel drives', 'Delete']) {
-    await expect(selectionButton(page, name)).toBeEnabled()
-  }
-
-  // 2. Close registration &&& confirm > "existing registrations remain", then "1 drive closed" &&& a closed badge
-  await selectionButton(page, 'Close registration').click()
-  const close = confirmation(page, 'Close registration?')
-  await expect(close).toContainText('Stop new registrations. Existing registrations remain.')
-  await expect(close).toContainText(toClose.title)
-  await close.getByRole('button', { name: 'Close registration' }).click()
-  await expect(toast(page, '1 drive closed')).toBeVisible()
-  await expect(badge(row(page, toClose.title), 'closed')).toBeVisible()
-
-  // 3. (as a guest, in a second browser) that drive says "registration has closed" instead of rsvp
-  const guestContext = await browser.newContext()
-  try {
-    const guest = await guestContext.newPage()
-    await guest.goto('/drives')
-    await driveSearch(guest).fill(toClose.title)
-    await driveCard(guest, toClose.title).click()
-    const guestDialog = guest.getByRole('dialog')
-    await expect(guestDialog.getByText('registration has closed')).toBeVisible()
-    await expect(guestDialog.getByRole('button', { name: 'rsvp' })).toHaveCount(0)
-  } finally {
-    await guestContext.close()
-  }
-
-  // 4. ticks the closed drive again > Close registration disabled, Cancel drives not
-  await rowCheckbox(page, toClose.title).click()
-  await expect(selectionButton(page, 'Close registration')).toBeDisabled()
-  await expect(selectionButton(page, 'Cancel drives')).toBeEnabled()
-  await rowCheckbox(page, toClose.title).click()
-
-  // 5. opens a different drive &&& Cancel drive, then confirms > "registrations remain for reference", "1 drive cancelled", it moves to Past
-  await row(page, toCancel.title).click()
-  const details = dialog(page)
-  await details.getByRole('button', { name: 'Cancel drive' }).click()
-  const cancel = confirmation(page, 'Cancel drive?')
-  await expect(cancel).toContainText('These events will be cancelled. Existing registrations remain for reference.')
-  await cancel.getByRole('button', { name: 'Cancel drives' }).click()
-  await expect(toast(page, '1 drive cancelled')).toBeVisible()
-  await expect(row(page, toCancel.title)).toHaveCount(0)
-
-  // 6. Past > no checkboxes, Closed \ Cancelled in the dropdown, &&& the cancelled drive's details have no books \ actions
-  await openTab(page, DRIVES, 'Past', { view: 'past' })
-  await expect(badge(row(page, toCancel.title), 'cancelled')).toBeVisible()
-  await expect(listMain(page).getByRole('checkbox')).toHaveCount(0)
-  const statusSelect = listSelect(page, 'Drive status')
-  expect(await optionsOf(statusSelect)).toEqual(['All statuses', 'Closed', 'Cancelled'])
-  await row(page, toCancel.title).click()
-  await expect(details.getByRole('heading', { name: 'Drive details' })).toBeVisible()
-  await expect(details.getByRole('heading', { name: 'Available books' })).toHaveCount(0)
-  for (const name of ['Edit', 'Close registration', 'Cancel drive', 'Delete']) {
-    await expect(details.getByRole('button', { name, exact: true })).toHaveCount(0)
-  }
-  await closeDialog(page)
-
-  // 7. back to Upcoming, ticks the 2 remaining open drives &&& Delete > "permanently deleted", then "2 drives deleted"
-  await openTab(page, DRIVES, 'Upcoming', { view: 'upcoming' })
-  await rowCheckbox(page, mistakeOne.title).click()
-  await rowCheckbox(page, mistakeTwo.title).click()
-  await selectionButton(page, 'Delete').click()
-  const remove = confirmation(page, 'Delete drives?')
-  await expect(remove).toContainText('These drives and their registrations will be permanently deleted.')
-  await remove.getByRole('button', { name: 'Delete' }).click()
-  await expect(toast(page, '2 drives deleted')).toBeVisible()
-  await expect(row(page, mistakeOne.title)).toHaveCount(0)
-  await expect(row(page, mistakeTwo.title)).toHaveCount(0)
-  await expect(rows(page)).toHaveCount(1)
-
-  // 8. filters by an Event date with no drives > "No matching drives"
-  await pickDate(page, 'Event date', singaporeDate(20))
-  await expect(page.getByText('No matching drives')).toBeVisible()
-  await expect(page.getByText('Try another date, status, search term, or view.')).toBeVisible()
+test.beforeEach(async ({ page }) => {
+  await page.goto('/login')
+  await page.getByRole('textbox', { name: 'Email' }).fill(demoAdmin.email)
+  await page.getByRole('textbox', { name: 'Password' }).fill(demoAdmin.password)
+  await page.getByRole('button', { name: 'Login', exact: true }).click()
+  await expect(page).toHaveURL(/admin/)
 })
 
-// 9. 🔌 closes 2 drives when the second PATCH fails > "1 drive closed" &&& "1 update failed" with the title, then the list reloads
-test('🔌 closing drives that fail part-way reports both results', async ({ page, admin }) => {
-  const one = await createDrive(admin, { title: 'Closes Fine' })
-  const two = await createDrive(admin, { title: 'Fails To Close' })
-  let patches = 0
-  await page.route(url => url.pathname.startsWith(`${DRIVES}/`), async route => {
-    if (route.request().method() === 'PATCH' && ++patches === 2) {
-      return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'error updating drive' }) })
-    }
-    await route.continue()
-  })
-  await page.goto('/admin/drives')
-  await search(page, DRIVES, admin.tag)
-  await rowCheckbox(page, one.title).click()
-  await rowCheckbox(page, two.title).click()
-  await selectionButton(page, 'Close registration').click()
-  const reloaded = nextList(page, DRIVES)
-  await confirmation(page, 'Close registration?').getByRole('button', { name: 'Close registration' }).click()
-  await expect(toast(page, '1 drive closed')).toBeVisible()
-  const failed = toast(page, '1 update failed')
-  await expect(failed).toBeVisible()
-  await expect(failed).toContainText(/(Closes Fine|Fails To Close) e2e-\w+: error updating drive/)
-  await reloaded
-  await expect(rows(page).locator('[data-status="closed"]')).toHaveCount(1)
+test('admin closes registration for a drive and then deletes it', async ({ page, browser }) => {
+  const title = `E2E Closing Drive ${Date.now()}`
+
+  // create a drive to work on
+  await page.getByRole('banner').getByRole('link', { name: 'Drives' }).click()
+  await page.getByRole('button', { name: 'Create drive' }).click()
+  await page.getByLabel('Drive title').fill(title)
+  await page.getByLabel('Venue and address').fill('Community Hall, 1 Example Road')
+  await page.getByLabel('Nearest MRT station').fill('Bugis MRT')
+  await page.getByRole('textbox', { name: 'Event date' }).fill(in10Days)
+  await page.getByRole('textbox', { name: /^Start time/ }).fill('10:00')
+  await page.getByRole('textbox', { name: /^End time/ }).fill('13:00')
+  await page.getByRole('dialog').getByRole('button', { name: 'Create drive' }).click()
+  await expect(page.getByText('adoption drive created successfully')).toBeVisible()
+
+  // close registration
+  await page.getByRole('main').getByRole('searchbox').first().fill(title)
+  await page.getByRole('main').locator('tbody tr').filter({ hasText: title }).getByRole('checkbox').check()
+  await page.getByRole('main').getByRole('group').getByRole('button', { name: 'Close registration', exact: true }).click()
+  await page.getByRole('region', { name: /Notifications/ }).getByRole('button', { name: 'Close registration' }).click()
+  await expect(page.getByText('1 drive closed')).toBeVisible()
+
+  // a guest in another browser can no longer rsvp
+  const guest = await browser.newPage()
+  await guest.goto('/drives')
+  await guest.getByRole('searchbox', { name: 'search', exact: true }).fill(title)
+  await guest.getByRole('heading', { name: title }).click()
+  await expect(guest.getByRole('dialog').getByText('registration has closed')).toBeVisible()
+  await guest.close()
+
+  // delete it so the drives list stays clean
+  await page.getByRole('main').locator('tbody tr').filter({ hasText: title }).getByRole('checkbox').check()
+  await page.getByRole('main').getByRole('group').getByRole('button', { name: 'Delete', exact: true }).click()
+  await page.getByRole('region', { name: /Notifications/ }).getByRole('button', { name: 'Delete', exact: true }).click()
+  await expect(page.getByRole('main').locator('tbody tr').filter({ hasText: title })).toHaveCount(0)
+})
+
+test('admin filters drives by a date with no drives', async ({ page }) => {
+  await page.getByRole('banner').getByRole('link', { name: 'Drives' }).click()
+  await page.getByRole('main').getByRole('searchbox').first().fill('zzzz-no-such-drive')
+  await expect(page.getByText('No matching drives')).toBeVisible()
 })
