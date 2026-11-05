@@ -1,7 +1,6 @@
 <script setup>
 import AppIcon from '@/components/shared/AppIcon.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { LockKeyIcon, UserIcon } from '@hugeicons/core-free-icons';
 import { toast } from 'vue-sonner';
 import AppPage from '@/components/shared/AppPage.vue';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 import GenrePicker from '@/components/customer/GenrePicker.vue';
 const auth = useAuthStore();
-const preferredgenres = ref([]), savingPreferences = ref(false), preferencesError = ref('');
+const preferredgenres = ref([]);
 const preferencesChanged = computed(() => JSON.stringify([...preferredgenres.value].sort()) !== JSON.stringify([...(account.value?.preferredgenres || [])].sort()));
 
 const account = ref(null), loading = ref(true), loadError = ref('');
@@ -29,7 +28,8 @@ const initials = computed(() => account.value?.name?.trim().split(/\s+/).slice(0
 const changed = computed(() => account.value && (draft.name.trim() !== account.value.name || draft.email.trim().toLowerCase() !== account.value.email));
 const emailInvalid = computed(() => emailTouched.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim()));
 const mismatch = computed(() => confirmationTouched.value && passwords.password !== passwords.confirmation);
-const canSaveProfile = computed(() => changed.value && draft.name.trim() && draft.email.trim() && !savingProfile.value);
+const canSaveProfile = computed(() => (changed.value || preferencesChanged.value) && draft.name.trim() && draft.email.trim()
+  && (!preferencesChanged.value || preferredgenres.value.length) && !savingProfile.value);
 const canSavePassword = computed(() => passwords.password.length >= 8 && !!passwords.password.trim() && passwords.password === passwords.confirmation && !savingPassword.value);
 let controller;
 let requestId = 0;
@@ -57,6 +57,7 @@ async function loadAccount() {
 }
 
 watch(draft, () => { profileError.value = ''; profileSaved.value = false; });
+watch(preferredgenres, () => { profileError.value = ''; profileSaved.value = false; }, { deep: true });
 watch(passwords, () => { passwordError.value = ''; passwordSaved.value = false; });
 
 async function saveProfile() {
@@ -67,11 +68,22 @@ async function saveProfile() {
   savingProfile.value = true;
   profileError.value = '';
   try {
-    await api('/customer/profile', { method: 'PATCH', body: details, signal: request.signal });
+    if (changed.value) {
+      await api('/customer/profile', { method: 'PATCH', body: details, signal: request.signal });
+    }
     if (request.signal.aborted) { return; }
     account.value = { ...account.value, ...details };
     if (auth.user) { auth.updateUser(details); }
     Object.assign(draft, details);
+    if (preferencesChanged.value) {
+      const response = await api('/customer/preferences', {
+        method: 'PATCH', body: { preferredgenres: preferredgenres.value }, signal: request.signal,
+      });
+      if (request.signal.aborted) return;
+      account.value.preferredgenres = response.preferredgenres;
+      preferredgenres.value = [...response.preferredgenres];
+      auth.updateUser({ preferredgenres: response.preferredgenres });
+    }
     await nextTick();
     profileSaved.value = true;
     toast.success('Profile saved');
@@ -82,29 +94,6 @@ async function saveProfile() {
     profileErrorElement.value?.focus();
   } finally {
     savingProfile.value = false;
-    saveControllers.delete(request);
-  }
-}
-
-async function savePreferences() {
-  if (savingPreferences.value || !preferredgenres.value.length || !preferencesChanged.value) return;
-  const request = new AbortController();
-  saveControllers.add(request);
-  savingPreferences.value = true;
-  preferencesError.value = '';
-  try {
-    const response = await api('/customer/preferences', {
-      method: 'PATCH', body: { preferredgenres: preferredgenres.value }, signal: request.signal,
-    });
-    if (request.signal.aborted) return;
-    account.value.preferredgenres = response.preferredgenres;
-    preferredgenres.value = [...response.preferredgenres];
-    auth.updateUser({ preferredgenres: response.preferredgenres });
-    toast.success('Favourite genres saved');
-  } catch (error) {
-    if (!request.signal.aborted) preferencesError.value = error.message;
-  } finally {
-    savingPreferences.value = false;
     saveControllers.delete(request);
   }
 }
@@ -122,7 +111,7 @@ async function savePassword() {
     confirmationTouched.value = false;
     await nextTick();
     passwordSaved.value = true;
-    toast.success('Password updated');
+    toast.success('Password saved');
   } catch (error) {
     if (request.signal.aborted) { return; }
     passwordError.value = error.message;
@@ -163,7 +152,7 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
       <Button @click="loadAccount" :loading="loading"><AppIcon name="refresh" /><span class="sr-only">Try again</span></Button>
     </div>
     <div v-else-if="account" class="account-workspace">
-      <aside class="account-rail" aria-label="Account navigation">
+      <aside aria-label="Account navigation">
         <div class="identity">
           <span class="avatar" aria-hidden="true">{{ initials }}</span>
           <div class="identity-details">
@@ -173,11 +162,9 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
         </div>
         <div class="section-nav" role="tablist" aria-orientation="vertical" aria-label="Account sections" @keydown="navigateTabs">
           <button id="profile-tab" ref="profileTab" type="button" role="tab" :data-active="activePanel === 'profile' ? true : undefined" :aria-selected="activePanel === 'profile'" aria-controls="profile-panel" :tabindex="activePanel === 'profile' ? 0 : -1" @click="activePanel = 'profile'">
-            <HugeiconsIcon :icon="UserIcon" class="size-4" aria-hidden="true" />
             Profile
           </button>
           <button id="password-tab" ref="passwordTab" type="button" role="tab" :data-active="activePanel === 'password' ? true : undefined" :aria-selected="activePanel === 'password'" aria-controls="password-panel" :tabindex="activePanel === 'password' ? 0 : -1" @click="activePanel = 'password'">
-            <HugeiconsIcon :icon="LockKeyIcon" class="size-4" aria-hidden="true" />
             Password
           </button>
         </div>
@@ -186,13 +173,10 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
       <div class="account-content">
         <section v-show="activePanel === 'profile'" id="profile-panel" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
           <header class="panel-heading">
-            <div class="panel-title">
-              <span class="section-icon"><HugeiconsIcon :icon="UserIcon" class="size-4" aria-hidden="true" /></span>
-              <h2>Profile</h2>
-            </div>
-            <p>your name &amp; the email you use to sign in</p>
+            <h2>Profile</h2>
+            <p>your name and email you use to sign in</p>
           </header>
-          <form :aria-busy="savingProfile" @submit.prevent="saveProfile">
+          <form class="space-y-2.5" :aria-busy="savingProfile" @submit.prevent="saveProfile">
             <p v-if="profileError" ref="profileErrorElement" class="form-error" role="alert" tabindex="-1">
               {{ profileError }}
             </p>
@@ -202,60 +186,50 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
             </div>
             <div class="account-field">
               <label for="account-email">Email address</label>
-              <Input id="account-email" v-model="draft.email" type="email" autocomplete="email" maxlength="200" required :disabled="savingProfile" :aria-invalid="emailInvalid || undefined" aria-describedby="account-email-help" @blur="emailTouched = true" />
-              <p id="account-email-help" class="field-note" :class="{ 'invalid-note': emailInvalid }">
-                {{ emailInvalid ? 'Enter a valid email address.' : 'Use this email to sign in.' }}
+              <Input id="account-email" v-model="draft.email" type="email" autocomplete="email" maxlength="200" required :disabled="savingProfile" :aria-invalid="emailInvalid || undefined" :aria-describedby="emailInvalid ? 'account-email-help' : undefined" @blur="emailTouched = true" />
+              <p v-if="emailInvalid" id="account-email-help" class="field-note invalid-note">
+                Enter a valid email address
               </p>
             </div>
+            <GenrePicker id="preferences" v-model="preferredgenres" :disabled="savingProfile" />
+            <p v-if="!preferredgenres.length" class="field-note">Choose at least one genre to save your preferences</p>
             <footer class="form-footer">
-              <p role="status" :class="{ saved: profileSaved }">
-                {{ savingProfile ? 'Saving your details…' : profileSaved ? 'Profile saved' : changed ? 'You have unsaved changes' : 'No unsaved changes' }}
+              <p v-show="savingProfile || profileSaved" role="status" :class="{ saved: profileSaved }">
+                {{ savingProfile ? 'Saving your details…' : profileSaved ? 'Profile saved' : '' }}
               </p>
-              <Button type="submit" :disabled="!canSaveProfile" :loading="savingProfile"><AppIcon name="save" />
-                {{ savingProfile ? 'Updating…' : 'Update' }}
+              <Button type="submit" class="w-full" :disabled="!canSaveProfile" :loading="savingProfile" aria-label="Save profile">
+                <AppIcon name="save" />
               </Button>
             </footer>
-          </form>
-          <form id="preferences" :aria-busy="savingPreferences" @submit.prevent="savePreferences">
-            <GenrePicker v-model="preferredgenres" :disabled="savingPreferences" />
-            <p v-if="preferencesError" role="alert" class="form-error">{{ preferencesError }}</p>
-            <p v-if="!preferredgenres.length" class="field-note">Choose at least one genre to save your preferences.</p>
-            <Button type="submit" :disabled="savingPreferences || !preferredgenres.length || !preferencesChanged" :loading="savingPreferences"><AppIcon name="save" />
-              {{ savingPreferences ? 'Saving…' : 'Save genres' }}
-            </Button>
           </form>
         </section>
 
         <section v-show="activePanel === 'password'" id="password-panel" role="tabpanel" aria-labelledby="password-tab" tabindex="0">
           <header class="panel-heading">
-            <div class="panel-title">
-              <span class="section-icon"><HugeiconsIcon :icon="LockKeyIcon" class="size-4" aria-hidden="true" /></span>
-              <h2>Change password</h2>
-            </div>
-            <p>Use at least 8 characters.</p>
+            <h2>Change password</h2>
+            <p id="password-hint">use at least 8 characters</p>
           </header>
-          <form :aria-busy="savingPassword" @submit.prevent="savePassword">
+          <form class="space-y-2.5" :aria-busy="savingPassword" @submit.prevent="savePassword">
             <p v-if="passwordError" ref="passwordErrorElement" class="form-error" role="alert" tabindex="-1">
               {{ passwordError }}
             </p>
             <div class="account-field">
               <label for="account-new-password">New password</label>
               <AppPasswordInput label="new password" id="account-new-password" v-model="passwords.password"  autocomplete="new-password" minlength="8" required :spellcheck="false" autocapitalize="none" :disabled="savingPassword" aria-describedby="password-hint" />
-              <p id="password-hint" class="field-note">Use at least 8 characters.</p>
             </div>
             <div class="account-field">
               <label for="account-confirm-password">Confirm new password</label>
               <AppPasswordInput label="confirmation password" id="account-confirm-password" v-model="passwords.confirmation"  autocomplete="new-password" required :spellcheck="false" autocapitalize="none" :disabled="savingPassword" :aria-invalid="mismatch || undefined" aria-describedby="password-feedback" @blur="confirmationTouched = true" />
-              <p id="password-feedback" class="field-note" :class="{ 'invalid-note': mismatch }" aria-live="polite">
+              <p v-show="mismatch || passwords.confirmation && canSavePassword" id="password-feedback" class="field-note" :class="{ 'invalid-note': mismatch }" aria-live="polite">
                 {{ mismatch ? 'Passwords don’t match.' : passwords.confirmation && canSavePassword ? 'Passwords match.' : '' }}
               </p>
             </div>
             <footer class="form-footer">
-              <p role="status" :class="{ saved: passwordSaved }">
-                {{ savingPassword ? 'Updating your password…' : passwordSaved ? 'Password updated' : canSavePassword ? 'Ready to update your password' : 'Enter and confirm a new password' }}
+              <p v-show="savingPassword || passwordSaved" role="status" :class="{ saved: passwordSaved }">
+                {{ savingPassword ? 'Saving your password…' : passwordSaved ? 'Password saved' : '' }}
               </p>
-              <Button type="submit" :disabled="!canSavePassword" :loading="savingPassword"><AppIcon name="save" />
-                {{ savingPassword ? 'Updating…' : 'Update' }}
+              <Button type="submit" class="w-full" :disabled="!canSavePassword" :loading="savingPassword" aria-label="Save password">
+                <AppIcon name="save" />
               </Button>
             </footer>
           </form>

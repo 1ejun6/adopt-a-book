@@ -7,8 +7,6 @@ export const buttonVariants = ({ variant, size } = {}) =>
     'inline-flex items-center justify-center min-h-11 min-w-11 gap-2 rounded-lg px-4 py-2 text-sm lowercase',
     variant === 'destructive'
       ? 'border border-destructive bg-transparent text-destructive hover:bg-destructive/10'
-      : variant === 'outline'
-      ? 'hover:bg-primary data-[active]:bg-primary border bg-transparent'
       : 'hover:bg-primary data-[active]:bg-primary border bg-transparent',
     size === 'sm' && 'px-3',
   );

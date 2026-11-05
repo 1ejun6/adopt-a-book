@@ -88,8 +88,7 @@ async function saveDetails() {
           <Field>
             <FieldLabel for="account-email">Email address</FieldLabel>
             <Input id="account-email" v-model="draft.email" type="email" autocomplete="email" maxlength="200"
-              aria-describedby="account-email-help" required :disabled="saving" />
-            <p id="account-email-help" class="text-sm text-muted-foreground">Use this email to sign in.</p>
+              required :disabled="saving" />
           </Field>
         </div>
         <section class="space-y-4">
@@ -119,8 +118,8 @@ async function saveDetails() {
           </div>
         </section>
         <div class="space-y-2 pt-1">
-          <Button type="submit" class="w-full" :disabled="!canSave" :loading="saving"><AppIcon name="save" />
-            {{ saving ? 'Saving…' : 'Save changes' }}
+          <Button type="submit" class="w-full" :disabled="!canSave" :loading="saving">
+            {{ saving ? 'saving…' : 'save' }}
           </Button>
           <p class="text-center text-sm text-muted-foreground" role="status">
             {{ saving ? 'Updating your account…' : changed || passwordChanged ? 'Changes ready to save' : 'No changes yet' }}

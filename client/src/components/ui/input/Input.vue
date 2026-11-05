@@ -30,7 +30,7 @@ defineExpose({ input, focus: () => input.value?.focus() });
 <template>
   <div data-slot="input-wrapper" :class="cn('relative min-w-0 rounded-lg border bg-transparent text-base', props.class)">
     <input ref="input" v-model="modelValue" v-bind="attrs" data-slot="input" :class="cn(
-      'block min-h-11 w-full min-w-0 rounded-lg border-0 bg-transparent px-3 text-base placeholder:text-muted-foreground',
+      'block min-h-11 w-full rounded-lg bg-transparent px-3 placeholder:text-muted-foreground',
       clearable && (nativeControls || clearButtonClass ? 'pr-22' : 'pr-11'),
     )" />
     <AppInputClear v-if="clearable" :disabled="!hasValue || attrs.disabled !== undefined && attrs.disabled !== false || attrs.readonly !== undefined && attrs.readonly !== false"
@@ -42,5 +42,4 @@ defineExpose({ input, focus: () => input.value?.focus() });
 <style scoped>
 [data-slot='input-wrapper']:has(input[aria-invalid='true']) { border-color: var(--destructive); }
 input[type='search']::-webkit-search-cancel-button { -webkit-appearance: none; }
-input::-ms-clear, input::-ms-reveal { display: none; }
 </style>

@@ -4,6 +4,12 @@
 }
 .account-heading > p {
   margin-top: 8px;
+}
+.account-heading > p,
+.identity-email,
+.panel-heading > p,
+.field-note,
+.form-footer p {
   font-size: 0.875rem;
   color: var(--muted-foreground);
 }
@@ -29,8 +35,11 @@
   background: var(--primary);
   font: 24px var(--font-heading);
 }
-.identity-details {
+.identity-details,
+.account-content {
   min-width: 0;
+}
+.identity-details {
   overflow-wrap: anywhere;
 }
 .identity-name {
@@ -39,8 +48,6 @@
 }
 .identity-email {
   margin-top: 3px;
-  font-size: 0.875rem;
-  color: var(--muted-foreground);
 }
 .section-nav {
   display: flex;
@@ -49,57 +56,34 @@
   border-bottom: 0;
 }
 .section-nav [role='tab'] {
-  display: flex;
-  align-items: center;
   justify-content: flex-start;
   text-align: left;
-  width: 100%;
-}
-.account-content {
-  min-width: 0;
-}
-.panel-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 .panel-heading > p {
   margin-top: 8px;
   margin-bottom: 24px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
-  font-size: 0.875rem;
   line-height: 1.6;
-  color: var(--muted-foreground);
 }
 .account-field {
   display: grid;
   gap: 8px;
 }
-.account-field label {
+.account-field label,
+.form-error,
+.error-state {
   font-size: 0.875rem;
 }
 .field-note {
-  font-size: 0.875rem;
   line-height: 1.5;
-  color: var(--muted-foreground);
 }
 .invalid-note {
   color: var(--destructive);
 }
 .form-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-.form-footer p {
-  font-size: 0.875rem;
-  color: var(--muted-foreground);
+  display: grid;
+  gap: 10px;
 }
 .form-footer .saved {
   color: var(--success-foreground);
@@ -109,7 +93,6 @@
   border-radius: 8px;
   background: var(--badge-purple);
   color: var(--destructive);
-  font-size: 0.875rem;
 }
 .loading-state {
   display: grid;
@@ -119,7 +102,6 @@
   display: grid;
   justify-items: start;
   gap: 16px;
-  font-size: 0.875rem;
 }
 @media (max-width: 700px) {
   .account-workspace {
@@ -129,7 +111,6 @@
     display: none;
   }
   .section-nav {
-    display: flex;
     margin-bottom: 24px;
   }
 }

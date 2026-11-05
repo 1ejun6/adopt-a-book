@@ -6,6 +6,3 @@ export { default as NavigationMenuLink } from './NavigationMenuLink.vue';
 export { default as NavigationMenuList } from './NavigationMenuList.vue';
 export { default as NavigationMenuTrigger } from './NavigationMenuTrigger.vue';
 export { default as NavigationMenuViewport } from './NavigationMenuViewport.vue';
-
-export const navigationMenuTriggerStyle = () =>
-  'hover:bg-primary data-[active]:bg-primary inline-flex min-h-11 items-center rounded-lg px-4 text-sm';

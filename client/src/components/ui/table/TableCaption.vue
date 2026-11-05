@@ -7,7 +7,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <caption data-slot="table-caption" :class="cn('mt-4 text-sm text-muted-foreground', props.class)">
+  <caption data-slot="table-caption" :class="cn('mt-4 text-muted-foreground', props.class)">
     <slot />
   </caption>
 </template>
