@@ -35,7 +35,7 @@ test('guest tries to rsvp, creates an account and is sent to login', async ({ pa
   const register = page.getByRole('button', { name: /Register/ })
   await register.click()
   await expect(page.getByRole('button', { name: 'Registering…' })).toBeVisible()
-  await expect(toast(page, 'account created > log in to continue')).toBeVisible()
+  await expect(toast(page, 'registration successful')).toBeVisible()
   await expect(page).toHaveURL('/login')
 
   // 5. goes back to a drive, clicks rsvp, then log in

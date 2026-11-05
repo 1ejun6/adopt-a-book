@@ -1,4 +1,12 @@
 node_modules/
+.pnpm-store/
 .env
 .DS_Store
 rawr/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

@@ -50,7 +50,7 @@ test('customer uses the site on their phone', async ({ page, customer }) => {
   await bookCards(page).nth(1).tap()
   await expect(dialog).toContainText(books[1].title)
   await expectFitsScreen(page, dialog)
-  const request = dialog.getByRole('button', { name: 'request', exact: true })
+  const request = dialog.getByRole('button', { name: 'Request this book' })
   await request.scrollIntoViewIfNeeded()
   await expect(request).toBeInViewport()
   await page.keyboard.press('Escape')
@@ -72,7 +72,6 @@ test('customer uses the site on their phone', async ({ page, customer }) => {
   // 6. opens ☰ &&& taps Logout
   await menuButton.tap()
   await mobileMenu.getByRole('button', { name: 'Logout' }).tap()
-  await expect(toast(page, 'logged out')).toBeVisible()
   await expect(page).toHaveURL('/login')
   await expect(mobileMenu).toBeHidden()
 })

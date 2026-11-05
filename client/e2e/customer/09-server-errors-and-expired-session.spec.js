@@ -51,12 +51,12 @@ test.describe('🔌 customer recovers when the server is down', () => {
   // 4. opens My Adoptions while the server is down
   test('my adoptions', async ({ page, customer }) => {
     await page.route(isApi('/applications'), serverDown)
-    await page.goto('/customer/adoptions')
+    await page.goto('/customer/adoption')
     await expect(page.getByText('server unavailable')).toBeVisible()
 
     await page.unroute(isApi('/applications'))
-    await page.getByRole('button', { name: 'Try Again' }).click()
-    await expect(page.getByText('No active requests yet')).toBeVisible()
+    await page.getByRole('button', { name: 'Try again' }).click()
+    await expect(page.getByText('No active adoptions')).toBeVisible()
   })
 
   // 5. opens Account while the server is down
@@ -67,8 +67,8 @@ test.describe('🔌 customer recovers when the server is down', () => {
     await expect(error).toContainText('server unavailable')
 
     await page.unroute(isApi('/customer/profile'))
-    await error.getByRole('button', { name: 'Try Again' }).click()
-    await expect(page.getByRole('heading', { name: customer.name, level: 2 })).toBeVisible()
+    await error.getByRole('button', { name: 'Try again' }).click()
+    await expect(page.locator('aside.account-rail .identity-name')).toHaveText(customer.name)
   })
 
   // 6. opens Adoption Drives while the server is down
@@ -95,23 +95,23 @@ test.describe('🔌 customer recovers when the server is down', () => {
     const dialog = page.getByRole('dialog', { name: 'Book details' })
     const error = toast(page, 'server unavailable')
     await expect(error).toBeVisible()
-    await expect(dialog.getByRole('button', { name: 'request', exact: true })).toHaveCount(0)
+    await expect(dialog.getByRole('button', { name: 'Request this book' })).toHaveCount(0)
 
     await page.unroute(isDetails)
-    await error.getByRole('button', { name: 'retry' }).click()
+    await error.getByRole('button', { name: 'Retry' }).click()
     await expect(dialog).toContainText(books[0].title)
-    await expect(dialog.getByRole('button', { name: 'request', exact: true })).toBeVisible()
+    await expect(dialog.getByRole('button', { name: 'Request this book' })).toBeVisible()
   })
 })
 
-//@ChitanyaBharathi > no faking needed > clearing the cookies is exactly what an expired session looks like
+//@brod > no faking needed > clearing cookies simulates session expiry > navigating to protected page redirects to login
 test('customer whose session expires is sent to login', async ({ page, context, customer }) => {
   await page.goto('/customer/watchlist')
   await expect(page.getByRole('heading', { name: 'My Watchlist' })).toBeVisible()
 
-  // 8. their session expires &&& they click to another page
+  // 8. their session expires &&& they navigate to a protected page
   await context.clearCookies()
-  await page.getByRole('banner').getByRole('link', { name: 'My Adoptions' }).click()
+  await page.goto('/customer/adoption')
   await expect(page).toHaveURL('/login')
   await expect(navLinks(page)).toHaveText(guestNavLinks)
 })

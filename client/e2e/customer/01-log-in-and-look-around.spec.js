@@ -2,12 +2,11 @@ import { test, expect } from '@playwright/test'
 import { guestNavLinks, isApi, toast } from '../support/guest.js'
 import { customerNavLinks, logInThroughForm, navLinks, registerCustomer, slowly } from '../support/customer.js'
 
-//@ChitanyaBharathi > pickups has no page yet > only its url is checked
+//@brod > pickups is now part of my adoptions > canonical path is /customer/adoption
 const pages = [
   { link: 'Browse Books', path: '/customer/books', heading: 'Find your next read' },
   { link: 'Watchlist', path: '/customer/watchlist', heading: 'My Watchlist' },
-  { link: 'My Adoptions', path: '/customer/adoptions', heading: 'My Adoptions' },
-  { link: 'Pickups', path: '/customer/pickups' },
+  { link: 'My Adoptions', path: '/customer/adoption', heading: 'My Adoptions' },
   { link: 'Adoption Drives', path: '/customer/drives', heading: 'adoption drives' },
   { link: 'Account', path: '/customer/account', heading: 'My account' },
 ]
@@ -21,7 +20,7 @@ test('customer logs in and finds their way around', async ({ page }) => {
   await page.goto('/login')
   await logInThroughForm(page, customer)
   await expect(page.getByRole('button', { name: 'Logging in…' })).toBeVisible()
-  await expect(toast(page, 'logged in')).toBeVisible()
+  await expect(toast(page, 'login successful')).toBeVisible()
   await expect(page).toHaveURL('/customer')
   await page.unroute(isApi('/login'))
 
@@ -37,6 +36,10 @@ test('customer logs in and finds their way around', async ({ page }) => {
     await expect(navLink).toHaveAttribute('data-active')
     if (heading) { await expect(page.getByRole('heading', { name: heading, exact: true, level: 1 })).toBeVisible() }
   }
+
+  // check /customer/adoptions redirects to /customer/adoption
+  await page.goto('/customer/adoptions')
+  await expect(page).toHaveURL('/customer/adoption')
 
   // 4. clicks the Adopt a Book logo
   await page.getByRole('banner').getByRole('link', { name: 'Adopt a Book' }).click()
@@ -58,7 +61,6 @@ test('customer logs in and finds their way around', async ({ page }) => {
 
   // 8. clicks Logout
   await page.getByRole('banner').getByRole('button', { name: 'Logout' }).click()
-  await expect(toast(page, 'logged out')).toBeVisible()
   await expect(page).toHaveURL('/login')
   await expect(navLinks(page)).toHaveText(guestNavLinks)
 

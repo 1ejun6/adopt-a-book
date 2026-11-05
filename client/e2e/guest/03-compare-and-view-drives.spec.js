@@ -129,7 +129,7 @@ test.describe('🔌 drives the seed does not have', () => {
 
     await expect(driveCards(page)).toHaveCount(10)
     await expect(page.getByText('1–10 of 12 adoption drives')).toBeVisible()
-    await page.getByRole('button', { name: 'Next Page' }).click()
+    await page.getByRole('button', { name: 'Next page' }).click()
     await expect(driveTitles(page)).toHaveText(['drive 11', 'drive 12'])
     await expect(page.getByText('Page 2 of 2')).toBeVisible()
 

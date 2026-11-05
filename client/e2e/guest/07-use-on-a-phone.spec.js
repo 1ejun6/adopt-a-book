@@ -60,10 +60,14 @@ test('guest uses the site on their phone', async ({ page }) => {
   await expect(page).toHaveURL('/register')
   await expect(mobileMenu).toBeHidden()
 
-  // 7. opens ☰ &&& taps ✕
+  // 7. opens ☰ &&& taps ✕ (or presses Esc)
   await menuButton.tap()
   await expect(mobileMenu).toBeVisible()
   await menuButton.tap()
+  await expect(mobileMenu).toBeHidden()
+  await menuButton.tap()
+  await expect(mobileMenu).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(mobileMenu).toBeHidden()
   await expect(page).toHaveURL('/register')
 })

@@ -8,7 +8,8 @@ test('guest is sent to login from every members-only page', async ({ page }) => 
   for (const path of [
     '/customer/watchlist',        // 1. watchlist
     '/customer/books?search=dune', // 2. a shared browse link
-    '/customer/adoptions',        // 3. my adoptions
+    '/customer/adoption',         // 3. my adoptions
+    '/customer/adoptions',        // 3. legacy my adoptions redirect
     '/customer/account',          // 3. account
     '/admin/books',               // 4. admin inventory
   ]) {

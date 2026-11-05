@@ -15,11 +15,19 @@ export async function callApi(request, method, path, data) {
 
 let accountNumber = 0
 //@ChitanyaBharathi > a brand new customer > empty watchlist, no requests, no rsvps
+//@brod > retries on rate limits so parallel workers do not fail registration
 export async function registerCustomer(request, name = 'Book Reader') {
-  accountNumber += 1
-  const email = `e2e-customer-${Date.now()}-${accountNumber}-${Math.random().toString(36).slice(2, 8)}@example.com`
-  await callApi(request, 'POST', '/register', { name, email, password: customerPassword })
-  return { name, email, password: customerPassword }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      accountNumber += 1
+      const email = `e2e-customer-${Date.now()}-${accountNumber}-${Math.random().toString(36).slice(2, 8)}@example.com`
+      const result = await callApi(request, 'POST', '/register', { name, email, password: customerPassword })
+      return { id: result?.user?.id, name, email, password: customerPassword }
+    } catch (err) {
+      if (attempt === 2) throw err
+      await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)))
+    }
+  }
 }
 
 //@ChitanyaBharathi > page.request shares cookies with the page > call this before the first page.goto()
@@ -35,17 +43,17 @@ export const test = base.extend({
     await use(customer)
   },
   //@ChitanyaBharathi > the seeded demo customer, already logged in > read only, never log them out
+  //@brod > skip gracefully if credentials are not configured in root .env
   demoCustomer: async ({ page }, use) => {
-    if (!demoCustomer.email || !demoCustomer.password) {
-      throw new Error('journey 2.6 needs e2e_customer_email and e2e_customer_password in the root .env')
-    }
+    test.skip(!demoCustomer.email || !demoCustomer.password, 'journey 2.6 needs e2e_customer_email and e2e_customer_password in the root .env')
     await logIn(page.request, demoCustomer)
     await use(demoCustomer)
   },
 })
 export { expect }
 
-export const customerNavLinks = ['Browse Books', 'Watchlist', 'My Adoptions', 'Pickups', 'Adoption Drives', 'Account']
+//@brod > pickups was merged into my adoptions > 5 customer links in the navbar
+export const customerNavLinks = ['Browse Books', 'Watchlist', 'My Adoptions', 'Adoption Drives', 'Account']
 export const navLinks = page => page.getByRole('banner').getByRole('link').filter({ hasNotText: 'Adopt a Book' })
 
 //@ChitanyaBharathi > browse books asks for 16 per page > the drive cards ask for 1 \ 5
@@ -56,7 +64,8 @@ export const bookCards = page => page.getByRole('main').locator('article[aria-ha
 export const bookCard = (page, title) => bookCards(page).filter({ has: page.getByText(title, { exact: true }) }).first()
 export const bookTitles = page => bookCards(page).locator('strong')
 export const booksFound = (page, count) => page.getByText(new RegExp(`^\\s*${count}\\s+books\\s+found\\s*$`))
-export const searchBox = page => page.getByRole('searchbox', { name: 'search', exact: true })
+//@brod > searchbox placeholder and aria-label are "Search by title, author or ISBN..." > distinguishes from location search
+export const searchBox = page => page.getByRole('searchbox', { name: /Search by title/i })
 export const genreSelect = page => page.locator('select').filter({ has: page.locator('option', { hasText: 'All genres' }) })
 export const bookSortSelect = page => page.locator('select').filter({ has: page.locator('option', { hasText: 'Title A–Z' }) })
 export const saveButton = card => card.getByRole('button', { name: /^(Save to|Remove from) watchlist$/ })
@@ -102,14 +111,48 @@ let fakeId = 0
 export function fakeApplication(status, changes = {}) {
   fakeId += 1
   const id = `00000000-0000-4000-9000-${String(fakeId).padStart(12, '0')}`
+  const userUuid = changes.userid || '00000000-0000-4000-b000-000000000001'
   return {
     id,
     status,
     createdat: new Date().toISOString(),
-    bookid: { id: `00000000-0000-4000-a000-${String(fakeId).padStart(12, '0')}`, title: `${status} book ${fakeId}`, authors: ['someone'], coverurl: '' },
+    userid: typeof userUuid === 'object' ? userUuid : { id: userUuid, name: 'Reader' },
+    bookid: {
+      id: `00000000-0000-4000-a000-${String(fakeId).padStart(12, '0')}`,
+      title: `${status} book ${fakeId}`,
+      authors: ['someone'],
+      coverurl: '',
+      status: status === 'approved' ? 'reserved' : 'available',
+      condition: 'Good',
+      collectionarea: 'Jurong East MRT',
+    },
     ...changes,
   }
 }
+
+//@brod > an appointment shaped like a /appointments response item > for 🔌 journeys
+let fakeAppointmentId = 0
+export function fakeAppointment(status = 'pending confirmation', changes = {}) {
+  fakeAppointmentId += 1
+  const id = `00000000-0000-4000-c000-${String(fakeAppointmentId).padStart(12, '0')}`
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' })
+  return {
+    id,
+    userid: '00000000-0000-4000-b000-000000000001',
+    bookid: `00000000-0000-4000-a000-${String(fakeAppointmentId).padStart(12, '0')}`,
+    booktitle: `fake book ${fakeAppointmentId}`,
+    location: 'Jurong East MRT',
+    appointmentdate: tomorrow,
+    timeslot: '10:30–11:00',
+    status,
+    createdat: new Date().toISOString(),
+    ...changes,
+  }
+}
+
+//@brod > adoption row on my adoptions > clickable row button for a book
+export const adoptionRows = page => page.locator('button.adoption-row')
+export const adoptionRow = (page, title) => adoptionRows(page).filter({ hasText: title }).first()
 
 //@ChitanyaBharathi > a section on my adoptions, found by its heading > last() skips the page's own outer section
 export const adoptionSection = (page, title) => page.locator('section').filter({ has: page.getByRole('heading', { name: title, exact: true }) }).last()
