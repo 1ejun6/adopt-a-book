@@ -1,4 +1,5 @@
 const { z } = require("zod");
+const genres = require("../../shared/genres.json");
 const stations = require("./mrtstations");
 const { readall } = require("./query");
 const { thumbnailurl } = require("../utils/bookcovers");
@@ -8,7 +9,7 @@ const bookschema = z.object({
   title: z.string().trim().min(1, "title is required"),
   authors: z.array(z.string().trim()).default([]),
   isbn: z.string().trim().optional().nullable(),
-  subjects: z.array(z.string().trim()).default([]),
+  subjects: z.array(z.enum(genres, { error: "choose a valid subject" })).max(1, "enter only one subject").default([]),
   publicationyear: z.coerce.number().int().optional().nullable(),
   description: z.string().default(""),
   coverurl: z.string().trim().optional().nullable().or(z.literal("")),
@@ -23,7 +24,7 @@ const bookschema = z.object({
 
 const bookupdateschema = bookschema.omit({ source: true, createdby: true, ownerid: true, status: true }).partial().extend({
   authors: bookschema.shape.authors.removeDefault().optional(),
-  subjects: bookschema.shape.subjects.removeDefault().optional(),
+  subjects: z.array(z.enum(genres, { error: "choose a valid subject" })).length(1, "subject is required").optional(),
   description: bookschema.shape.description.removeDefault().optional()
 }).strict().refine((fields) => Object.keys(fields).length > 0, "provide at least one field");
 

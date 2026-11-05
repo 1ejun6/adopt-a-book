@@ -102,7 +102,7 @@ function preventClosing(event) {
             {{
               applicationStatus === 'approved'
                 ? 'Your adoption is approved. View your request to check pickup arrangements.'
-                : 'Under review. Arrange pickup after approval.'
+                : 'The team is reviewing your request. Check My Adoptions for approval before arranging pickup.'
             }}
           </p>
           <p v-if="receiptWarning" class="text-sm text-muted-foreground" role="status">

@@ -157,10 +157,12 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
         </div>
       </div>
       <p class="sr-only" role="status" aria-live="polite">{{ announcement }}</p>
+      <RouterLink v-if="loading || error || selection.length" :to="{ name: 'customerBooks' }" class="inline-flex min-h-11 items-center text-sm underline underline-offset-4">Browse all books</RouterLink>
     </section>
     <section aria-labelledby="saved-heading" class="saved-section">
       <div v-if="savedLoading || savedError || !entries.length" class="section-heading">
         <h2 id="saved-heading">Saved books</h2>
+        <Button asChild variant="outline"><RouterLink :to="{ name: 'customerWatchlist' }">View saved books</RouterLink></Button>
       </div>
       <div
         v-if="savedLoading"

@@ -47,10 +47,10 @@ const viewTabs = [
 //@lee-hlmilk > dashboard links choose the initial queue through navigation state > keep the URL clean
 const filters = reactive({ search: '', date: '', view: viewTabs.some(tab => tab.value === navigation.view) ? navigation.view : 'awaiting', status: 'all' });
 const columns = [
-    { key: 'customer', label: 'Customer', class: 'w-1/5' },
-    { key: 'book', label: 'Requested copy' },
+    { key: 'customer', label: 'Customer', class: 'w-1/5', mobileClass: 'col-span-2 flex items-baseline gap-2' },
+    { key: 'book', label: 'Requested copy', mobileClass: 'col-start-1 row-start-1', hideMobileLabel: true },
     { key: 'collection', label: 'Collection', class: 'w-1/4' },
-    { key: 'status', label: 'Status', class: 'w-48' }
+    { key: 'status', label: 'Status', class: 'w-48', mobileClass: 'col-start-2 row-start-1', hideMobileLabel: true }
 ];
 const emptyTitles = {
     awaiting: 'No appointments awaiting confirmation',
@@ -207,7 +207,7 @@ fetchAppointments().then(loadAppointmentLink);
         </template>
         <template #cellCustomer="{ row }">
             <p class="break-words lg:truncate">{{ row.customer }}</p>
-            <small class="block break-words lg:truncate text-sm text-muted-foreground">{{ row.email || 'Email not provided' }}</small>
+            <small class="hidden truncate text-sm text-muted-foreground lg:block">{{ row.email || 'Email not provided' }}</small>
         </template>
         <template #cellBook="{ row }">
             <BookIdentity :title="row.booktitle" :author="row.book?.authors?.join(', ') || 'Unknown Author'" :cover="row.book?.coverurl" />
@@ -216,7 +216,7 @@ fetchAppointments().then(loadAppointmentLink);
             <p>{{ formatDate(row.appointmentdate) }} · {{ row.status === 'pending confirmation' && row.optionsby === 'customer' ? 'Three times proposed' : row.timeslot }}</p>
             <p class="text-muted-foreground">{{ row.location }}</p>
         </template>
-        <template #cellStatus="{ value, row }"><StatusBadge :status="value" /><p v-if="value === 'pending confirmation' && pendingPickupState(row, currentTime) !== 'awaiting'" class="text-sm text-destructive">Needs attention: no future pickup time or incomplete details</p><p v-else-if="value === 'pending confirmation' && row.pickupoptions?.length" class="text-sm text-muted-foreground">Select a proposed time</p></template>
+        <template #cellStatus="{ value, row }"><StatusBadge :status="value" /><p v-if="value === 'pending confirmation' && pendingPickupState(row, currentTime) !== 'awaiting'" class="hidden text-sm text-destructive lg:block">Needs attention: no future pickup time or incomplete details</p><p v-else-if="value === 'pending confirmation' && row.pickupoptions?.length" class="hidden text-sm text-muted-foreground lg:block">Select a proposed time</p></template>
         <template #empty>
             <h2>{{ hasFilters ? 'No matching appointments' : emptyTitles[filters.view] }}</h2>
             <p class="text-sm text-muted-foreground">{{ hasFilters ? emptyFilterHint : 'Pickup bookings will appear in their corresponding view.' }}</p>

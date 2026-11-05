@@ -58,6 +58,7 @@ const createbook = async (req, res) => {
   };
   try {
     require("../utils/validation").rejectfields(req.body, ["title", "authors", "isbn", "subjects", "publicationyear", "description", "coverurl", "openlibraryid", "condition", "mrtstationid", "source"]);
+    if (formdata.source !== "open_library") formdata.subjects = book.bookupdateschema.shape.subjects.unwrap().parse(formdata.subjects);
     if (formdata.source === "open_library") {
       formdata.subjects = openlibrary.generalgenres(formdata.subjects);
       if (formdata.openlibraryid && typeof formdata.description === "string" && !formdata.description.trim()) {

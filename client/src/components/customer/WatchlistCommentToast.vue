@@ -38,7 +38,7 @@ async function saveComment() {
     await store.updateComment(props.entry.id, comment.value.trim());
     emit('saved', { id: props.entry.id, comments: comment.value.trim() });
     dismiss();
-    toast.success('comment saved', { duration: 1000, style: { pointerEvents: 'auto' } });
+    toast.success('Note saved', { duration: 1000, style: { pointerEvents: 'auto' } });
   } catch (failure) {
     error.value = failure.message;
   } finally {
@@ -55,7 +55,7 @@ async function saveComment() {
         <HugeiconsIcon :icon="error ? CancelCircleIcon : editing ? PencilEdit02Icon : CheckmarkCircle02Icon" class="size-5 shrink-0"
           :class="error ? 'text-destructive' : 'text-success-foreground'" aria-hidden="true" />
         <div class="min-w-0 flex-1">
-          <p :role="error ? 'alert' : undefined">{{ error || (editing ? 'edit your note' : 'saved to watchlist') }}</p>
+          <p :role="error ? 'alert' : undefined">{{ error || (editing ? 'Edit your note' : 'Book saved') }}</p>
           <p class="truncate text-muted-foreground" :title="entry.bookid.title">{{ entry.bookid.title }}</p>
         </div>
         <button type="button" class="min-h-11 min-w-11 shrink-0 rounded-lg p-2" title="Dismiss" aria-label="Dismiss" @click="dismiss">
@@ -65,7 +65,7 @@ async function saveComment() {
       <form class="space-y-3" @submit.prevent="saveComment">
       <label class="block space-y-2">
       <span>Private note (optional)</span>
-      <textarea  v-model="comment" rows="3" maxlength="300" :disabled="busy" placeholder="Write a note about this book..."  class="block w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"/>
+      <textarea v-model="comment" rows="3" maxlength="300" :disabled="busy" placeholder="Write a note about this book..." class="block w-full rounded-md border bg-transparent px-3 py-2 text-base leading-relaxed" />
       </label>
       <div class="flex items-center justify-between gap-3">
         <p class="text-xs text-muted-foreground">
@@ -74,12 +74,8 @@ async function saveComment() {
       <Button type="submit" :disabled="busy">
         {{ busy ? 'Saving…' : 'Save note' }}
       </Button>
-  </div>
-</form>
-
-
-
-
+      </div>
+      </form>
     </div>
   </FocusScope>
 </template>

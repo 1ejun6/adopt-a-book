@@ -37,7 +37,7 @@ const findbyid = (userid) => many(supabase.from("adoptionapplications").select(s
 //@lee-hlmilk > admin list needs applicant email > customer queries retain their existing user fields
 const findall = () => many(supabase.from("adoptionapplications").select(selectwithrelations("id,name,email")));
 
-const findbyadoptionapplicationid = (id) => one(supabase.from("adoptionapplications").select(selectwithrelations()).eq("id", id));
+const findbyadoptionapplicationid = (id, userfields) => one(supabase.from("adoptionapplications").select(selectwithrelations(userfields)).eq("id", id));
 
 const findbyuserbookwithstatuses = (userid, bookid, statuses) => one(supabase.from("adoptionapplications").select("*").eq("userid", userid).eq("bookid", bookid).in("status", statuses));
 

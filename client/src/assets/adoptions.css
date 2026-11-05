@@ -19,8 +19,8 @@
 /* All adoption records share the same columns and action treatment. */
 .adoption-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: 'book action' 'status action' 'pickup action';
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'book' 'status' 'pickup' 'action';
   gap: 8px 12px;
   min-width: 0;
   width: 100%;
@@ -45,7 +45,6 @@
 .adoption-row__warning {
   margin-top: 4px;
   color: var(--destructive);
-  font-size: 0.75rem;
   line-height: 1.4;
 }
 .adoption-row__pickup {
@@ -58,7 +57,6 @@
 .adoption-row__mobile-label {
   flex-shrink: 0;
   color: var(--muted-foreground);
-  font-size: 0.75rem;
 }
 .adoption-row__date {
   overflow-wrap: anywhere;
@@ -75,16 +73,15 @@
 .adoption-row__action {
   grid-area: action;
   align-self: center;
-  justify-self: end;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--muted-foreground);
-  font-size: 0.8125rem;
-  white-space: nowrap;
 }
 .adoption-row__action-label {
-  display: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .adoption-column-headings {
   display: none;
@@ -100,11 +97,6 @@
     grid-template-areas: 'book status pickup action';
     align-items: center;
     min-height: 84px;
-  }
-  .adoption-row__action-label {
-    display: inline;
-    text-decoration: underline;
-    text-underline-offset: 4px;
   }
   .adoption-column-headings {
     color: var(--muted-foreground);

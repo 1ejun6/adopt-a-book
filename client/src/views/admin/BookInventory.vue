@@ -12,6 +12,7 @@ import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue'
 import BookIdentity from '@/components/shared/AppBookIdentity.vue'
 import StatusBadge from '@/components/shared/AppStatusBadge.vue'
 import { Button } from '@/components/ui/button'
+import genres from '../../../../shared/genres.json'
 
 const selectedBook = ref(null);
 //@1ejun6 > admin view shows book metadata > missing values stay visible instead of hiding rows
@@ -19,8 +20,6 @@ const bookFields = computed(() => {
     const book = selectedBook.value;
     if (!book) { return []; }
     return [
-        { label: 'Title', value: book.title },
-        { label: 'Authors', value: book.authors?.join(', ') || book.author },
         { label: 'Condition', value: book.condition },
         { label: 'Collection area', value: book.collectionarea || book.mrtstation?.name },
         { label: 'Subjects', value: book.subjects?.join(', ') },
@@ -53,7 +52,6 @@ const deleting = ref(false);
 let bookRequestId = 0;
 
 const filters = reactive({ search: '', status: 'all', genre: 'all' });
-const availableGenres = ref([]);
 const bookDetails = new Map(); //@1ejun6 > hashmap
 
 //@lee-hlmilk > share cached promise between details &&& edit > repeated opens reuse the same request
@@ -231,8 +229,7 @@ const { rows: books, page, pageSize, total, counts, pageCount, loading, loadErro
     busy: () => saving.value || deleting.value, endpoint: '/admin/books', filters, selectedIds,
     query: () => ({ search: filters.search, status: filters.status === 'all' ? undefined : filters.status, subject: filters.genre === 'all' ? undefined : filters.genre }),
     read: response => response.books.map(formatBook),
-    beforeLoad: () => { bookDetails.clear(); bookRequestId++; },
-    onResponse: response => { availableGenres.value = response.genres; }
+    beforeLoad: () => { bookDetails.clear(); bookRequestId++; }
 });
 
 //@lee-hlmilk > snapshot selected copies before deleting > retain available-only checks for single &&& bulk actions
@@ -276,9 +273,9 @@ const statusTabs = [
 ];
 
 const columns = [
-    { key: 'book', label: 'Book', class: 'w-3/5' },
-    { key: 'isbn', label: 'ISBN', class: 'w-1/5' },
-    { key: 'status', label: 'Status' }
+    { key: 'book', label: 'Book', class: 'w-3/5', mobileClass: 'col-start-1', hideMobileLabel: true },
+    { key: 'isbn', label: 'ISBN', class: 'w-1/5', mobileClass: 'col-span-2 flex items-baseline gap-2' },
+    { key: 'status', label: 'Status', mobileClass: 'col-start-2 row-start-1', hideMobileLabel: true }
 ];
 </script>
 <template>
@@ -295,7 +292,7 @@ const columns = [
         <template #filters>
             <select v-model="filters.genre" class="w-full min-w-0 rounded-lg border px-3 sm:w-auto text-base min-h-11">
                 <option value="all">All genres</option>
-                <option v-for="genre in availableGenres" :key="genre" :value="genre">{{ genre }}</option>
+                <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
             </select>
         </template>
         <template #selectionActions="{ onlyOne }">

@@ -62,7 +62,7 @@ export const useWatchlistStore = defineStore('watchlist', () => {
   }
   async function mutate(bookId, operation, endpoint, options, commit) {
     if (pendingOperations.value.has(bookId)) throw new Error('This book is already being updated');
-    if (loading.value || !loaded.value) throw new Error('Load your watchlist before updating it');
+    if (loading.value || !loaded.value) throw new Error('Load your saved books before updating them');
     const current = generation, controller = new AbortController();
     controllers.add(controller);
     pendingOperations.value.set(bookId, operation);

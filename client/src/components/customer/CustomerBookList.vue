@@ -44,7 +44,7 @@ async function toggleSave(book) {
     if (!result) return;
     if (result.removed) {
       toast.dismiss(`watchlist-comment-${book.id}`);
-      toast.success('removed from watchlist');
+      toast.success('Removed from saved books');
     } else showSavedToast(result.entry, trigger);
   } catch (error) { toast.error(error.message); }
 }

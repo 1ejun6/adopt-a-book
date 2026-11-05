@@ -71,11 +71,20 @@ h1, h2, h3, h4, h5, h6 {
   .washi-row[data-state='selected'] { background: var(--primary); }
 
   [role='tablist'] {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.25rem;
     min-width: 0;
     border-bottom: 1px solid var(--border);
+  }
+  [role='tablist'] > [role='tab']:first-child:nth-last-child(odd) {
+    grid-column: span 2;
+  }
+  @media (min-width: 640px) {
+    [role='tablist'] {
+      display: flex;
+      flex-wrap: wrap;
+    }
   }
   [role='tab'] {
     display: inline-flex;

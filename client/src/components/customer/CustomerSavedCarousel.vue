@@ -46,6 +46,9 @@ onBeforeUnmount(() => observer?.disconnect());
     <div class="header">
       <slot name="heading" />
       <div class="controls">
+        <Button asChild variant="outline">
+          <RouterLink :to="{ name: 'customerWatchlist' }">View saved books</RouterLink>
+        </Button>
         <Button
           variant="outline"
           aria-label="Previous saved books"
@@ -88,9 +91,11 @@ onBeforeUnmount(() => observer?.disconnect());
           />
           <span class="metadata">
             <span class="availability">{{
-              entry.bookid.status === 'available'
-                ? 'Available to request'
-                : 'Unavailable for new requests'
+              props.requestIds.get(entry.bookid.id)
+                ? 'Request sent'
+                : entry.bookid.status === 'available'
+                  ? 'Available to request'
+                  : 'Unavailable for new requests'
             }}</span>
             <span class="collection" :title="entry.bookid.collectionarea || entry.bookid.mrtstation?.name || 'Not provided'">Collection: {{ entry.bookid.collectionarea || entry.bookid.mrtstation?.name || 'Not provided' }}</span>
           </span>
@@ -118,6 +123,7 @@ onBeforeUnmount(() => observer?.disconnect());
 <style scoped>
 .header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;

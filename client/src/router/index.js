@@ -22,7 +22,7 @@ const router = createRouter({
       children: [
         { path: '', name: 'customerHome', component: () => import('../views/customer/Home.vue'), meta: { roles: ['customer'] } },
         { path: 'books', name: 'customerBooks', component: () => import('../views/customer/BrowseBooks.vue'), label: 'Browse Books', meta: { roles: ['customer'] } },
-        { path: 'watchlist', name: 'customerWatchlist', component: () => import('../views/customer/Watchlist.vue'), label: 'Watchlist', meta: { roles: ['customer'] } },
+        { path: 'watchlist', name: 'customerWatchlist', component: () => import('../views/customer/Watchlist.vue'), label: 'Saved books', meta: { roles: ['customer'] } },
         { path: 'adoptions', name: 'customerAdoptions', component: () => import('../views/customer/MyAdoptions.vue'), label: 'My Adoptions', meta: { roles: ['customer'] } },
         { path: 'drives', name: 'customerDrives', component: () => import('../views/customer/AdoptionDrives.vue'), label: 'Adoption Drives', meta: { roles: ['customer'] } },
         { path: 'account', name: 'customerAccount', component: () => import('../views/customer/Account.vue'), label: 'Account', meta: { roles: ['customer'] }, end: true },
@@ -32,7 +32,7 @@ const router = createRouter({
       path: '/admin',
       component: AppLayout,
       children: [
-        { path: '', name: 'adminHome', component: () => import('../views/admin/Home.vue'), label: 'Home', meta: { roles: ['admin'] } },
+        { path: '', name: 'adminHome', component: () => import('../views/admin/Home.vue'), label: 'Dashboard', meta: { roles: ['admin'] } },
         { path: 'books', name: 'adminBooks', component: () => import('../views/admin/BookInventory.vue'), label: 'Book Inventory', meta: { roles: ['admin'] } },
         { path: 'applications', name: 'adminApplications', component: () => import('../views/admin/AdoptionApplications.vue'), label: 'Adoption Applications', meta: { roles: ['admin'] } },
         { path: 'appointments', name: 'adminAppointments', component: () => import('../views/admin/Appointments.vue'), label: 'Appointments', meta: { roles: ['admin'] } },

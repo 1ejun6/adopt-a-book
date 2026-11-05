@@ -77,7 +77,7 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
         {
           key: 'arrange',
           title: 'Arrange a pickup',
-          description: 'Your book is approved. Choose a preferred meeting point and time.',
+          description: 'Your book is approved. Propose a meeting point, date and three available times.',
         },
         {
           key: 'confirmed',
@@ -95,7 +95,7 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
           key: 'review',
           title: 'Waiting for book approval',
           description:
-            'No action needed yet. You can arrange pickup once your request is approved.',
+            'The team is reviewing your request. No action is needed until approval. Check My Adoptions for updates.',
         },
       ].map((group) => ({ ...group, matches: (entry) => entryTask(entry) === group.key }));
     }

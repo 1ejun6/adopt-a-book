@@ -158,7 +158,7 @@ export function hasPickupOptions(appointment) {
 export function pickupStatus(appointment) {
   if (hasPickupOptions(appointment)) return {
     label: 'Waiting for pickup confirmation', variant: 'neutral',
-    description: 'Your three available times have been sent. The team will pick one and confirm your collection.',
+    description: 'Your three available times have been sent. The team will confirm one. Wait for confirmation before travelling.',
   };
 
   return (
@@ -166,7 +166,7 @@ export function pickupStatus(appointment) {
       'pending confirmation': {
         label: 'Pickup awaiting confirmation',
         variant: 'neutral',
-        description: 'Your pickup request has been sent. Wait for confirmation before you travel.',
+        description: 'Your pickup request has been sent. The team will confirm it. Wait for confirmation before travelling.',
       },
       'appointment confirmed': {
         label: 'Pickup confirmed',
@@ -181,12 +181,12 @@ export function pickupStatus(appointment) {
       cancelled: {
         label: 'Pickup cancelled',
         variant: 'neutral',
-        description: 'This pickup was cancelled. You can arrange another pickup.',
+        description: 'This pickup was cancelled. Your adoption is still approved. You can arrange another pickup.',
       },
       rejected: {
         label: 'Pickup declined',
         variant: 'rose',
-        description: 'This pickup was declined. You can suggest another time and location.',
+        description: 'This pickup was declined. Your adoption is still approved. You can propose another date and three available times.',
       },
     }[getApplicationStatus(appointment)] || {
       label: 'Pickup status unavailable',
@@ -264,7 +264,7 @@ export function adoptionJourney(
       variant: 'neutral',
       warning: reliable ? '' : 'Needs checking',
       description: reliable
-        ? 'We’re reviewing your book request.'
+        ? 'The team is reviewing your book request. No action is needed until approval. Check My Adoptions for updates.'
         : 'Some request or pickup records need checking. Review the available records before making changes.',
     };
   }
@@ -409,7 +409,7 @@ export function adoptionJourney(
     description: canArrange
       ? appointment
         ? `${pickupStatus(appointment).label}. Your adoption is still approved. You can request another pickup.`
-        : 'Choose a preferred pickup time.'
+        : 'Your next step is to propose a pickup location, date and three available times.'
       : 'Your adoption is approved, but we couldn’t verify the pickup details. Refresh the page or check with the team before arranging pickup.',
   };
 }

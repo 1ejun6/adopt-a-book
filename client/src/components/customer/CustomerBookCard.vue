@@ -60,7 +60,7 @@ function handleAction(book) {
         <!--@sree-sanjana06 > save directly or request removal when already saved-->
         <!--@sree-sanjana06 > remove saved book from watchlist-->
         <button type="button" class="ml-auto min-h-11 min-w-11 shrink-0 rounded-lg p-2" :class="{ 'text-destructive': variant === 'watchlist' }"
-          :disabled="busy" :title="variant === 'watchlist' || saved ? 'Remove from watchlist' : 'Save to watchlist'"
+          :disabled="busy" :title="variant === 'watchlist' || saved ? 'Remove from saved books' : 'Save book'"
           :aria-label="`${variant === 'watchlist' || saved ? 'Remove' : 'Save'} ${book.title} ${variant === 'watchlist' || saved ? 'from' : 'to'} saved books`"
           :aria-pressed="variant === 'browse' ? saved : undefined" @click.stop="handleAction(book)">
           <HugeiconsIcon v-if="variant === 'watchlist'" :icon="Delete02Icon" class="size-5" aria-hidden="true" />
@@ -74,12 +74,15 @@ function handleAction(book) {
     </div>
 
     <!--@1ejun6 > shared metadata styles > missing fields do not reserve empty rows -->
-    <div class="space-y-1 pt-1 text-sm text-muted-foreground" :class="{ 'mt-auto': variant !== 'watchlist' }">
-      <p v-if="variant === 'watchlist'" class="text-foreground">{{ book.status === 'available' ? 'Available to request' : 'Unavailable for new requests' }}</p>
+    <div class="mt-auto space-y-1 pt-1 text-sm text-muted-foreground">
+      <p v-if="variant === 'watchlist'" class="text-foreground">{{ props.requestId ? 'Request sent' : book.status === 'available' ? 'Available to request' : 'Unavailable for new requests' }}</p>
       <p class="truncate" :title="book.collectionarea || book.mrtstation?.name || 'Not provided'">Collection: {{ book.collectionarea || book.mrtstation?.name || 'Not provided' }}</p>
     </div>
-    <Button v-if="props.requestId" asChild variant="outline" class="mt-auto w-full">
+    <Button v-if="props.requestId" asChild variant="outline" class="w-full">
       <RouterLink :to="{ name: 'customerAdoptions', query: { request: props.requestId } }">View my request<span class="sr-only"> for {{ book.title }}</span></RouterLink>
+    </Button>
+    <Button v-else-if="variant === 'watchlist'" type="button" variant="outline" class="w-full" aria-haspopup="dialog" @click="emit('preview', book)">
+      View details<span class="sr-only"> for {{ book.title }}</span>
     </Button>
 
     <!--@sree-sanjana06 > personal notes are managed only in watchlist-->

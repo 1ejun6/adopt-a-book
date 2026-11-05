@@ -87,9 +87,9 @@ function handleRowClick(row) {
               @update:modelValue="toggleRowSelection(row.id)" />
             Select record
           </label>
-          <dl class="space-y-3">
-            <div v-for="column in columns" :key="column.key" class="min-w-0">
-              <dt class="text-sm text-muted-foreground" :class="!column.label && 'sr-only'">
+          <dl class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <div v-for="column in columns" :key="column.key" class="min-w-0" :class="column.mobileClass || 'col-span-2'">
+              <dt class="text-sm text-muted-foreground" :class="(!column.label || column.hideMobileLabel) && 'sr-only'">
                 <slot :name="`header${column.key[0].toUpperCase()}${column.key.slice(1)}`" :column="column">{{ column.label || 'Actions' }}</slot>
               </dt>
               <dd class="min-w-0 break-words">
@@ -99,10 +99,10 @@ function handleRowClick(row) {
               </dd>
             </div>
           </dl>
-          <Button :disabled="props.disabled" v-if="props.rowAction === 'open'" type="button" variant="outline" class="w-full "
+          <Button :disabled="props.disabled" v-if="props.rowAction === 'open'" type="button" variant="outline" class="w-full"
             :aria-label="`View details for ${row.title || row.customer || row.userid?.name || row.id}`" @click="emit('openRow', row)">
             View details
-            <HugeiconsIcon :icon="ArrowRight01Icon" class="ml-2 size-4" aria-hidden="true" />
+            <HugeiconsIcon :icon="ArrowRight01Icon" class="size-4" aria-hidden="true" />
           </Button>
         </article>
       </div>

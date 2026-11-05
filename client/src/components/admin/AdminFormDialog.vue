@@ -37,12 +37,11 @@ async function handleOpenChange(nextOpen) {
 
 <template>
   <Dialog :open="open" @update:open="handleOpenChange">
-    <DialogContent v-bind="props.description ? {} : { 'aria-describedby': undefined }" class="inset-3 max-h-[calc(100dvh-1.5rem)] p-4" :class="props.contentClass" :showCloseButton="!submitting">
+    <DialogContent v-bind="props.description ? {} : { 'aria-describedby': undefined }" class="p-4" :class="props.contentClass" :showCloseButton="!submitting">
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
         <DialogDescription v-if="description">{{ description }}</DialogDescription>
       </DialogHeader>
-      <hr>
 
       <!--@lee-hlmilk > dialog body &&& form-->
       <div class="space-y-5">
@@ -53,8 +52,7 @@ async function handleOpenChange(nextOpen) {
         <!--@lee-hlmilk > forward the original submit event so forms can inspect controls &&& the clicked submitter-->
         <form v-if="!hideForm" :novalidate="props.noValidate" @submit.prevent="emit('submit', $event)">
           <slot />
-          <hr v-if="props.showFooterSeparator">
-          <DialogFooter class="flex-col sm:flex-row">
+          <DialogFooter class="flex-col sm:flex-row" :class="!props.showFooterSeparator && 'border-0 pt-0'">
             <!--@lee-hlmilk > footer replaces default buttons > extraActions adds buttons while retaining the defaults-->
             <slot name="footer">
               <Button type="button" variant="outline" :disabled="submitting" @click="handleOpenChange(false)">

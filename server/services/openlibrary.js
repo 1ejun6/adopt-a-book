@@ -1,4 +1,6 @@
 const open_library_api = process.env.openlibraryapi;
+const staticgenres = require("../../shared/genres.json");
+const specificgenres = new Map(staticgenres.filter(genre => genre !== "Fiction" && genre !== "Nonfiction").map(genre => [genre.toLowerCase(), genre]));
 
 function getuseragent() {
   const contact = "contact-not-configured";
@@ -10,6 +12,7 @@ function generalgenres(subjects = []) {
   const tags = subjects.filter(subject => typeof subject === "string")
     .map(subject => subject.normalize("NFKC").toLowerCase().replace(/[’]/g, "'")
       .replace(/[_/–—]+/g, " ").replace(/\s+/g, " ").trim());
+  for (const tag of tags) { if (specificgenres.has(tag)) { return [specificgenres.get(tag)]; } }
   const fictiongenres = [
     ["Fantasy", /\bfantasy\b/],
     ["Science fiction", /\bscience[- ]fiction\b|\bsci[- ]fi\b/],
