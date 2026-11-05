@@ -1,4 +1,4 @@
-const open_library_api = process.env.openlibraryapi;
+const open_library_api = process.env.openlibraryapi?.trim() || "https://openlibrary.org";
 
 function getuseragent() {
   const contact = "contact-not-configured";
