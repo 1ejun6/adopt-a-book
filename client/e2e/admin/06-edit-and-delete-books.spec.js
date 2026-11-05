@@ -60,9 +60,9 @@ test('admin edits a book and deletes two others', async ({ page, admin }) => {
   await expect(selectedCount(page, 2)).toBeVisible()
   await expect(selectionButton(page, 'Edit')).toBeDisabled()
 
-  // 6. also ticks the reserved book > "Only available books can be deleted." &&& both actions disabled
+  // 6. also ticks the reserved book > "Only available books without adoption or pickup history…" &&& both actions disabled
   await rowCheckbox(page, reserved.title).click()
-  await expect(selectionHint(page, 'Only available books can be deleted.')).toBeVisible()
+  await expect(selectionHint(page, 'Only available books without adoption or pickup history can be deleted.')).toBeVisible()
   await expect(selectionButton(page, 'Delete')).toBeDisabled()
   await expect(selectionButton(page, 'Edit')).toBeDisabled()
 
@@ -72,7 +72,8 @@ test('admin edits a book and deletes two others', async ({ page, admin }) => {
   await selectionButton(page, 'Delete').click()
   const ask = confirmation(page, 'Delete books?')
   await expect(ask).toBeVisible()
-  await expect(ask).toContainText('related applications, appointments, and watchlist entries will be permanently deleted')
+  await expect(ask).toContainText('Only available copies without any adoption applications or appointments can be deleted.')
+  await expect(ask).toContainText('If any selected copy has protected history, nothing will be deleted.')
   await expect(ask).toContainText(second.title)
   await expect(ask).toContainText(third.title)
   await ask.getByRole('button', { name: 'Cancel' }).click()

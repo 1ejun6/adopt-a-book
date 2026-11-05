@@ -1,6 +1,6 @@
 import { singaporeDate, driveCard, driveSearch } from '../support/guest.js'
 import {
-  test, expect, badge, confirmation, createDrive, dialog, DRIVES, listMain, listSelect, nextList, openTab, optionsOf, pickDate, row, rowCheckbox, rows, search, selectedCount, selectionButton, toast,
+  test, expect, closeDialog, badge, confirmation, createDrive, dialog, DRIVES, listMain, listSelect, nextList, openTab, optionsOf, pickDate, row, rowCheckbox, rows, search, selectedCount, selectionButton, toast,
 } from '../support/admin.js'
 
 
@@ -73,7 +73,7 @@ test('admin closes, cancels and deletes drives', async ({ page, browser, admin }
   for (const name of ['Edit', 'Close registration', 'Cancel drive', 'Delete']) {
     await expect(details.getByRole('button', { name, exact: true })).toHaveCount(0)
   }
-  await page.keyboard.press('Escape')
+  await closeDialog(page)
 
   // 7. back to Upcoming, ticks the 2 remaining open drives &&& Delete > "permanently deleted", then "2 drives deleted"
   await openTab(page, DRIVES, 'Upcoming', { view: 'upcoming' })

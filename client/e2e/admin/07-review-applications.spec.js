@@ -1,5 +1,5 @@
 import {
-  test, expect, APPLICATIONS, badge, BOOKS, confirmation, dialog, field, goTo, listSelect, nextList, openList, openTab, row, rowCheckbox, rows, search, seedAdoption, selectionButton, tab, toast,
+  test, expect, closeDialog, APPLICATIONS, badge, BOOKS, confirmation, dialog, field, goTo, listSelect, nextList, openList, openTab, row, rowCheckbox, rows, search, seedAdoption, selectionButton, tab, toast,
 } from '../support/admin.js'
 
 
@@ -37,7 +37,7 @@ test('admin reviews adoption applications', async ({ page, admin }) => {
   await expect(rows(page).nth(0)).toContainText(newer.book.title)
   await expect(rows(page).nth(1)).toContainText(older.book.title)
 
-  // 4. clicks the older request > Application details with every field, "No reason stated." &&& Reject \ Approve
+  // 4. clicks the older request > Application details with every field &&& Reject \ Approve
   await row(page, older.customer.email).click()
   const details = dialog(page)
   await expect(details.getByRole('heading', { name: 'Application details' })).toBeVisible()
@@ -47,12 +47,11 @@ test('admin reviews adoption applications', async ({ page, admin }) => {
   await expect(field(details, 'Email')).toHaveText(older.customer.email)
   await expect(field(details, 'Submitted')).not.toHaveText('Not provided')
   await expect(field(details, 'Collection area')).toHaveText(older.book.collectionarea)
-  await expect(details.getByText('Reason', { exact: true })).toBeVisible()
-  await expect(details.getByText('No reason stated.')).toBeVisible()
   await expect(details.getByRole('button', { name: 'Reject' })).toBeEnabled()
   await expect(details.getByRole('button', { name: 'Approve' })).toBeEnabled()
 
   // 5. Approve, then confirm > the explanation &&& "<applicant> — <title>", then "1 application approved", the row leaves Pending
+  //    the details window stays open &&& refreshes to the decided record, with no decision buttons left
   await details.getByRole('button', { name: 'Approve' }).click()
   const approve = confirmation(page, 'Approve application?')
   await expect(approve).toContainText('Each approved copy becomes reserved. Competing pending requests will be rejected.')
@@ -61,6 +60,10 @@ test('admin reviews adoption applications', async ({ page, admin }) => {
   await approve.getByRole('button', { name: 'Approve' }).click()
   await expect(toast(page, '1 application approved')).toBeVisible()
   await afterApprove
+  await expect(badge(details, 'approved')).toBeVisible()
+  await expect(details.getByRole('button', { name: 'Approve' })).toHaveCount(0)
+  await closeDialog(page)
+  await expect(details).toBeHidden()
   await expect(rows(page)).toHaveCount(1)
   await expect(row(page, older.customer.email)).toHaveCount(0)
   await openTab(page, APPLICATIONS, 'Approved', { status: 'approved' })
@@ -72,7 +75,7 @@ test('admin reviews adoption applications', async ({ page, admin }) => {
   await expect(badge(row(page, older.book.title), 'reserved')).toBeVisible()
   await row(page, older.book.title).click()
   await expect(dialog(page).getByRole('button', { name: 'Edit' })).toBeDisabled()
-  await page.keyboard.press('Escape')
+  await closeDialog(page)
 
   // 7. back, ticks the second request &&& Reject > "Reject application?" with a red Reject, then "1 application rejected"
   await page.goBack()
@@ -94,7 +97,7 @@ test('admin reviews adoption applications', async ({ page, admin }) => {
   await expect(badge(details, 'rejected')).toBeVisible()
   await expect(details.getByRole('button', { name: 'Approve' })).toHaveCount(0)
   await expect(details.getByRole('button', { name: 'Reject' })).toHaveCount(0)
-  await page.keyboard.press('Escape')
+  await closeDialog(page)
 
   // 9. searches for something that doesn't exist
   await search(page, APPLICATIONS, `no-such-request-${admin.tag}`)

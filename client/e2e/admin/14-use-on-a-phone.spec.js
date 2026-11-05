@@ -1,5 +1,5 @@
 import { devices } from '@playwright/test'
-import { test, expect, adminNavLinks, confirmation, listMain, search, seedAdoption } from '../support/admin.js'
+import { test, expect, closeDialog, adminNavLinks, confirmation, listMain, search, seedAdoption } from '../support/admin.js'
 
 //@ChitanyaBharathi > journey 3.14 > phone-sized screen with touch > same setup as journeys 1.7 &&& 2.10
 const { defaultBrowserType, ...pixel5 } = devices['Pixel 5']
@@ -47,7 +47,7 @@ test('admin checks requests on their phone', async ({ page, admin }) => {
   const edit = details.getByRole('button', { name: 'Edit' })
   await edit.scrollIntoViewIfNeeded()
   await expect(edit).toBeInViewport()
-  await page.keyboard.press('Escape')
+  await closeDialog(page)
   await expect(details).toBeHidden()
 
   // 4. ☰ → Adoption Applications, Select record on their request > "1 selected", full-width Approve \ Reject &&& a confirmation that fits

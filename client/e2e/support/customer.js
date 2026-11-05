@@ -5,6 +5,8 @@ import { isApi, json, nextResponse } from './guest.js'
 //@ChitanyaBharathi > journeys log in through the api > only the steps that test the login form type into it
 
 export const customerPassword = 'e2e-Password-123'
+//@ChitanyaBharathi > sign-up now asks for at least one favourite genre (shared/genres.json) > every test customer likes these
+export const customerGenres = ['Fiction', 'Mystery']
 
 //@ChitanyaBharathi > the server rejects mutations with cookies but no client origin > send it on every call
 export async function callApi(request, method, path, data) {
@@ -21,8 +23,8 @@ export async function registerCustomer(request, name = 'Book Reader') {
     try {
       accountNumber += 1
       const email = `e2e-customer-${Date.now()}-${accountNumber}-${Math.random().toString(36).slice(2, 8)}@example.com`
-      const result = await callApi(request, 'POST', '/register', { name, email, password: customerPassword })
-      return { id: result?.user?.id, name, email, password: customerPassword }
+      const result = await callApi(request, 'POST', '/register', { name, email, password: customerPassword, preferredgenres: customerGenres })
+      return { id: result?.user?.id, name, email, password: customerPassword, preferredgenres: customerGenres }
     } catch (err) {
       if (attempt === 4 || (!err.message.includes('429') && !err.message.includes('500') && !err.message.includes('503'))) throw err
       await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))

@@ -1,50 +1,53 @@
 import { guestNavLinks, isApi, json, nextResponse, trackApiRequests } from '../support/guest.js'
 import {
-  test, expect, confirmation, createBook, createDrive, dialog, goTo, listMain, navLinks, pageCount, row, rowCheckbox, rows, search, seedAdoption, selectionButton, toast,
+  test, expect, APPLICATIONS, APPOINTMENTS, BOOKS, confirmation, createBook, createDrive, dialog, DRIVES, goTo, listMain, loadError, navLinks,
+  pageCount, row, rowCheckbox, rows, search, seedAdoption, selectionButton, toast, whenIdle,
 } from '../support/admin.js'
 
 const down = { error: 'service unavailable' }
-const isDetails = url => /^\/admin\/books\/[0-9a-f-]{36}$/.test(url.pathname)
+const isBookDetails = url => /^\/admin\/books\/[0-9a-f-]{36}$/.test(url.pathname)
 
-//@ChitanyaBharathi > journey 3.13 > things go wrong &&& the admin recovers without reloading
+//@ChitanyaBharathi > journey 3.13 > things go wrong &&& the admin recovers without reloading the page
 test.describe('🔌 admin recovers when the server is down', () => {
-  // 1. Book Inventory while /admin/books is down > toast with retry, no table \ page count; retry loads the books
+  // 1. Book Inventory while /admin/books is down > a toast &&& an error box with Retry, no table \ page count;
+  //    Retry loads the books once the server is back
   test('book inventory', async ({ page, admin }) => {
-    await page.route(isApi('/admin/books'), json(down, 503))
+    await page.route(isApi(BOOKS), json(down, 503))
     await page.goto('/admin/books')
-    const failed = toast(page, 'service unavailable')
-    await expect(failed).toBeVisible()
+    await expect(toast(page, 'service unavailable')).toBeVisible()
+    await expect(loadError(page)).toContainText('service unavailable')
     await expect(listMain(page).locator('table')).toHaveCount(0)
     await expect(pageCount(page)).toHaveCount(0)
 
-    await page.unroute(isApi('/admin/books'))
-    const books = nextResponse(page, '/admin/books')
-    await failed.getByRole('button', { name: 'retry' }).click()
+    await page.unroute(isApi(BOOKS))
+    const books = nextResponse(page, BOOKS)
+    await loadError(page).getByRole('button', { name: 'Retry' }).click()
     const { total } = await (await books).json()
+    await expect(loadError(page)).toHaveCount(0)
     await expect(rows(page).first()).toBeVisible()
     await expect(pageCount(page)).toContainText(`of ${total} books`)
   })
 
-  // 2. Applications, Appointments &&& Drives while their lists are down > the same toast + retry
+  // 2. Applications, Appointments &&& Drives while their lists are down > the same error box; Retry loads the list
   for (const [path, endpoint, heading] of [
-    ['/admin/applications', '/admin/applications', 'Adoption applications'],
-    ['/admin/appointments', '/admin/appointments', 'Appointments'],
-    ['/admin/drives', '/admin/drives', 'Drives'],
+    ['/admin/applications', APPLICATIONS, 'Adoption applications'],
+    ['/admin/appointments', APPOINTMENTS, 'Appointments'],
+    ['/admin/drives', DRIVES, 'Drives'],
   ]) {
     test(`${heading} list`, async ({ page, admin }) => {
       await page.route(isApi(endpoint), json(down, 503))
       await page.goto(path)
       await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible()
-      const failed = toast(page, 'service unavailable')
-      await expect(failed).toBeVisible()
+      await expect(toast(page, 'service unavailable')).toBeVisible()
+      await expect(loadError(page)).toContainText('service unavailable')
       await expect(listMain(page).locator('table')).toHaveCount(0)
 
       await page.unroute(isApi(endpoint))
       const list = nextResponse(page, endpoint)
-      await failed.getByRole('button', { name: 'retry' }).click()
+      await loadError(page).getByRole('button', { name: 'Retry' }).click()
       expect((await list).ok()).toBe(true)
-      await expect(failed).toBeHidden()
-      //@ChitanyaBharathi > the list is back > either rows ||| its empty message, depending on the data
+      await expect(loadError(page)).toHaveCount(0)
+      //@ChitanyaBharathi > the list is back > either rows ||| its empty message, depending on everyone's data
       await expect(rows(page).first().or(listMain(page).getByRole('heading', { level: 2 }))).toBeVisible()
     })
   }
@@ -53,13 +56,13 @@ test.describe('🔌 admin recovers when the server is down', () => {
   test('book details', async ({ page, admin }) => {
     const book = await createBook(admin, { title: 'Details Fail' })
     await page.goto('/admin/books')
-    await search(page, '/admin/books', admin.tag)
-    await page.route(isDetails, json(down, 503))
+    await search(page, BOOKS, admin.tag)
+    await page.route(isBookDetails, json(down, 503))
     await row(page, book.title).click()
     await expect(toast(page, 'service unavailable')).toBeVisible()
     await expect(dialog(page)).toHaveCount(0)
 
-    await page.unroute(isDetails)
+    await page.unroute(isBookDetails)
     await row(page, book.title).click()
     await expect(dialog(page).getByRole('heading', { name: 'Book details' })).toBeVisible()
   })
@@ -79,23 +82,26 @@ test.describe('🔌 admin recovers when the server is down', () => {
     })
   }
 
-  // 5. a drive whose Available books fail to load > details still show, the list is hidden &&& retry loads it
+  // 5. a drive whose Available books fail to load > the details still show, with "Retry book list" in place of the list;
+  //    it loads the books once the server is back
   test('drive books', async ({ page, admin }) => {
     const drive = await createDrive(admin, { title: 'Books Fail' })
     await page.route(isApi('/books'), json(down, 503))
     await page.goto('/admin/drives')
-    await search(page, '/admin/drives', admin.tag)
+    await search(page, DRIVES, admin.tag)
     await row(page, drive.title).click()
     const details = dialog(page)
     await expect(details.getByRole('heading', { name: drive.title })).toBeVisible()
-    const failed = toast(page, 'service unavailable')
+    await whenIdle(details)
+    const failed = details.getByRole('alert').filter({ hasText: 'service unavailable' })
     await expect(failed).toBeVisible()
     const books = details.getByRole('region', { name: 'Available books at this MRT station' })
     await expect(books).toHaveCount(0)
 
     await page.unroute(isApi('/books'))
-    await failed.getByRole('button', { name: 'retry' }).click()
+    await failed.getByRole('button', { name: 'Retry book list' }).click()
     await expect(books).toBeVisible()
+    await expect(failed).toHaveCount(0)
   })
 
   // 6. approving when PATCH …/status fails > "1 decision failed" with the reason &&& the request stays pending
@@ -103,7 +109,7 @@ test.describe('🔌 admin recovers when the server is down', () => {
     const { customer } = await seedAdoption(admin, 'requested', { book: { title: 'Approve Fails' } })
     await page.route(url => url.pathname.endsWith('/status'), json({ error: 'error updating adoption application status' }, 500))
     await page.goto('/admin/applications')
-    await search(page, '/admin/applications', admin.tag)
+    await search(page, APPLICATIONS, admin.tag)
     await rowCheckbox(page, customer.email).click()
     await selectionButton(page, 'Approve').click()
     await confirmation(page, 'Approve application?').getByRole('button', { name: 'Approve' }).click()
@@ -119,7 +125,7 @@ test.describe('🔌 admin recovers when the server is down', () => {
     //@ChitanyaBharathi > the confirmation toast covers the navbar > leave with the browser's Back button instead (still an in-app navigation)
     await page.goto('/admin')
     await goTo(page, 'Book Inventory')
-    await search(page, '/admin/books', admin.tag)
+    await search(page, BOOKS, admin.tag)
     const api = trackApiRequests(page)
     await rowCheckbox(page, book.title).click()
     await selectionButton(page, 'Delete').click()
@@ -132,12 +138,12 @@ test.describe('🔌 admin recovers when the server is down', () => {
   })
 })
 
-// 8. their session expires &&& they go to another page > sent to Login with the guest navbar
+// 8. their session expires &&& they go to another page > sent to Login (which remembers where they were going), guest navbar
 test('admin whose session expires is sent to login', async ({ page, context, admin }) => {
   await page.goto('/admin/books')
   await expect(page.getByRole('heading', { name: 'Book Inventory', level: 1 })).toBeVisible()
   await context.clearCookies()
   await page.goto('/admin/applications')
-  await expect(page).toHaveURL('/login')
+  await expect(page).toHaveURL('/login?redirect=/admin/applications')
   await expect(navLinks(page)).toHaveText(guestNavLinks)
 })

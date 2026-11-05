@@ -1,6 +1,6 @@
 import { nextResponse } from '../support/guest.js'
 import {
-  test, expect, badge, BOOKS, createBook, dialog, field, listMain, listSearch, nextList, openList, PAGE_SIZE, pageCount, row, rowCheckbox, rows, search, seedAdoption, tab,
+  test, expect, closeDialog, badge, BOOKS, createBook, dialog, field, listMain, listSearch, nextList, openList, PAGE_SIZE, pageCount, row, rowCheckbox, rows, search, seedAdoption, tab,
 } from '../support/admin.js'
 
 const titlesOf = books => books.map(book => book.title)
@@ -91,7 +91,7 @@ test('admin browses the inventory and checks a book', async ({ page, admin }) =>
   await expect(field(details, 'ISBN')).toHaveText(full.isbn)
   await expect(field(details, 'First publication')).toHaveText('1999')
   await expect(field(details, 'Collection area')).toHaveText(full.collectionarea)
-  await page.keyboard.press('Escape')
+  await closeDialog(page)
   await expect(details).toBeHidden()
 
   // 9. the book with no ISBN \ description > "Not provided" &&& "No description recorded."
@@ -100,13 +100,13 @@ test('admin browses the inventory and checks a book', async ({ page, admin }) =>
   await expect(field(details, 'ISBN')).toHaveText('Not provided')
   await expect(field(details, 'Subjects')).toHaveText('Not provided')
   await expect(details.getByText('No description recorded.')).toBeVisible()
-  await page.keyboard.press('Escape')
+  await closeDialog(page)
 
   // 10. the reserved book > Edit is disabled &&& Esc closes the window
   await row(page, reserved.title).click()
   await expect(details.getByRole('heading', { name: 'Book details' })).toBeVisible()
   await expect(details.getByRole('button', { name: 'Edit' })).toBeDisabled()
-  await page.keyboard.press('Escape')
+  await closeDialog(page)
   await expect(details).toBeHidden()
   await expect(listSearch(page)).toHaveValue(admin.tag)
 })

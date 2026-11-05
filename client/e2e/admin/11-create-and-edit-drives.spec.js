@@ -16,7 +16,7 @@ test('admin creates and edits an adoption drive', async ({ page, browser, admin 
   // 1. opens Drives > Upcoming selected, Upcoming \ Past with counts, an Event date picker &&& a status dropdown
   const opened = await openList(page, '/admin/drives', DRIVES)
   await expect(page.getByRole('tab', { name: `Upcoming ${opened.counts.upcoming}` })).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByRole('tab', { name: `Past ${opened.counts.past}` })).toBeVisible()
+  await expect(page.getByRole('tab', { name: `Past / cancelled ${opened.counts.past}` })).toBeVisible()
   await expect(listMain(page).getByRole('button', { name: 'Event date', exact: true })).toBeVisible()
   const statusSelect = listSelect(page, 'Drive status')
   expect(await optionsOf(statusSelect)).toEqual(['All statuses', 'Open', 'Closed'])
