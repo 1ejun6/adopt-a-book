@@ -1388,3 +1388,86 @@ returns jsonb language sql stable security invoker set search_path = '' as $$
 $$;
 
 notify pgrst, 'reload schema';
+
+-- Apply after the current base schema. Existing drives intentionally start without books.
+create table if not exists public.drivebooks (
+  driveid uuid not null references public.adoptiondrives(id) on delete cascade,
+  bookid uuid not null references public.books(id) on delete cascade,
+  primary key (driveid, bookid)
+);
+create index if not exists drivebooks_bookid_idx on public.drivebooks(bookid);
+alter table public.drivebooks enable row level security;
+revoke all on public.drivebooks from anon, authenticated;
+grant select, insert, update, delete on public.drivebooks to service_role;
+
+-- The service validates content/schedule. Locks keep inventory validation and membership atomic.
+create or replace function public.save_drive_with_books(drive_id uuid, fields jsonb, book_ids uuid[], actor_id uuid)
+returns uuid language plpgsql security invoker set search_path = '' as $$
+declare target public.adoptiondrives; selected_count integer; selected_station uuid;
+begin
+  if book_ids is null or cardinality(book_ids) = 0 then
+    raise exception 'Select at least one book for this drive.' using errcode = 'PT422';
+  end if;
+  if exists(select 1 from unnest(book_ids) id group by id having count(*) > 1) or array_position(book_ids, null) is not null then
+    raise exception 'Book IDs must be unique and non-null.' using errcode = 'PT422';
+  end if;
+  if drive_id is not null then
+    select * into target from public.adoptiondrives where id = drive_id for update;
+    if not found then raise exception 'Drive not found.' using errcode = 'PT404'; end if;
+  end if;
+  selected_station := coalesce((fields->>'mrtstationid')::uuid, target.mrtstationid);
+  perform id from public.books where id = any(book_ids) order by id for share;
+  select count(*) into selected_count from public.books
+    where id = any(book_ids) and status = 'available' and mrtstationid = selected_station;
+  if selected_count <> cardinality(book_ids) then
+    raise exception 'Some selected books are no longer available at this MRT. Review the book list and try again.' using errcode = 'PT409';
+  end if;
+  if drive_id is null then
+    insert into public.adoptiondrives(title,location,mrtstationid,eventdate,starttime,endtime,description,maxcapacity,createdby)
+    values(fields->>'title',fields->>'location',selected_station,(fields->>'eventdate')::date,
+      (fields->>'starttime')::time,(fields->>'endtime')::time,coalesce(fields->>'description',''),(fields->>'maxcapacity')::integer,actor_id)
+    returning id into drive_id;
+  else
+    target := jsonb_populate_record(target, fields - 'bookids');
+    update public.adoptiondrives set title=target.title,location=target.location,mrtstationid=target.mrtstationid,
+      eventdate=target.eventdate,starttime=target.starttime,endtime=target.endtime,description=target.description,
+      maxcapacity=target.maxcapacity,status=target.status,
+      closedbycapacity=case when fields ? 'status' then false else target.closedbycapacity end
+    where id=drive_id;
+  end if;
+  delete from public.drivebooks where driveid=drive_id;
+  insert into public.drivebooks(driveid,bookid) select drive_id,id from unnest(book_ids) id;
+  return drive_id;
+end;
+$$;
+revoke all on function public.save_drive_with_books(uuid,jsonb,uuid[],uuid) from public, anon, authenticated;
+grant execute on function public.save_drive_with_books(uuid,jsonb,uuid[],uuid) to service_role;
+create or replace function public.browse_drives(station_ids uuid[] default null, sort_by text default 'date', customer_id uuid default null)
+returns jsonb language plpgsql stable set search_path = '' as $$
+declare result jsonb;
+begin
+  if sort_by is null or sort_by not in ('date','nearest') or (sort_by = 'nearest' and station_ids is null)
+     or cardinality(station_ids) > 500
+     or cardinality(station_ids) <> (select count(distinct id) from unnest(station_ids) id)
+     or exists (select 1 from unnest(station_ids) f(id) where not exists (select 1 from public.mrtstations s where s.id = f.id)) then
+    raise exception 'invalid drive filters' using errcode = 'PT422';
+  end if;
+  if customer_id is not null and not exists (select 1 from public.users where id = customer_id and role = 'customer') then
+    raise exception 'customer account required' using errcode = 'PT403';
+  end if;
+  select coalesce(jsonb_agg(
+    jsonb_build_object('id',d.id,'title',d.title,'location',d.location,'eventdate',d.eventdate,'starttime',d.starttime,'endtime',d.endtime,
+      'description',d.description,'maxcapacity',d.maxcapacity,'status',d.status,'mrtstationid',d.mrtstationid,
+      'bookCount',(select count(*) from public.drivebooks db where db.driveid=d.id),
+      'spotsleft',greatest(d.maxcapacity-cardinality(d.userids),0),
+      'mrtstation',case when s.id is null then null else jsonb_build_object('id',s.id,'name',s.name,'codes',s.codes,'lat',s.lat,'lng',s.lng,'selectable',s.selectable) end)
+    || case when customer_id is null then '{}'::jsonb else jsonb_build_object(
+      'registered',customer_id=any(d.userids),'attendees',cardinality(d.userids),'createdat',d.createdat,'updatedat',d.updatedat) end
+    order by case when sort_by='nearest' then array_position(station_ids,d.mrtstationid) end, d.eventdate,d.id
+  ),'[]'::jsonb) into result
+  from public.adoptiondrives d left join public.mrtstations s on s.id=d.mrtstationid
+  where station_ids is null or d.mrtstationid=any(station_ids);
+  return result;
+end;
+$$;
+notify pgrst, 'reload schema';

@@ -1,17 +1,19 @@
 <script setup>
 import AppIcon from '@/components/shared/AppIcon.vue';
 import { useAdminRecord } from '@/composables/useAdminRecord';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
 import { formatDateTime } from '@/lib/date';
 import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue'
+import AppFilterSelect from '@/components/shared/AppFilterSelect.vue';
 import BookFormDialog from '@/components/admin/BookFormDialog.vue'
-import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue'
+import AppBookPreviewDialog from '@/components/shared/AppBookPreviewDialog.vue'
 import BookIdentity from '@/components/shared/AppBookIdentity.vue'
 import StatusBadge from '@/components/shared/AppStatusBadge.vue'
+import StatusLegend from '@/components/shared/AppStatusLegend.vue'
 import { Button } from '@/components/ui/button'
 import genres from '../../../../shared/genres.json'
 
@@ -39,7 +41,7 @@ const saving = ref(false);
 const formLoading = ref('');
 const uploadingCover = ref(false);
 const stations = ref([]);
-//@lee-hlmilk > template ref gives access to form reset > draft fields stay inside BookFormDialog
+// The toast can reopen a fresh manual-entry draft after saving.
 const bookFormDialog = ref(null);
 const importedIds = ref([]);
 const lookup = reactive({ query: '', books: [], loading: false, searched: false });
@@ -120,7 +122,7 @@ async function searchBooks() {
     }
 }
 
-//@lee-hlmilk > invalidate response without clearing search results > Add and continue can reuse them
+// Invalidate an older lookup without clearing its results.
 function cancelLookup() { lookupRequestId++; lookup.loading = false; }
 
 function resetLookup() {
@@ -150,7 +152,7 @@ async function openEditBook(book) {
 }
 
 //@lee-hlmilk > form emits prepared fields > view sends POST for add ||| PATCH for edit
-async function saveBook(data, keepAdding, coverFile) {
+async function saveBook(data, coverFile) {
     if (saving.value) { return; }
     const editing = Boolean(editingBook.value);
     saving.value = true;
@@ -170,11 +172,17 @@ async function saveBook(data, keepAdding, coverFile) {
         uploadedCover = ''; //@lee-hlmilk > once saved, the cover belongs to the book > later refresh errors must not remove it
         const updated = response.book;
         if (selectedBook.value?.id === updated.id) { selectedBook.value = formatBook(updated); }
-        if (keepAdding) { bookFormDialog.value.resetForm(); }
-        else { formOpen.value = false; }
-        toast.success(response.message || (editing ? 'Book updated' : 'Book added'));
+        formOpen.value = false;
+
         //@lee-hlmilk > reload so changed titles &&& subjects respect current filters &&& page order
         await fetchBooks();
+        toast.success(response.message || (editing ? 'Book updated' : 'Book added'), editing ? {} : {
+            duration: 10000, action: { label: 'Add another', onClick: async () => {
+                await openAddBook();
+                await nextTick();
+                if (formOpen.value) bookFormDialog.value?.selectAddMode('manual');
+            } }
+        });
     } catch (error) {
         if (uploadedCover) {
             try { await api('/admin/books/cover', { method: 'DELETE', body: { coverurl: uploadedCover } }); }
@@ -201,8 +209,8 @@ async function importBooks(booksToAdd) {
         importedIds.value = completed;
         if (completed.length === booksToAdd.length) { formOpen.value = false; }
         if (completed.length) {
-            toast.success(`${completed.length} ${completed.length === 1 ? 'book added' : 'books added'}`);
             await fetchBooks();
+            toast.success(`${completed.length} ${completed.length === 1 ? 'book added' : 'books added'}`, completed.length === booksToAdd.length ? { duration: 10000, action: { label: 'Add another', onClick: () => openAddBook() } } : {});
         }
         if (failures.length) { toast.error(`${failures.length} ${failures.length === 1 ? 'book could' : 'books could'} not be added`, { description: failures.join('\n'), style: { whiteSpace: 'pre-line' } }); }
     } finally { saving.value = false; }
@@ -237,9 +245,7 @@ async function deleteBooks() {
         toast.error('Only available books without adoption or pickup history can be deleted.');
         return;
     }
-    const titles = targets.map(book => book.title);
-    if (!await confirm(`Delete ${targets.length === 1 ? 'book' : 'books'}?`, {
-        description: `Only available copies without any adoption applications or appointments can be deleted. If any selected copy has protected history, nothing will be deleted. Saved entries for eligible copies will be removed.\n${titles.join('\n')}`,
+    if (!await confirm(targets.length === 1 ? 'Delete book?' : `Delete ${targets.length} books?`, {
         actionLabel: 'Delete', destructive: true
     })) { return; }
     if (loading.value || deleting.value || saving.value || formLoading.value || !canSelect.value) { return; }
@@ -250,10 +256,7 @@ async function deleteBooks() {
     deleting.value = true;
     try {
         const { deletedids = [] } = await api('/admin/books', { method: 'DELETE', body: { ids: bookids } });
-        toast.info(`${deletedids.length} deleted`, {
-            description: titles.map((title, index) => `${index + 1}. ${title}`).join('\n'),
-            style: { whiteSpace: 'pre-line' }
-        });
+        toast.success(`${deletedids.length} ${deletedids.length === 1 ? 'book' : 'books'} deleted`);
     } catch (error) { toast.error(error.message); }
     finally { await fetchBooks(); await refreshDetail(); deleting.value = false; }
 }
@@ -262,34 +265,36 @@ fetchBooks();
 watch(formOpen, isOpen => { if (!isOpen) { cancelLookup(); } });
 
 const statusTabs = [
-    { value: 'all', label: 'All books' },
+    { value: 'all', label: 'All' },
     { value: 'available', label: 'Available', status: 'available' },
     { value: 'reserved', label: 'Reserved', status: 'reserved' },
     { value: 'adopted', label: 'Adopted', status: 'adopted' }
 ];
+const bookStatuses = statusTabs.filter(tab => tab.status);
 
 const columns = [
-    { key: 'book', label: 'Book', class: 'w-3/5', mobileClass: 'col-start-1', hideMobileLabel: true },
+    { key: 'book', label: 'Book', class: 'w-3/5', mobileClass: 'col-start-1' },
     { key: 'isbn', label: 'ISBN', class: 'w-1/5', mobileClass: 'col-span-2 flex items-baseline gap-2' },
-    { key: 'status', label: 'Status', mobileClass: 'col-start-2 row-start-1', hideMobileLabel: true }
+    { key: 'status', label: 'Status', class: 'text-center', mobileClass: 'col-start-2 row-start-1' }
 ];
 </script>
 <template>
     <!--@lee-hlmilk > list models update this view's filters &&& selection &&& page > watchers fetch the matching server page-->
-    <AdminList @retry="fetchBooks" title="Book Inventory" description="Manage book records and track their availability."
+    <AdminList @retry="fetchBooks" title="Book Inventory" description="manage book records and track their availability"
         v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="books" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="deleting || saving || !!formLoading" :selectable="canSelect"
-        :error="loadError" searchPlaceholder="Search by Title, Author, ISBN..."
+        :error="loadError" searchPlaceholder="Search by title, author or ISBN..."
         emptyTitle="No books in this view" emptyDescription="Try another Status Tab, Genre, Search term"
+        :emptyKey="JSON.stringify(filters)"
         :pagination="{ itemLabel: 'books', total, pageSize, pageCount }" @openRow="openBook">
         <template #headerActions>
-            <Button :disabled="loading || deleting || saving || !!formLoading" :loading="formLoading === 'add'" @click="openAddBook"><AppIcon name="add" />Add Book</Button>
+            <Button :disabled="loading || deleting || saving || !!formLoading" :loading="formLoading === 'add'" title="Add book" @click="openAddBook"><AppIcon name="add" /><span class="sr-only">Add book</span></Button>
         </template>
         <template #filters>
-            <select v-model="filters.genre" class="w-full min-w-0 rounded-lg border px-3 sm:w-auto text-base min-h-11">
-                <option value="all">All genres</option>
+            <AppFilterSelect v-model="filters.genre">
+                <option value="all">All</option>
                 <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
-            </select>
+            </AppFilterSelect>
         </template>
         <template #selectionActions="{ onlyOne }">
             <p v-if="deleteBlocked" class="text-sm text-muted-foreground" role="status">Only available books without adoption or pickup history can be deleted.</p>
@@ -306,16 +311,22 @@ const columns = [
             <span class="text-sm text-muted-foreground">{{ value }}</span>
         </template>
         <template #cellStatus="{ value }">
-            <StatusBadge :status="value" />
+            <div class="flex items-center justify-center"><StatusBadge :status="value" dot :title="value" /></div>
+        </template>
+        <template #legend>
+            <StatusLegend :statuses="bookStatuses" />
         </template>
     </AdminList>
-    <AdminDetailsDialog :loading="detailLoading" :error="detailError" :busy="saving || deleting || detailLoading || !!formLoading" @retry="refreshDetail" v-if="selectedBook" :open="dialogOpen" title="Book details" :book="selectedBook"
-        :status="selectedBook.status" :fields="bookFields" :description="selectedBook.description || 'No description recorded.'" @update:open="dialogOpen = $event">
+    <AppBookPreviewDialog :loading="detailLoading" :error="detailError" :preventClose="saving || deleting || detailLoading || !!formLoading" @retry="refreshDetail" v-if="selectedBook" v-model:open="dialogOpen" :book="selectedBook"
+        :metadata="bookFields" fullDescription>
+        <template #book-action>
+            <StatusBadge :status="selectedBook.status" dot :title="selectedBook.status" class="shrink-0" />
+        </template>
         <template #actions>
             <!--@lee-hlmilk > reserved &&& adopted copies cannot be edited > availability follows approval &&& collection-->
-            <Button type="button" :loading="formLoading === 'edit'" :disabled="saving || deleting || !!formLoading || detailLoading || !!detailError || ['reserved', 'adopted'].includes(selectedBook.status)" @click="openEditBook(selectedBook)"><AppIcon name="edit" /><span class="sr-only">Edit</span></Button>
+            <Button type="button" class="w-full" :loading="formLoading === 'edit'" :disabled="saving || deleting || !!formLoading || detailLoading || !!detailError || ['reserved', 'adopted'].includes(selectedBook.status)" @click="openEditBook(selectedBook)"><AppIcon name="edit" /><span class="sr-only">Edit book</span></Button>
         </template>
-    </AdminDetailsDialog>
+    </AppBookPreviewDialog>
 
     <!--@lee-hlmilk > models sync visibility &&& query text > props carry results &&& save state > events request API work-->
     <BookFormDialog ref="bookFormDialog" v-model:open="formOpen" v-model:query="lookup.query"

@@ -5,7 +5,10 @@ import CustomerRequestDetailsDialog from './CustomerRequestDetailsDialog.vue';
 import CustomerPickupDialog from './CustomerPickupDialog.vue';
 import CustomerAdoptionProgress from './CustomerAdoptionProgress.vue';
 import { bookAuthors, getApplicationStatus, pickupStatus, recordId } from '@/lib/adoptions';
-import { Badge } from '@/components/ui/badge';
+import AppStatusDot from '@/components/shared/AppStatusDot.vue';
+import { adoptionStatusTone, underReviewMessage } from '@/lib/myAdoptionsPresentation';
+import AppIcon from '@/components/shared/AppIcon.vue';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 
 const props = defineProps({
+  myAdoptionsPresentation: { type: Boolean, default: false },
   embedded: { type: Boolean, default: false },
   record: { type: Object, default: null },
   appointment: { type: Object, default: null },
@@ -27,7 +31,7 @@ const props = defineProps({
   withdrawn: { type: Function, required: true },
 });
 const open = defineModel('open', { type: Boolean, default: false });
-const emit = defineEmits(['restore-focus', 'appointment', 'history']);
+const emit = defineEmits(['restore-focus', 'appointment', 'history', 'back-book']);
 const view = ref('adoption');
 const pickupMode = ref('view');
 const pickupKey = ref(0);
@@ -49,6 +53,9 @@ const status = computed(() => {
   return props.record || (props.appointment ? pickupStatus(props.appointment) : null);
 });
 const unlinked = computed(() => !props.record && !!props.appointment);
+const statusTone = computed(() => props.myAdoptionsPresentation
+  ? adoptionStatusTone({ ...status.value, warning: props.record?.warning || unlinked.value })
+  : status.value?.variant);
 const editingPickup = computed(
   () => view.value === 'pickup' && ['details', 'review'].includes(state.value.pickupStep),
 );
@@ -60,14 +67,16 @@ const progressVerified = computed(() => {
 });
 const flowDescription = computed(() => {
   if (unlinked.value)
-    return 'This pickup could not be linked to an adoption request. Check the details with the team before travelling.';
+    return 'we couldn’t match this pickup to a book request. check with the team before you travel.';
   if (props.record?.warning) return props.record.description;
+  if (props.myAdoptionsPresentation && view.value === 'adoption' && ['pending', 'pending review'].includes(props.record?.code))
+    return underReviewMessage;
   if (view.value === 'pickup' && state.value.pickupStep === 'review')
-    return 'Check your preferred location, date and time before sending your pickup request.';
+    return 'check your pickup location, date and times before you send your request.';
   if (view.value === 'pickup' && state.value.pickupStep === 'details') {
     return getApplicationStatus(props.appointment) === 'appointment confirmed'
-      ? 'Update your preferred pickup details. Your current pickup stays confirmed until you send changes.'
-      : 'Choose a date and two available times for pickup at the book’s MRT station. The team will confirm one before you travel.';
+      ? 'update your pickup details. your current pickup stays confirmed until you send changes.'
+      : 'choose a pickup date and two times at the book’s mrt station. wait for the team to confirm a time before you travel.';
   }
   return status.value?.description || '';
 });
@@ -117,6 +126,9 @@ async function canNavigate() {
   if (!open.value) return true;
   return (await body.value?.canNavigate()) !== false;
 }
+async function backToBook() {
+  if (await canNavigate()) emit('back-book');
+}
 defineExpose({ canNavigate });
 </script>
 
@@ -146,7 +158,7 @@ defineExpose({ canNavigate });
         }}</DialogDescription>
       </DialogHeader>
       <div class="dialog-body space-y-5">
-        <div v-if="status" class="space-y-3" aria-label="Adoption status">
+        <div v-if="status" class="space-y-3 border-b pb-5" aria-label="Adoption status">
           <CustomerAdoptionProgress
             v-if="state.flowVisible !== false"
             :applicationStatus="record?.application?.status || ''"
@@ -156,20 +168,22 @@ defineExpose({ canNavigate });
           />
           <div class="space-y-2">
             <p v-if="unlinked" class="text-sm text-muted-foreground">Unlinked pickup record</p>
-            <Badge :variant="status.variant">{{ status.label }}</Badge>
-            <Badge v-if="record?.warning || unlinked" variant="amber" class="ml-2">{{
+            <p class="flex items-center gap-2 text-sm text-foreground"><AppStatusDot :tone="statusTone" />{{ status.label }}</p>
+            <p v-if="record?.warning || unlinked" class="flex items-center gap-2 text-sm text-foreground"><AppStatusDot tone="amber" />{{
               record?.warning || 'Needs checking'
-            }}</Badge>
+            }}</p>
             <p class="text-sm text-muted-foreground">{{ flowDescription }}</p>
           </div>
         </div>
-        <AppBookIdentity
-          :title="record?.book?.title || appointment?.booktitle || 'Book details unavailable'"
-          :author="record?.book ? bookAuthors(record.book) : ''"
-          :cover="record?.book?.thumbnailurl || record?.book?.coverurl"
-          coverClass="w-14"
-          wrap
-        />
+        <div class="border-b pb-5">
+          <AppBookIdentity
+            :title="record?.book?.title || appointment?.booktitle || 'Book details unavailable'"
+            :author="record?.book ? bookAuthors(record.book) : ''"
+            :cover="record?.book?.thumbnailurl || record?.book?.coverurl"
+            coverClass="w-14"
+            wrap
+          />
+        </div>
         <CustomerRequestDetailsDialog
           v-if="open && view === 'adoption' && record"
           ref="detailsBody"
@@ -199,9 +213,9 @@ defineExpose({ canNavigate });
           @state="state = $event"
           @focus-heading="focusHeading"
           @back="backToAdoption"
-          @show-adoptions="open = false"
           @pickup-record="showPickupRecord"
         />
+        <Button v-if="embedded" type="button" variant="outline" :disabled="state.saving" @click="backToBook"><AppIcon name="back" />Back to book details</Button>
       </div>
     </DialogContent>
   </Dialog>

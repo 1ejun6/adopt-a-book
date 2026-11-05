@@ -15,6 +15,7 @@ const props = defineProps({
     title: { type: String, required: true },
     book: { type: Object, default: null },
     status: { type: String, default: '' },
+    statusDot: Boolean,
     description: { type: String, default: '' },
     fields: { type: Array, default: () => [] }
 });
@@ -24,9 +25,9 @@ const emit = defineEmits(['update:open', 'retry']);
 <template>
     <!--@lee-hlmilk > open is read from the view > update:open asks the view to store X ||| Escape ||| outside-click changes-->
     <Dialog :open="props.open" @update:open="!busy && emit('update:open', $event)">
-        <DialogContent :showCloseButton="!busy" :aria-describedby="undefined" class="p-4">
+        <DialogContent :showCloseButton="!busy" :aria-describedby="undefined" class="space-y-5 p-5">
             <p v-if="error" role="alert">{{ error }} Actions are unavailable until details refresh. <Button variant="outline" type="button" class="min-h-11" :disabled="busy" :loading="loading" @click="emit('retry')"><AppIcon name="refresh" /><span class="sr-only">Retry details</span></Button></p>
-            <DialogHeader>
+            <DialogHeader class="p-0 pb-5 pr-12">
                 <DialogTitle>{{ props.title }}</DialogTitle>
             </DialogHeader>
             <div class="space-y-5" :aria-busy="loading">
@@ -38,7 +39,7 @@ const emit = defineEmits(['update:open', 'retry']);
                         <Skeleton class="h-4 w-full" />
                     </div>
                 </div>
-                <div v-show="!loading" class="contents">
+                <div v-show="!loading" class="space-y-5">
                     <div v-if="props.book || props.status || $slots.summary" class="flex flex-wrap items-center justify-between gap-5">
                         <!--@lee-hlmilk > book identity is optional > other records such as drives can supply their own summary-->
                         <slot name="summary">
@@ -46,8 +47,9 @@ const emit = defineEmits(['update:open', 'retry']);
                                 :author="props.book.authors?.join(', ') || props.book.author || 'Unknown Author'"
                                 :cover="props.book.cover || props.book.thumbnailurl || props.book.coverurl" />
                         </slot>
-                        <StatusBadge v-if="props.status" :status="props.status" class="shrink-0" />
+                        <StatusBadge v-if="props.status" :status="props.status" :dot="props.statusDot" :title="props.statusDot ? props.status : undefined" class="shrink-0" />
                     </div>
+                    <slot name="statusLegend" />
                     <p v-if="props.description" class="whitespace-pre-line">{{ props.description }}</p>
                     <dl v-if="props.fields.length" class="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-baseline sm:gap-x-4 sm:gap-y-2.5">
                         <!--@lee-hlmilk > mobile stacks labels above values > sm uses label/value columns with a shrinkable value track-->
@@ -57,7 +59,7 @@ const emit = defineEmits(['update:open', 'retry']);
                             <dd class="min-w-0"><slot :name="`field-${field.key || field.label}`" :field="field">{{ field.value || 'Not provided' }}</slot></dd>
                         </div>
                     </dl>
-                    <fieldset :disabled="busy || !!error" :inert="busy || !!error" class="min-w-0"><slot /></fieldset>
+                    <fieldset v-if="$slots.default" :disabled="busy || !!error" :inert="busy || !!error" class="min-w-0"><slot /></fieldset>
                 </div>
             </div>
             <!--@lee-hlmilk > read-only records omit actions > no empty footer ||| separator-->

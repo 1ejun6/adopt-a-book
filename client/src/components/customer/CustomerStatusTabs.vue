@@ -13,7 +13,7 @@ defineProps({
     <TabsTrigger v-for="item in journeyTabs" :key="item.value" :value="item.value"
       class=" flex-1 gap-2.5 sm:flex-none">
       <span>{{ item.label }}</span>
-      <Badge v-if="showCounts" variant="neutral" class="adoption-tab-count tabular-nums">
+      <Badge v-if="showCounts" class="bg-primary adoption-tab-count tabular-nums">
         {{ counts[item.value] }}
       </Badge>
     </TabsTrigger>

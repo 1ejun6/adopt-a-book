@@ -107,7 +107,7 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
       <select id="watchlist-availability" v-model="availability"
         class="min-h-11 w-full rounded-lg border bg-transparent p-2.5 text-sm sm:w-52"
         :disabled="loading && !watchlist.length">
-        <option value="all">All statuses</option>
+        <option value="all">All</option>
         <option value="available">Available</option>
         <option value="unavailable">Unavailable</option>
         <option value="requested">Requested</option>

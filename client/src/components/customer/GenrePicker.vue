@@ -15,7 +15,7 @@ defineExpose({ focus: () => fieldset.value?.querySelector('input')?.focus() });
       <span>Favourite genres{{ required ? ' (required)' : '' }}</span>
       <span v-if="showCount" class="genre-count" role="status">{{ selected.length }} selected</span>
     </legend>
-    <p v-if="required" :id="`${id}-help`" class="genre-help">Choose at least one genre for your shelf. You can change these in your account.</p>
+    <p v-if="required" :id="`${id}-help`" class="genre-help">choose at least one genre for your shelf. you can change this in your account.</p>
     <div :id="`${id}-options`" class="genre-options">
       <label v-for="genre in genres" :key="genre" class="genre-option">
         <input v-model="selected" type="checkbox" :aria-label="genre" :value="genre" class="genre-input" />

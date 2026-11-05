@@ -39,6 +39,7 @@ export function useAdoptionReveal({ grouping, navigation, results }) {
     await updateQuery(
       {
         tab: selected,
+        history: 'all',
         stage: selected === 'active' ? selectedStage : undefined,
         action: selectedAction,
         waiting: selectedWaiting,

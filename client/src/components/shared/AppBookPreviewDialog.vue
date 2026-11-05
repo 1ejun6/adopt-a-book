@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 //@1ejun6 > shelf & customer pages share details layout > caller owns requests & saved state
 const props = defineProps({
+  title: { type: String, default: 'Book details' },
+  subtitle: { type: String, default: 'details for the selected book' },
   book: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   error: { type: String, default: '' },
@@ -17,6 +19,9 @@ const props = defineProps({
   canSave: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
   busy: { type: Boolean, default: false },
+  preventClose: { type: Boolean, default: false },
+  metadata: { type: Array, default: null },
+  fullDescription: { type: Boolean, default: false },
 });
 const open = defineModel('open', { type: Boolean, default: false });
 const emit = defineEmits(['save', 'retry', 'close-auto-focus']);
@@ -32,8 +37,8 @@ function cleanDescription(description) {
     .trim();
 }
 
-const description = computed(() => cleanDescription(props.book?.description));
-const fields = computed(() => [
+const description = computed(() => props.fullDescription ? props.book?.description : cleanDescription(props.book?.description));
+const fields = computed(() => props.metadata || [
   { label: 'subject', value: props.book?.subjects?.join(', ') },
   { label: 'published', value: props.book?.publicationyear },
   { label: 'ISBN', value: props.book?.isbn },
@@ -43,11 +48,11 @@ const fields = computed(() => [
 </script>
 
 <template>
-  <Dialog v-model:open="open">
-    <DialogContent v-if="props.book || props.error || props.loading" @close-auto-focus="emit('close-auto-focus', $event)">
+  <Dialog :open="open" @update:open="!props.preventClose && (open = $event)">
+    <DialogContent v-if="props.book || props.error || props.loading" :showCloseButton="!props.preventClose" @close-auto-focus="emit('close-auto-focus', $event)">
       <DialogHeader>
-        <DialogTitle>Book details</DialogTitle>
-        <DialogDescription>details for the selected book</DialogDescription>
+        <DialogTitle>{{ props.title }}</DialogTitle>
+        <DialogDescription>{{ props.subtitle }}</DialogDescription>
       </DialogHeader>
 
       <div class="dialog-body">
@@ -69,8 +74,8 @@ const fields = computed(() => [
         <div v-else-if="props.error" role="alert" class="space-y-3"><p>{{ props.error }}</p><Button variant="outline" type="button" class="min-h-11" @click="emit('retry')" :loading="props.loading"><AppIcon name="refresh" /><span class="sr-only">Retry book details</span></Button></div>
         <div v-else class="space-y-4">
           <div class="flex items-start gap-2.5">
-            <AppBookIdentity :title="props.book.title" :author="props.book.authors?.join(', ') || 'author not listed'"
-              :cover="props.book.coverurl" coverClass="w-16" class="flex-1" wrap />
+            <AppBookIdentity :title="props.book.title" :author="props.book.authors?.join(', ') || props.book.author || 'author not listed'"
+              :cover="props.book.cover || props.book.thumbnailurl || props.book.coverurl" coverClass="w-16" class="flex-1" wrap />
             <slot name="book-action" :book="props.book">
             <Button variant="outline" :loading="props.saving" v-if="props.canSave || props.saved" type="button" class="border-0 bg-transparent hover:bg-transparent min-h-11 min-w-11 shrink-0 rounded-lg p-2"
               :disabled="!props.canSave || props.busy"
@@ -82,6 +87,8 @@ const fields = computed(() => [
             </Button>
             </slot>
           </div>
+
+          <slot name="summary-after" />
 
           <div class="space-y-1.5">
             <h3>Description</h3>
@@ -102,7 +109,7 @@ const fields = computed(() => [
                   {{ field.value }} <span class="inline-block no-underline" aria-hidden="true">↗</span>
                 </a>
                 </template>
-                <template v-else>{{ field.value }}</template>
+                <template v-else>{{ field.value || 'Not provided' }}</template>
               </dd>
             </div>
           </dl>

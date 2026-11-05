@@ -91,8 +91,7 @@ const spots = computed(() => Number.isInteger(props.drive.spotsleft) ? `${props.
             </template>
           </dl>
 
-          <AppCalendarButton :event="driveEvent(drive, currentTime)" />
-          <AppAdoptionDriveBooks v-if="open && drive.mrtstationid" :stationId="drive.mrtstationid" />
+          <AppAdoptionDriveBooks v-if="open && drive.id" :driveId="drive.id" />
         </div>
 
         <DialogFooter class="flex-col text-center" :class="{ 'border-t-0': drive.mrtstationid }">
@@ -100,6 +99,7 @@ const spots = computed(() => Number.isInteger(props.drive.spotsleft) ? `${props.
             <Button v-if="canRsvp" @click="requestrsvp"><AppIcon name="community" />rsvp</Button>
             <p v-else class="grid min-h-9 place-items-center text-sm">{{ actionMessage }}</p>
           </slot>
+          <AppCalendarButton :event="driveEvent(drive, currentTime)" />
         </DialogFooter>
       </div>
     </DialogContent>

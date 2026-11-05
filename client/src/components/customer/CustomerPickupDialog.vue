@@ -24,7 +24,7 @@ const props = defineProps({
   complete: { type: Function, required: true },
 });
 const open = defineModel('open', { type: Boolean, default: false });
-const emit = defineEmits(['show-adoptions', 'back', 'state', 'focus-heading', 'pickup-record']);
+const emit = defineEmits(['back', 'state', 'focus-heading', 'pickup-record']);
 const state = usePickupState(props);
 const {
   step,
@@ -58,7 +58,7 @@ const navigation = usePickupNavigation(props, open, emit, state, {
   changeField: (key) => draftFlow.changeField(key),
   focusField: (key) => draftFlow.focusField(key),
 });
-const { keepEditing, discardChanges, back, updateOpen, leaveReceipt, canNavigate } = navigation;
+const { keepEditing, discardChanges, back, updateOpen, canNavigate } = navigation;
 const draftFlow = usePickupDraft(props, open, emit, state, navigation.resetNavigation);
 const { edit, changeField, focusField, review } = draftFlow;
 const { checkStatus, submit, cancelPickup } = usePickupMutations(props, state, review);
@@ -156,7 +156,6 @@ watchEffect(() =>
       :manageable="manageable"
       :saving="saving"
       @edit="step = 'details'"
-      @leave="leaveReceipt"
     />
     <CustomerPickupDetails
       v-else-if="appointment"

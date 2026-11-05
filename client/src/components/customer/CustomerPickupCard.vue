@@ -10,7 +10,8 @@ import {
 } from '@/lib/adoptions';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 import CustomerAdoptionRow from './CustomerAdoptionRow.vue';
-import { Badge } from '@/components/ui/badge';
+import AppStatusDot from '@/components/shared/AppStatusDot.vue';
+import { adoptionStatusTone } from '@/lib/myAdoptionsPresentation';
 const props = defineProps({
   appointment: { type: Object, required: true },
   book: { type: Object, default: null },
@@ -27,6 +28,7 @@ const needsDetails = computed(
     !pickupComplete(props.appointment) &&
     !['collected', 'cancelled', 'rejected'].includes(getApplicationStatus(props.appointment)),
 );
+const historical = computed(() => ['collected', 'cancelled', 'rejected'].includes(getApplicationStatus(props.appointment)));
 const action = computed(() =>
   props.unlinked
     ? 'Check pickup details'
@@ -41,7 +43,7 @@ const action = computed(() =>
 <template>
   <CustomerAdoptionRow
     :id="`adoption-pickup-${recordId(appointment)}`"
-    :label="`${action} for ${title}`"
+    :label="`${action} for ${title}. ${state.label}${unlinked || needsDetails ? '. Needs checking' : ''}`"
     :action="action"
     @open="needsDetails && editable && !unlinked ? emit('edit') : emit('details')"
   >
@@ -55,7 +57,7 @@ const action = computed(() =>
       />
     </template>
     <template #status>
-      <Badge :variant="state.variant" class="text-sm font-normal">{{ state.label }}</Badge>
+      <span class="inline-flex items-center justify-center gap-2" :title="state.label"><AppStatusDot :tone="adoptionStatusTone({ ...state, warning: unlinked || needsDetails })" /><span :class="{ 'sr-only': !historical }">{{ state.label.toLowerCase() }}</span></span>
       <p v-if="unlinked || needsDetails" class="adoption-row__warning">
         {{ unlinked ? 'Needs checking' : 'Pickup details incomplete' }}
       </p>

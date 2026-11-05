@@ -3,12 +3,14 @@ import AppIcon from '@/components/shared/AppIcon.vue';
 import { Button } from '@/components/ui/button';
 import { computed, useSlots } from 'vue';
 import AppFilters from '@/components/shared/AppFilters.vue';
+import AppPage from '@/components/shared/AppPage.vue';
 import AppPagination from '@/components/shared/AppPagination.vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
 
 const props = defineProps({
   title: { type: String, required: true },
   description: { type: String, default: '' },
+  tabDescription: { type: String, default: '' },
   rows: { type: Array, required: true },
   columns: { type: Array, required: true },
   tabs: { type: Array, default: () => [] },
@@ -20,6 +22,8 @@ const props = defineProps({
   error: { type: String, default: '' },
   emptyTitle: { type: String, default: 'No matching rows' },
   emptyDescription: { type: String, default: 'Try another filter or search term.' },
+  emptyKey: { type: String, default: '' },
+  emptyAction: { type: Object, default: null },
   pagination: { type: Object, default: null }
 });
 
@@ -32,22 +36,23 @@ const page = defineModel('page', { type: Number, default: 1 });
 const emit = defineEmits(['openRow', 'retry']);
 const slots = useSlots();
 //@lee-hlmilk > forward custom cell slots &&& empty state to AdminTable > keep page action slots here
-const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsWith('cell') || name === 'empty'));
+const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsWith('cell')));
 </script>
 
 <template>
   <!--@lee-hlmilk > AppLayout owns page padding > this shell only centres &&& limits width &&& spaces sections-->
-  <section class="mx-auto min-w-0 w-full max-w-7xl space-y-5">
+  <AppPage class="space-y-5">
     <header class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
       <div class="min-w-0">
         <h1>{{ props.title }}</h1>
         <p v-if="props.description" class="text-muted-foreground">{{ props.description }}</p>
+        <div v-if="$slots.legend" class="mt-3"><slot name="legend" /></div>
       </div>
       <slot name="headerActions" />
     </header>
 
     <fieldset :disabled="props.disabled" :inert="props.disabled" class="min-w-0">
-    <AppFilters v-model:search="search" v-model:status="tab" :tabs="props.tabs" :counts="props.counts"
+    <AppFilters adminTabs v-model:search="search" v-model:status="tab" :tabs="props.tabs" :counts="props.counts" :tabDescription="props.tabDescription"
       :searchPlaceholder="props.searchPlaceholder" :selectedRowCount="props.selectable ? selectedIds.length : 0">
       <template v-if="$slots.tabs" #tabs="slotProps">
         <slot name="tabs" v-bind="slotProps" />
@@ -68,6 +73,7 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
 
     <AdminTable v-if="!props.error" :rows="props.rows" :columns="props.columns" :selectedIds="selectedIds"
       :disabled="props.disabled || props.loading" :isLoading="props.loading" :selectable="props.selectable" :emptyTitle="props.emptyTitle" :emptyDescription="props.emptyDescription"
+      :emptyKey="JSON.stringify([props.emptyKey, search, tab, page])" :emptyAction="props.emptyAction"
       @selectedRows="selectedIds = $event" @openRow="emit('openRow', $event)">
       <!--@lee-hlmilk > scoped slot props come from AdminTable > pass row &&& value through to the view's cell slots-->
       <template v-for="name in tableSlots" #[name]="slotProps">
@@ -78,5 +84,5 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
     <!--@lee-hlmilk > pagination is optional > views without paged data can omit it-->
     <AppPagination v-if="!props.error && props.pagination" v-model:page="page"
       v-bind="props.pagination" :visibleCount="props.rows.length" :loading="props.loading" :disabled="props.loading || props.disabled" />
-  </section>
+  </AppPage>
 </template>

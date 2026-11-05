@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 import AppPagination from '@/components/shared/AppPagination.vue';
 import CustomerAdoptionTaskGroup from './CustomerAdoptionTaskGroup.vue';
 import CustomerPickupCard from './CustomerPickupCard.vue';
@@ -12,6 +12,7 @@ defineProps({
   waitingCounts: Object,
   searching: Boolean,
   tab: String,
+  history: String,
   loading: Boolean,
   filtered: Array,
   hasUnlinked: Boolean,
@@ -40,8 +41,8 @@ const emit = defineEmits(['appointment', 'details', 'pickup', 'refresh']);
 </script>
 <template>
   <component
-    :is="!searching && tab === 'active' ? TabsContent : 'section'"
-    :value="!searching && tab === 'active' ? stage : undefined"
+    :is="!searching ? TabsContent : 'section'"
+    :value="!searching ? tab === 'active' ? stage : history : undefined"
     :aria-labelledby="searching || tab === 'history' ? 'adoption-list-title' : undefined"
     class="space-y-4"
     :aria-busy="loading"
@@ -53,8 +54,8 @@ const emit = defineEmits(['appointment', 'details', 'pickup', 'refresh']);
     >
 
       <TabsList v-if="!searching && tab === 'active' && stage === 'waiting'" aria-label="Waiting tasks" class="adoption-tabs">
-        <TabsTrigger value="approval">Adoption approval <Badge v-if="!loading && !loadError && !pickupError" variant="neutral">{{ waitingCounts.approval }}</Badge></TabsTrigger>
-        <TabsTrigger value="confirmation">Pickup confirmation <Badge v-if="!loading && !loadError && !pickupError" variant="neutral">{{ waitingCounts.confirmation }}</Badge></TabsTrigger>
+        <TabsTrigger value="approval">Adoption approval <StatusBadge v-if="!loading && !loadError && !pickupError" :status="stage === 'waiting' ? 'pending' : 'action needed'" :tone="stage === 'waiting' ? 'amber' : 'purple'">{{ waitingCounts.approval }}</StatusBadge></TabsTrigger>
+        <TabsTrigger value="confirmation">Pickup confirmation <StatusBadge v-if="!loading && !loadError && !pickupError" :status="stage === 'waiting' ? 'pending' : 'action needed'" :tone="stage === 'waiting' ? 'amber' : 'purple'">{{ waitingCounts.confirmation }}</StatusBadge></TabsTrigger>
       </TabsList>
 
       <TabsList
@@ -64,11 +65,11 @@ const emit = defineEmits(['appointment', 'details', 'pickup', 'refresh']);
       >
         <TabsTrigger value="arrange" >
           Arrange pickup
-          <Badge v-if="!loading && !loadError && !pickupError" variant="neutral" class="adoption-tab-count tabular-nums">{{ actionCounts.arrange }}</Badge>
+          <StatusBadge v-if="!loading && !loadError && !pickupError" :status="stage === 'waiting' ? 'pending' : 'action needed'" :tone="stage === 'waiting' ? 'amber' : 'purple'" class="adoption-tab-count tabular-nums">{{ actionCounts.arrange }}</StatusBadge>
         </TabsTrigger>
         <TabsTrigger value="check" >
           Review issues
-          <Badge v-if="!loading && !loadError && !pickupError" variant="neutral" class="adoption-tab-count tabular-nums">{{ actionCounts.check }}</Badge>
+          <StatusBadge v-if="!loading && !loadError && !pickupError" :status="stage === 'waiting' ? 'pending' : 'action needed'" :tone="stage === 'waiting' ? 'amber' : 'purple'" class="adoption-tab-count tabular-nums">{{ actionCounts.check }}</StatusBadge>
         </TabsTrigger>
       </TabsList>
       <component

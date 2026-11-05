@@ -1,6 +1,6 @@
 const { z } = require("zod");
 const locations = require("../services/locations");
-const { errorstatus } = require("../utils/errors");
+const { errorstatus, errormessage } = require("../utils/errors");
 
 const coordinates = {
   lat: z.number().min(1.15).max(1.48),
@@ -55,4 +55,13 @@ async function stations(req, res) {
     return res.status(status).json({ error: status === 422 ? "invalid station search" : "could not load MRT stations" });
   }
 }
-module.exports = { nearby, stations };
+async function places(req, res) {
+  res.set("Cache-Control", "no-store");
+  try {
+    const query = z.string().trim().min(3).max(120).parse(req.query.q);
+    return res.json({ places: await locations.places(query) });
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, error.status ? error.message : "Address lookup unavailable. Please retry or choose an MRT manually.") });
+  }
+}
+module.exports = { nearby, stations, places };

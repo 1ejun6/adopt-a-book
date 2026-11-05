@@ -1,8 +1,8 @@
 
 
-async function readall(query) {
+async function readall(query, order = "id") {
   const rows = [];
-  query = query.order("id");
+  query = query.order(order);
   for (;;) {
     const { data, error } = await query.range(rows.length, rows.length + 499);
     if (error) throw error;

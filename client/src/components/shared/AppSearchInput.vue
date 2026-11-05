@@ -18,6 +18,6 @@ const inputid = useId();
   <div class="relative min-w-0" :class="props.class">
     <label :for="props.id || inputid" class="sr-only">search</label>
     <Input :id="props.id || inputid" v-model="search" v-bind="$attrs" type="text" role="searchbox" :disabled="props.disabled" :readonly="props.readonly"
-      class="bg-transparent" />
+      class="h-[46px] bg-transparent text-sm font-normal [&_input]:h-full [&_input]:min-h-0" />
   </div>
 </template>

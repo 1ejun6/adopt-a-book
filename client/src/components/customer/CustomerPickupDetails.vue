@@ -32,7 +32,7 @@ const emit = defineEmits(['pickup-record', 'cancel', 'edit', 'back']);
             : pickupStatus(appointment).label
     }}
   </h3>
-  <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm">
+  <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 border-b pb-5 text-sm">
     <dt class="text-muted-foreground">Date</dt>
     <dd>{{ displayDate(appointment.appointmentdate) }}</dd>
     <dt class="text-muted-foreground">Time</dt>

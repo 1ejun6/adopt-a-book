@@ -3,8 +3,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { computed } from 'vue';
-import { Button } from '@/components/ui/button';
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { useEmptyStateToast } from '@/composables/useEmptyStateToast';
 
 const props = defineProps({
   disabled: Boolean,
@@ -17,8 +17,19 @@ const props = defineProps({
   rowAction: { type: String, default: 'open' },
   isLoading: { type: Boolean, default: false },
   emptyTitle: { type: String, default: 'no matching rows' },
-  emptyDescription: { type: String, default: 'no rows to display' }
+  emptyDescription: { type: String, default: 'no rows to display' },
+  emptyKey: { type: String, default: '' },
+  emptyAction: { type: Object, default: null }
 });
+
+useEmptyStateToast(() => ({
+  loading: props.isLoading,
+  empty: !props.rows.length,
+  key: props.emptyKey,
+  title: props.emptyTitle,
+  description: props.emptyDescription,
+  action: props.emptyAction,
+}));
 
 const emit = defineEmits(['selectedRows', 'openRow']);
 
@@ -74,22 +85,21 @@ function handleRowClick(row) {
 
     <template v-else-if="rows.length > 0">
       <!-- CSS controls the layout; both views share the same selection state. -->
-      <div v-if="!props.compact" class="space-y-3 lg:hidden">
+      <div v-if="!props.compact" class="lg:hidden">
         <label v-if="props.selectionColumn && props.selectable" class="flex min-h-11 items-center gap-3">
           <Checkbox :disabled="props.disabled" :modelValue="headerCheckboxState" aria-label="Select all visible rows"
             @update:modelValue="toggleAllRows" />
-          Select all visible rows
         </label>
-        <article v-for="row in rows" :key="row.id" class="space-y-3 border p-4"
-          :data-state="rowSelected(row.id) ? 'selected' : undefined" :class="rowSelected(row.id) && 'bg-primary'">
-          <label v-if="props.selectionColumn && props.selectable" class="flex min-h-11 items-center gap-3">
+        <article v-for="row in rows" :key="row.id" class="relative grid gap-3 border-b p-4 last:border-b-0"
+          :data-state="rowSelected(row.id) ? 'selected' : undefined"
+          :class="[rowSelected(row.id) && 'bg-primary', props.rowAction !== 'none' && 'hover:bg-primary']">
+          <label v-if="props.selectionColumn && props.selectable" class="relative z-10 flex size-11 items-center justify-center" @click.stop>
             <Checkbox :disabled="props.disabled" :modelValue="rowSelected(row.id)" :aria-label="`Select ${row.title || row.id}`"
               @update:modelValue="toggleRowSelection(row.id)" />
-            Select record
           </label>
           <dl class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
             <div v-for="column in columns" :key="column.key" class="min-w-0" :class="column.mobileClass || 'col-span-2'">
-              <dt class="text-sm text-muted-foreground" :class="(!column.label || column.hideMobileLabel) && 'sr-only'">
+              <dt class="sr-only">
                 <slot :name="`header${column.key[0].toUpperCase()}${column.key.slice(1)}`" :column="column">{{ column.label || 'Actions' }}</slot>
               </dt>
               <dd class="min-w-0 break-words">
@@ -99,11 +109,10 @@ function handleRowClick(row) {
               </dd>
             </div>
           </dl>
-          <Button :disabled="props.disabled" v-if="props.rowAction === 'open'" type="button" variant="outline" class="w-full"
-            :aria-label="`View details for ${row.title || row.customer || row.userid?.name || row.id}`" @click="emit('openRow', row)">
-            View details
-            <HugeiconsIcon :icon="ArrowRight01Icon" class="size-4" aria-hidden="true" />
-          </Button>
+          <button v-if="props.rowAction !== 'none'" :disabled="props.disabled" type="button"
+            class="absolute inset-0 h-full w-full cursor-pointer border-0 bg-transparent"
+            :aria-label="`${props.rowAction === 'open' ? 'View details for' : 'Select'} ${row.title || row.customer || row.userid?.name || row.id}`"
+            @click.stop="handleRowClick(row)" />
         </article>
       </div>
 
@@ -156,12 +165,6 @@ function handleRowClick(row) {
     </template>
 
     <!--@lee-hlmilk > empty table-->
-    <div v-else class="border p-5 text-center">
-      <slot name="empty">
-        <h2>{{ emptyTitle }}</h2>
-        <!--@lee-hlmilk > empty table description-->
-        <p class="text-sm text-muted-foreground">{{ emptyDescription }}</p>
-      </slot>
-    </div>
+    <p v-else class="sr-only" role="status">{{ emptyTitle }}. {{ emptyDescription }}</p>
   </div>
 </template>

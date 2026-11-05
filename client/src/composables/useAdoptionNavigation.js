@@ -1,10 +1,20 @@
 import { computed, ref, watch, nextTick } from 'vue';
+import { historyAdoptionTabs } from '@/lib/myAdoptionsPresentation';
 import { useRoute, useRouter } from 'vue-router';
 
 export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction, defaultWaiting }) {
   const route = useRoute();
   const router = useRouter();
   const rememberedStage = ref('');
+  const rememberedHistory = ref('all');
+  const history = computed({
+    get: () => historyAdoptionTabs.some(item => item.value === route.query.history) ? route.query.history : rememberedHistory.value,
+    set: value => {
+      if (!historyAdoptionTabs.some(item => item.value === value)) return;
+      rememberedHistory.value = value;
+      return updateQuery({ history: value, page: String(rememberedPages[`history:${value}`] || 1) }, false, true);
+    },
+  });
   const stage = computed({
     get: () => {
       if (stageValues.includes(route.query.stage)) return route.query.stage;
@@ -25,6 +35,10 @@ export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction
     },
     { immediate: true },
   );
+  watch(() => [route.query.history, routeTab()], ([value]) => {
+    if (historyAdoptionTabs.some(item => item.value === value)) rememberedHistory.value = value;
+    else if (routeTab() === 'history') rememberedHistory.value = 'all';
+  }, { immediate: true });
   const action = computed({
     get: () =>
       ['arrange', 'check'].includes(route.query.action) ? route.query.action : defaultAction.value,
@@ -92,8 +106,11 @@ export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction
       if (query.stage === 'waiting') query.waiting = ['approval', 'confirmation'].includes(query.waiting) ? query.waiting : waiting.value;
       else delete query.waiting;
       if (query.stage === defaultStage.value) delete query.stage;
+      delete query.history;
       delete query.tab;
     } else {
+      query.history = historyAdoptionTabs.some(item => item.value === query.history) ? query.history : history.value;
+      if (query.history === 'all') delete query.history;
       delete query.stage;
       delete query.action;
       delete query.waiting;
@@ -138,7 +155,7 @@ export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction
           search: value.trim() ? value : undefined,
           page: value.trim()
             ? undefined
-            : String(rememberedPages[tab.value === 'active' ? activePageKey() : tab.value] || 1),
+            : String(rememberedPages[tab.value === 'active' ? activePageKey() : `history:${history.value}`] || 1),
         },
         true,
         true,
@@ -147,7 +164,7 @@ export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction
   });
   const searching = computed(() => !!search.value.trim());
   const pageKey = computed(() =>
-    searching.value ? 'search' : tab.value === 'active' ? activePageKey() : tab.value,
+    searching.value ? 'search' : tab.value === 'active' ? activePageKey() : `history:${history.value}`,
   );
   const page = computed({
     get: () => {
@@ -177,7 +194,7 @@ export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction
         tab: selected,
         stage: selected === 'active' ? stage.value : undefined,
         search: undefined,
-        page: String(rememberedPages[selected === 'active' ? activePageKey() : selected] || 1),
+        page: String(rememberedPages[selected === 'active' ? activePageKey() : `history:${history.value}`] || 1),
       },
       replace,
       true,
@@ -202,6 +219,7 @@ export function useAdoptionNavigation({ stageValues, defaultStage, defaultAction
   }
 
   return {
+    history,
     waiting,
     action,
     route,

@@ -18,7 +18,7 @@ const props = defineProps({
     submitting: { type: Boolean, default: false },
     importedIds: { type: Array, default: () => [] }
 });
-const emit = defineEmits(['update:query', 'search', 'select', 'manual', 'submit']);
+const emit = defineEmits(['update:query', 'search', 'select', 'submit']);
 //@lee-hlmilk > form owns the shared draft > selection &&& locations survive switching import steps
 //@lee-hlmilk > toRefs keeps writes linked to props.draft > this intentionally edits BookFormDialog's draft, not saved API records
 const { selectedIds, addedIds, reviewBooks, reviewing, invalidIds } = toRefs(props.draft);
@@ -86,17 +86,16 @@ watch(() => props.importedIds, ids => {
 <template>
     <form novalidate @submit.prevent="reviewing ? submitBooks($event) : emit('search')">
         <fieldset :disabled="props.submitting" class="min-w-0 space-y-5">
-            <div class="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                <h2>{{ reviewing ? 'Choose collection locations' : 'Find on Open Library' }}</h2>
-                <Button v-if="!reviewing" type="button" variant="outline" @click="emit('manual')"><AppIcon name="book" />Enter manually</Button>
-            </div>
+            <h2 v-if="reviewing">Choose collection locations</h2>
+            <p v-else class="text-sm text-muted-foreground">Search Open Library and select the books to add</p>
             <p v-if="reviewing" class="text-muted-foreground">Check the selected books against the physical copies. Choose an MRT station for each book before adding them.</p>
             <Field v-else>
-                <FieldLabel for="book-search">Search by title, author or ISBN</FieldLabel>
-                <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-                    <Input id="book-search" :modelValue="props.query" type="search" class="flex-1  "
+                <FieldLabel for="book-search" class="sr-only">Search by title, author or ISBN</FieldLabel>
+                <div class="flex min-w-0 items-center overflow-hidden rounded-lg border focus-within:ring-2 focus-within:ring-ring">
+                    <Input id="book-search" :modelValue="props.query" type="search" class="flex-1 border-0"
+                        placeholder="Search by title, author or ISBN" :clearButtonClass="props.query ? '' : 'hidden'"
                         @update:modelValue="emit('update:query', $event)" />
-                    <Button type="submit" class="shrink-0" :disabled="props.lookup.loading || !props.query.trim()" :loading="props.lookup.loading"><AppIcon name="search" /><span class="sr-only">{{ props.lookup.loading ? 'Searching…' : 'Search' }}</span></Button>
+                    <Button type="submit" class="shrink-0 rounded-none border-0" title="Search" :disabled="props.lookup.loading || !props.query.trim()" :loading="props.lookup.loading"><AppIcon name="search" /><span class="sr-only">{{ props.lookup.loading ? 'Searching…' : 'Search' }}</span></Button>
                 </div>
             </Field>
             <p v-if="props.lookup.loading" role="status">Searching Open Library…</p>
@@ -107,6 +106,8 @@ watch(() => props.importedIds, ids => {
                 </div>
                 <!--@lee-hlmilk > share table markup &&& checkbox logic with admin lists > import-specific controls use slots-->
                 <AdminTable :rows="rows" :columns="columns" :isLoading="props.lookup.loading" :disabled="props.lookup.loading || props.submitting" :selectedIds="reviewing ? [] : selectedIds"
+                    :emptyKey="JSON.stringify([props.query, reviewing])" :emptyTitle="reviewing ? 'No books selected' : 'No matching books'"
+                    :emptyDescription="reviewing ? 'Go back to results to choose books to add.' : 'Try another title, author or ISBN, or use Manual entry.'"
                     :selectable="!reviewing && !props.submitting" :selectionColumn="!reviewing" :rowAction="reviewing ? 'none' : 'select'"
                     @selectedRows="selectedIds = $event">
                     <template #cellBook="{ row }"><BookIdentity :title="row.title" :author="row.authors.join(', ')" :cover="row.coverurl" /></template>
@@ -120,9 +121,6 @@ watch(() => props.importedIds, ids => {
                     </template>
                     <template #cellActions="{ row }">
                         <Button type="button" variant="outline" :aria-label="`Remove ${row.title}`" @click.stop="removeBook(row.id)"><AppIcon name="delete" /><span class="sr-only">Remove</span></Button>
-                    </template>
-                    <template #empty>
-                        <p class="text-muted-foreground">{{ reviewing ? 'No books selected. Go back to results to choose books to add.' : 'Try another title, author or ISBN, or enter the book manually.' }}</p>
                     </template>
                 </AdminTable>
             </template>

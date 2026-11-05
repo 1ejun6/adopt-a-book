@@ -52,6 +52,7 @@ export function useAdoptionLinks({
           await updateQuery(
             {
               tab: section,
+              history: 'all',
               stage: section === 'active' ? 'needs-action' : undefined,
               action: 'check',
               search: undefined,

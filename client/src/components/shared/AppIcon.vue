@@ -6,7 +6,7 @@ import {
   Search01Icon, Cancel01Icon, PencilEdit02Icon, Delete02Icon, ArrowReloadHorizontalIcon,
   Loading03Icon, CheckmarkCircle02Icon, CancelCircleIcon, InformationCircleIcon,
   Add01Icon, ArrowLeft01Icon, ArrowRight01Icon, FilterIcon,
-  FloppyDiskIcon, Location08Icon, SentIcon, ViewIcon,
+  FloppyDiskIcon, Location08Icon, SentIcon, ViewIcon, ImageUploadIcon,
 } from '@hugeicons/core-free-icons';
 
 defineProps({ name: { type: String, required: true }, size: { type: Number, default: 16 } });
@@ -18,7 +18,7 @@ const icons = {
   refresh: ArrowReloadHorizontalIcon, loading: Loading03Icon, success: CheckmarkCircle02Icon,
   cancel: CancelCircleIcon, info: InformationCircleIcon,
   add: Add01Icon, back: ArrowLeft01Icon, next: ArrowRight01Icon, filter: FilterIcon,
-  save: FloppyDiskIcon, location: Location08Icon, send: SentIcon, view: ViewIcon,
+  save: FloppyDiskIcon, location: Location08Icon, send: SentIcon, view: ViewIcon, upload: ImageUploadIcon,
 };
 </script>
 

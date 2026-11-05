@@ -70,8 +70,8 @@ const mapUrl = computed(() => `https://www.google.com/maps/search/?api=1&query=$
             <HugeiconsIcon :icon="UserGroupIcon" class="size-5 shrink-0" aria-hidden="true" />
             {{ slots }} {{ slots === 1 ? 'slot' : 'slots' }} left
           </span>
-          <!--@1ejun6 > failed book count lookup shows a dash > zero means no available books-->
-          <span class="flex gap-2.5" :title="bookcount == null ? 'book count unavailable' : 'available books nearby'">
+          <!--@1ejun6 > unavailable saved book count shows a dash > zero means no available books-->
+          <span class="flex gap-2.5" :title="bookcount == null ? 'book count unavailable' : 'books selected for this drive'">
             <HugeiconsIcon :icon="Book02Icon" class="size-5 shrink-0" aria-hidden="true" />
             {{ booklabel }}
           </span>

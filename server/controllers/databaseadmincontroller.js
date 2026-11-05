@@ -30,11 +30,11 @@ async function base(req, res) {
 async function fix(req, res) {
   try {
     require("../utils/validation").rejectfields(req.body, []);
-    const result = await runsql("fix-customer-books.sql");
-    return res.json({ message: "customer books and shelf repair applied", result });
+    const result = await runsql("migrations/20261106_drive_books.sql");
+    return res.json({ message: "drive books migration applied", result });
   } catch (error) {
-    console.error("customer books repair failed >", error);
-    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not repair customer books and shelf") });
+    console.error("drive books migration failed >", error);
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not apply drive books migration") });
   }
 }
 

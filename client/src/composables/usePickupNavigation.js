@@ -75,10 +75,6 @@ export function usePickupNavigation(
     }
     closeDialog();
   }
-  function leaveReceipt() {
-    if (result.value === 'current' && draftChanged.value) updateOpen(false);
-    else emit('show-adoptions');
-  }
   async function canNavigate() {
     if (!open.value) return true;
     if (saving.value) return false;
@@ -102,7 +98,6 @@ export function usePickupNavigation(
     discardChanges,
     back,
     updateOpen,
-    leaveReceipt,
     canNavigate,
     resetNavigation,
   };

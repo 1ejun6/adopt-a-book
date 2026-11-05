@@ -67,31 +67,11 @@ export function useAdoptionDrives({ endpoint, cacheKey }) {
       if (!Array.isArray(drivelist))
         throw new Error('could not load adoption drives > please try again');
 
-      // Get book counts for each station
-      const stationIds = [...new Set(drivelist.map((drive) => drive.mrtstationid).filter(Boolean))];
-      const bookCounts = new Map(
-        await Promise.all(
-          stationIds.map(async (id) => {
-            try {
-              const books = await api('/books', {
-                method: 'GET',
-                signal: request.signal,
-                query: { mrtstationids: id, status: 'available', limit: 1 },
-              });
-              return [id, Number.isInteger(books.total) && books.total >= 0 ? books.total : null];
-            } catch (error) {
-              if (request.signal.aborted) throw error;
-              return [id, null];
-            }
-          }),
-        ),
-      );
-
       if (id !== requestId) return;
       drives.value = drivelist.map((drive) => ({
         ...drive,
         past: driveHasEnded(drive),
-        bookCount: bookCounts.get(drive.mrtstationid) ?? null,
+        bookCount: Number.isInteger(drive.bookCount) && drive.bookCount >= 0 ? drive.bookCount : null,
       }));
       try {
         if (cacheKey) localStorage.setItem(cacheKey, JSON.stringify(drives.value));

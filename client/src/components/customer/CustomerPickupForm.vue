@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 
 import { Input } from '@/components/ui/input';
 import { Field, FieldLabel } from '@/components/ui/field';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 defineProps({
   ready: Boolean,
@@ -72,22 +73,20 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
       <fieldset class="space-y-2" :disabled="saving" aria-describedby="pickup-time-help">
         <legend class="text-sm">Two times you’re available (SGT)</legend>
         <p id="pickup-time-help" class="text-sm text-muted-foreground">
-          Choose two different hourly times on the same date. The team will confirm one.
+          choose two different times on the same date. the team will confirm one.
         </p>
-        <div v-for="(_, index) in draft.timeslots" :key="index" class="space-y-1">
+        <div v-for="index in [0, 1]" :key="index" class="space-y-1">
           <label :for="index === 0 ? 'pickup-timeslot' : `pickup-timeslot-${index}`" class="text-sm"
             >Time {{ index + 1 }}</label
           >
-          <select
-            :id="index === 0 ? 'pickup-timeslot' : `pickup-timeslot-${index}`"
-            v-model="draft.timeslots[index]"
-            required
-            class="min-h-11 w-full min-w-0 rounded-lg border bg-background px-3 text-base"
-            :aria-invalid="!!errors.timeslot || undefined"
-            :aria-describedby="errors.timeslot ? 'pickup-time-error' : undefined"
-          >
-            <option disabled value="">Choose a time</option>
-            <option
+          <Select v-model="draft.timeslots[index]" :disabled="saving || !draft.appointmentdate">
+            <SelectTrigger :id="index === 0 ? 'pickup-timeslot' : `pickup-timeslot-${index}`"
+              :aria-invalid="!!errors.timeslot || undefined"
+              :aria-describedby="errors.timeslot ? 'pickup-time-help pickup-time-error' : 'pickup-time-help'">
+              <SelectValue placeholder="Choose a time" />
+            </SelectTrigger>
+            <SelectContent>
+            <SelectItem
               v-for="time in timeSlots"
               :key="time"
               :value="time"
@@ -97,15 +96,16 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
               "
             >
               {{ time }}
-            </option>
-          </select>
+            </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <p v-if="errors.timeslot" id="pickup-time-error" class="text-sm text-destructive">
           {{ errors.timeslot }}
         </p>
       </fieldset>
     </div>
-    <p class="text-sm text-muted-foreground">All times are in Singapore time (SGT).</p>
+    <p class="text-sm text-muted-foreground">all times are in singapore time (sgt).</p>
     <div class="adoption-actions">
       <Button
         type="button"

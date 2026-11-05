@@ -1,7 +1,8 @@
 <script setup>
 import { computed } from 'vue';
 import { Alert02Icon } from '@hugeicons/core-free-icons';
-import { Badge } from '@/components/ui/badge';
+import AppStatusDot from '@/components/shared/AppStatusDot.vue';
+import { adoptionStatusTone } from '@/lib/myAdoptionsPresentation';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 import CustomerAdoptionRow from './CustomerAdoptionRow.vue';
 import { bookAuthors, displayDate, getApplicationStatus, pickupStatus, hasPickupOptions } from '@/lib/adoptions';
@@ -11,7 +12,7 @@ const props = defineProps({
   verified: { type: Boolean, default: true },
   groupedOverdueWarning: { type: Boolean, default: false },
 });
-const emit = defineEmits(['details', 'pickup']);
+const emit = defineEmits(['details']);
 const title = computed(() => props.record.book?.title || 'Book details unavailable');
 const showPickup = computed(
   () =>
@@ -37,21 +38,14 @@ const authors = computed(() => {
     ? `${bookAuthors({ authors: values.slice(0, 1) })} +${values.length - 1} more`
     : bookAuthors(props.record.book);
 });
-const actionLabel = computed(() =>
-  props.verified && props.record.action ? props.record.actionLabel : 'View details',
-);
-function openRecord() {
-  if (props.verified && props.record.action) emit('pickup', props.record);
-  else emit('details', props.record);
-}
 </script>
 
 <template>
   <CustomerAdoptionRow
     :id="`adoption-${record.id}`"
-    :label="`${actionLabel} for ${title}${overdue ? '. Pickup times have passed' : ''}`"
-    :action="actionLabel"
-    @open="openRecord"
+    :label="`View request for ${title}. ${record.label}${overdue ? '. Pickup times have passed' : ''}`"
+    action="View request"
+    @open="emit('details', record)"
   >
     <template #book>
       <AppBookIdentity
@@ -64,7 +58,7 @@ function openRecord() {
       />
     </template>
     <template #status>
-      <Badge :variant="record.variant" class="text-sm font-normal">{{ record.label }}</Badge>
+      <span class="inline-flex items-center justify-center gap-2" :title="record.label"><AppStatusDot :tone="adoptionStatusTone(record)" /><span :class="{ 'sr-only': !record.history }">{{ record.label.toLowerCase() }}</span></span>
       <p v-if="warning && !(groupedOverdueWarning && overdue)" class="adoption-row__warning">
         {{ warning }}
       </p>

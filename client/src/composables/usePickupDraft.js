@@ -111,7 +111,7 @@ export function usePickupDraft(props, open, emit, state, resetNavigation) {
       errors.appointmentdate = pickupDateError.value;
     }
     if (
-      new Set(draft.timeslots).size !== 2 ||
+      draft.timeslots.length !== 2 || new Set(draft.timeslots).size !== 2 ||
       !draft.timeslots.every((timeslot) =>
         availablePickupSlot({ appointmentdate: draft.appointmentdate, timeslot }),
       )

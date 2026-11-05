@@ -6,13 +6,14 @@ const supabase = require("../supabase/supabase");
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(?::00)?$/, "use HH:MM Singapore time").transform(value => value.slice(0, 5));
 const schedule = z.object({ starttime: time, endtime: time }).refine(value => value.endtime > value.starttime, "end time must be after start time");
 const adoptiondriveschema = z.object({
+  bookids: z.array(z.uuid()).min(1, "select at least one book").refine(ids => new Set(ids).size === ids.length, "book IDs must be unique"),
   title: z.string().trim().min(1),
   location: z.string().trim().min(1),
   mrtstationid: z.uuid({ error: "choose an MRT station" }),
   eventdate: z.iso.date(),
   starttime: time,
   endtime: time,
-  description: z.string().default(""),
+  description: z.string().refine(value => value.trim().split(/\s+/u).filter(Boolean).length <= 500, "description must be 500 words or fewer").default(""),
   maxcapacity: z.coerce.number().int().positive().max(2147483647),
   userids: z.array(z.string().uuid()).default([]),
   createdby: z.string().uuid(),
@@ -40,14 +41,17 @@ async function createdrive(drive) {
   const validateddrive = adoptiondriveschema.parse(drive);
   schedule.parse(validateddrive);
   await stations.validatewrite(validateddrive.mrtstationid);
-  const { data, error } = await supabase.from("adoptiondrives").insert(validateddrive).select(`*,${stations.relation}`).single();
+  const { bookids, ...fields } = validateddrive;
+  const { data, error } = await supabase.rpc("save_drive_with_books", { drive_id: null, fields, book_ids: bookids, actor_id: fields.createdby });
   if (error) throw error;
-  return mapdrive(data);
+  return getdrivebyid(data);
 }
 async function getdrivebyid(id) {
   const { data, error } = await supabase.from("adoptiondrives").select(`*,${stations.relation}`).eq("id", id).maybeSingle();
   if (error) throw error;
-  return stations.decorate(mapdrive(data), true);
+  if (!data) return null;
+  const books = await drivebooks(id);
+  return stations.decorate({ ...mapdrive(data), bookids: books.map(book => book.id), books }, true);
 }
 async function updatedrive(id, drive) {
   const validateddrive = adoptiondriveupdateschema.parse(drive);
@@ -61,6 +65,14 @@ async function updatedrive(id, drive) {
   const changes = Object.fromEntries(Object.entries(validateddrive).filter(([key]) => Object.hasOwn(drive, key) && drive[key] !== undefined));
   // Even setting an already closed drive to closed is an explicit admin choice.
   if (changes.status !== undefined) changes.closedbycapacity = false;
+  if (Object.keys(changes).some(key => key !== "status" && key !== "closedbycapacity")) {
+    if (!validateddrive.bookids) throw stations.invalid("select at least one book for this drive");
+    const { bookids, ...fields } = changes;
+    delete fields.closedbycapacity;
+    const { error } = await supabase.rpc("save_drive_with_books", { drive_id: id, fields, book_ids: bookids, actor_id: null });
+    if (error) throw error;
+    return getdrivebyid(id);
+  }
   const { data, error } = await supabase.from("adoptiondrives").update(changes).eq("id", id).select(`*,${stations.relation}`).maybeSingle();
   if (error) throw error;
   return mapdrive(data);
@@ -82,11 +94,6 @@ async function publicdrives(id) {
   const { userids, ...drive } = data;
   return mapdrive({ ...drive, spotsleft: Math.max(drive.maxcapacity - userids.length, 0) });
 }
-async function removedrives(ids, userid) {
-  const { data, error } = await supabase.rpc("remove_drives", { record_ids: ids, actor_id: userid });
-  if (error) throw error;
-  return data;
-}
 async function cancelrsvp(id, userid) {
   const { data, error } = await supabase.rpc("cancel_drive_rsvp", { drive_id: id, customer_id: userid });
   if (error) throw error;
@@ -107,4 +114,9 @@ async function discovery(query = {}, customerid = null) {
   return data.map(mapdrive);
 }
 
-module.exports = { rsvpdrive, adoptiondriveschema, adoptiondriveupdateschema, getalldrives, createdrive, getdrivebyid, updatedrive, publicdrives, removedrives, cancelrsvp, discovery };
+async function drivebooks(id) {
+  const rows = await readall(supabase.from("drivebooks").select("book:books(id,title,authors,isbn,publicationyear,coverurl,status,mrtstationid)").eq("driveid", id), "bookid");
+  return rows.map(row => row.book).filter(Boolean);
+}
+
+module.exports = { drivebooks, rsvpdrive, adoptiondriveschema, adoptiondriveupdateschema, getalldrives, createdrive, getdrivebyid, updatedrive, publicdrives, cancelrsvp, discovery };
