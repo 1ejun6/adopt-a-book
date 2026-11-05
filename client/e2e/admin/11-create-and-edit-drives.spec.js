@@ -1,10 +1,9 @@
 import { isApi, singaporeDate, trackApiRequests, driveCard, driveSearch } from '../support/guest.js'
 import { callApi, slowly } from '../support/customer.js'
 import {
-  test, expect, badge, confirmation, createBook, defaultStation, dialog, field, listMain, newCustomer, openList, row, rows, rsvp, search, taggedTitle, toast,
+  test, expect, badge, confirmation, createBook, defaultStation, dialog, DRIVES, field, listMain, listSelect, newCustomer, openList, optionsOf, row, rows, rsvp, search, taggedTitle, toast,
 } from '../support/admin.js'
 
-const DRIVES = '/admin/drives'
 
 //@ChitanyaBharathi > journey 3.11 > the admin plans a drive, checks which books will be there &&& tweaks it later
 test('admin creates and edits an adoption drive', async ({ page, browser, admin }) => {
@@ -19,8 +18,8 @@ test('admin creates and edits an adoption drive', async ({ page, browser, admin 
   await expect(page.getByRole('tab', { name: `Upcoming ${opened.counts.upcoming}` })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByRole('tab', { name: `Past ${opened.counts.past}` })).toBeVisible()
   await expect(listMain(page).getByRole('button', { name: 'Event date', exact: true })).toBeVisible()
-  const statusSelect = listMain(page).getByRole('combobox', { name: 'Drive status' })
-  expect((await statusSelect.locator('option').allTextContents()).map(text => text.trim())).toEqual(['All statuses', 'Open', 'Closed'])
+  const statusSelect = listSelect(page, 'Drive status')
+  expect(await optionsOf(statusSelect)).toEqual(['All statuses', 'Open', 'Closed'])
 
   // 2. Create drive > every field, today's date &&& a capacity of 30
   await page.getByRole('button', { name: 'Create drive' }).click()

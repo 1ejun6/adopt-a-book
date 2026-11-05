@@ -1,6 +1,6 @@
 import { guestNavLinks, isApi, json, nextResponse, trackApiRequests } from '../support/guest.js'
 import {
-  test, expect, goTo, confirmation, createBook, createDrive, dialog, listMain, navLinks, pageCount, row, rowCheckbox, rows, search, seedAdoption, toast,
+  test, expect, confirmation, createBook, createDrive, dialog, goTo, listMain, navLinks, pageCount, row, rowCheckbox, rows, search, seedAdoption, selectionButton, toast,
 } from '../support/admin.js'
 
 const down = { error: 'service unavailable' }
@@ -105,7 +105,7 @@ test.describe('🔌 admin recovers when the server is down', () => {
     await page.goto('/admin/applications')
     await search(page, '/admin/applications', admin.tag)
     await rowCheckbox(page, customer.email).click()
-    await listMain(page).getByRole('group').getByRole('button', { name: 'Approve' }).click()
+    await selectionButton(page, 'Approve').click()
     await confirmation(page, 'Approve application?').getByRole('button', { name: 'Approve' }).click()
     const failed = toast(page, '1 decision failed')
     await expect(failed).toBeVisible()
@@ -122,7 +122,7 @@ test.describe('🔌 admin recovers when the server is down', () => {
     await search(page, '/admin/books', admin.tag)
     const api = trackApiRequests(page)
     await rowCheckbox(page, book.title).click()
-    await listMain(page).getByRole('group').getByRole('button', { name: 'Delete' }).click()
+    await selectionButton(page, 'Delete').click()
     const ask = confirmation(page, 'Delete book?')
     await expect(ask).toBeVisible()
     await page.goBack()

@@ -1,11 +1,9 @@
 import { isApi, json, singaporeDate } from '../support/guest.js'
 import { logIn } from '../support/customer.js'
 import {
-  test, expect, goTo, TODAY_TIMESLOT, badge, confirmation, dialog, field, listMain, nextList, openList, row, rows, search, seedAdoption, tab, toast,
+  test, expect, APPOINTMENTS, badge, BOOKS, confirmation, dialog, field, goTo, listMain, nextList, openList, openTab, row, rows, search, seedAdoption, tab, toast, TODAY_TIMESLOT,
 } from '../support/admin.js'
 
-const APPOINTMENTS = '/admin/appointments'
-const BOOKS = '/admin/books'
 
 //@ChitanyaBharathi > the dashboard previews the first record of each queue > older seed data could come first
 //@ChitanyaBharathi > so these dashboard requests are narrowed to the journey's tag (the counts are unaffected by search)
@@ -17,12 +15,6 @@ async function narrowDashboardTo(page, tag) {
   })
 }
 
-async function openView(page, label, view) {
-  const list = nextList(page, APPOINTMENTS, url => url.searchParams.get('view') === view)
-  await tab(page, label).click()
-  return (await list).json()
-}
-
 //@ChitanyaBharathi > journey 3.10 > a customer turns up today &&& the admin follows the pickup through to adopted
 test('admin hands a book over on collection day', async ({ page, browser, admin }) => {
   const { book, customer } = await seedAdoption(admin, 'pickup today', { book: { title: 'Collected Today' } })
@@ -31,7 +23,7 @@ test('admin hands a book over on collection day', async ({ page, browser, admin 
   await openList(page, '/admin/appointments', APPOINTMENTS)
   await search(page, APPOINTMENTS, admin.tag)
   await expect(rows(page)).toHaveCount(0)
-  await openView(page, 'Overdue', 'overdue')
+  await openTab(page, APPOINTMENTS, 'Overdue', { view: 'overdue' })
   await expect(rows(page)).toHaveCount(1)
   await expect(badge(row(page, book.title), 'pending confirmation')).toBeVisible()
 
@@ -44,13 +36,13 @@ test('admin hands a book over on collection day', async ({ page, browser, admin 
 
   // 3. back to Appointments &&& confirms it > "1 appointment confirmed"; it moves to Today's pickup (no date picker there)
   await goTo(page, 'Appointments')
-  await openView(page, 'Overdue', 'overdue')
+  await openTab(page, APPOINTMENTS, 'Overdue', { view: 'overdue' })
   await search(page, APPOINTMENTS, admin.tag)
   await row(page, book.title).click()
   await dialog(page).getByRole('button', { name: 'Confirm appointment' }).click()
   await confirmation(page, 'Confirm appointment?').getByRole('button', { name: 'Confirm', exact: true }).click()
   await expect(toast(page, '1 appointment confirmed')).toBeVisible()
-  await openView(page, "Today's pickup", 'today')
+  await openTab(page, APPOINTMENTS, "Today's pickup", { view: 'today' })
   await expect(badge(row(page, book.title), 'appointment confirmed')).toBeVisible()
   await expect(listMain(page).getByRole('button', { name: 'Collection date', exact: true })).toHaveCount(0)
 
@@ -82,7 +74,7 @@ test('admin hands a book over on collection day', async ({ page, browser, admin 
   await collect.getByRole('button', { name: 'Mark collected' }).click()
   await expect(toast(page, '1 appointment marked collected')).toBeVisible()
   await search(page, APPOINTMENTS, admin.tag)
-  await openView(page, 'History', 'history')
+  await openTab(page, APPOINTMENTS, 'History', { view: 'history' })
   await expect(badge(row(page, book.title), 'collected')).toBeVisible()
   await row(page, book.title).click()
   await expect(details.getByRole('heading', { name: 'Appointment details' })).toBeVisible()

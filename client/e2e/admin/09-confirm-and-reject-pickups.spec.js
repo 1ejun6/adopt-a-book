@@ -1,17 +1,7 @@
 import {
-  test, expect, goTo, TIMESLOT, badge, confirmation, dialog, field, listMain, nextList, openList, pickDate, row, rowCheckbox, rows, search, seedAdoption, shownDate, tab, toast,
+  test, expect, APPOINTMENTS, badge, BOOKS, confirmation, dialog, field, goTo, listMain, listSelect, nextList, openList, openTab, optionsOf, pickDate, row, rowCheckbox, rows, search, seedAdoption, selectionButton, selectionHint, shownDate, tab, TIMESLOT, toast,
 } from '../support/admin.js'
 
-const APPOINTMENTS = '/admin/appointments'
-const BOOKS = '/admin/books'
-const statusSelect = page => listMain(page).getByRole('combobox', { name: 'Appointment status' })
-const actionButton = (page, name) => listMain(page).getByRole('group').getByRole('button', { name, exact: true })
-
-async function openView(page, label, view) {
-  const list = nextList(page, APPOINTMENTS, url => url.searchParams.get('view') === view)
-  await tab(page, label).click()
-  return (await list).json()
-}
 
 //@ChitanyaBharathi > journey 3.9 > the admin goes through pickup times customers proposed
 test('admin confirms and rejects pickups', async ({ page, admin }) => {
@@ -28,7 +18,7 @@ test('admin confirms and rejects pickups', async ({ page, admin }) => {
     await expect(page.getByRole('tab', { name: `${label} ${opened.counts[key]}` })).toBeVisible()
   }
   await expect(listMain(page).getByRole('button', { name: 'Collection date', exact: true })).toBeVisible()
-  await expect(statusSelect(page)).toHaveCount(0)
+  await expect(listSelect(page, 'Appointment status')).toHaveCount(0)
 
   // 2. searches for their tag > 3 pickups with customer + email, book, "date · time", location &&& a pending badge
   await search(page, APPOINTMENTS, admin.tag)
@@ -71,7 +61,7 @@ test('admin confirms and rejects pickups', async ({ page, admin }) => {
   await confirmIt.getByRole('button', { name: 'Confirm', exact: true }).click()
   await expect(toast(page, '1 appointment confirmed')).toBeVisible()
   await expect(row(page, first.book.title)).toHaveCount(0)
-  await openView(page, 'Upcoming', 'upcoming')
+  await openTab(page, APPOINTMENTS, 'Upcoming', { view: 'upcoming' })
   await expect(badge(row(page, first.book.title), 'appointment confirmed')).toHaveText('confirmed')
 
   // 6. the second pickup > Reject appointment &&& confirm > the book stays reserved; History filtered to Rejected lists it
@@ -81,9 +71,9 @@ test('admin confirms and rejects pickups', async ({ page, admin }) => {
   await expect(rejectIt).toContainText('The book stays reserved and the customer can propose another pickup time.')
   await rejectIt.getByRole('button', { name: 'Reject', exact: true }).click()
   await expect(toast(page, '1 appointment rejected')).toBeVisible()
-  await openView(page, 'History', 'history')
+  await openTab(page, APPOINTMENTS, 'History', { view: 'history' })
   const rejected = nextList(page, APPOINTMENTS, url => url.searchParams.get('status') === 'rejected')
-  await statusSelect(page).selectOption('rejected')
+  await listSelect(page, 'Appointment status').selectOption('rejected')
   await rejected
   await expect(rows(page)).toHaveCount(1)
   await expect(badge(row(page, second.book.title), 'rejected')).toBeVisible()
@@ -95,38 +85,37 @@ test('admin confirms and rejects pickups', async ({ page, admin }) => {
 
   // 8. Upcoming > ticks the confirmed pickup &&& the pending one > the "Filter by…" hint &&& both buttons disabled
   await page.goBack()
-  await openView(page, 'Upcoming', 'upcoming')
+  await openTab(page, APPOINTMENTS, 'Upcoming', { view: 'upcoming' })
   await search(page, APPOINTMENTS, admin.tag)
   await expect(rows(page)).toHaveCount(2)
   await rowCheckbox(page, first.book.title).click()
   await rowCheckbox(page, third.book.title).click()
-  await expect(listMain(page).locator('p[role="status"]').filter({ hasText: 'Filter by Pending to confirm appointments, or Confirmed to mark them collected.' })).toBeVisible()
-  await expect(actionButton(page, 'Confirm appointments')).toBeDisabled()
-  await expect(actionButton(page, 'Mark collected')).toBeDisabled()
+  await expect(selectionHint(page, 'Filter by Pending to confirm appointments, or Confirmed to mark them collected.')).toBeVisible()
+  await expect(selectionButton(page, 'Confirm appointments')).toBeDisabled()
+  await expect(selectionButton(page, 'Mark collected')).toBeDisabled()
 
   // 9. filters Upcoming to Pending, ticks the pending pickup &&& Confirm appointments > "1 appointment confirmed"
   const pending = nextList(page, APPOINTMENTS, url => url.searchParams.get('status') === 'pending confirmation')
-  await statusSelect(page).selectOption('pending confirmation')
+  await listSelect(page, 'Appointment status').selectOption('pending confirmation')
   await pending
   await expect(rows(page)).toHaveCount(1)
   await rowCheckbox(page, third.book.title).click()
-  await actionButton(page, 'Confirm appointments').click()
+  await selectionButton(page, 'Confirm appointments').click()
   await confirmation(page, 'Confirm appointment?').getByRole('button', { name: 'Confirm', exact: true }).click()
   await expect(toast(page, '1 appointment confirmed')).toBeVisible()
 
   // 10. switches between tabs > the status dropdown resets &&& offers the right statuses, hidden on Awaiting \ Today's pickup
-  const options = async () => (await statusSelect(page).locator('option').allTextContents()).map(text => text.trim())
   for (const [label, view, expected] of [
     ['Overdue', 'overdue', ['All statuses', 'Pending', 'Confirmed']],
     ['History', 'history', ['All statuses', 'Collected', 'Cancelled', 'Rejected']],
     ['Upcoming', 'upcoming', ['All statuses', 'Pending', 'Confirmed']],
   ]) {
-    await openView(page, label, view)
-    await expect(statusSelect(page)).toHaveValue('all')
-    expect(await options()).toEqual(expected)
+    await openTab(page, APPOINTMENTS, label, { view })
+    await expect(listSelect(page, 'Appointment status')).toHaveValue('all')
+    expect(await optionsOf(listSelect(page, 'Appointment status'))).toEqual(expected)
   }
   for (const [label, view] of [['Awaiting confirmation', 'awaiting'], ["Today's pickup", 'today']]) {
-    await openView(page, label, view)
-    await expect(statusSelect(page)).toHaveCount(0)
+    await openTab(page, APPOINTMENTS, label, { view })
+    await expect(listSelect(page, 'Appointment status')).toHaveCount(0)
   }
 })

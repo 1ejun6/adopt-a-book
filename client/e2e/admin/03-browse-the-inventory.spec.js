@@ -1,9 +1,8 @@
 import { nextResponse } from '../support/guest.js'
 import {
-  test, expect, PAGE_SIZE, badge, createBook, dialog, field, listMain, listSearch, nextList, openList, pageCount, row, rowCheckbox, rows, search, seedAdoption, tab,
+  test, expect, badge, BOOKS, createBook, dialog, field, listMain, listSearch, nextList, openList, PAGE_SIZE, pageCount, row, rowCheckbox, rows, search, seedAdoption, tab,
 } from '../support/admin.js'
 
-const BOOKS = '/admin/books'
 const titlesOf = books => books.map(book => book.title)
 
 //@ChitanyaBharathi > journey 3.3 > the admin finds a particular copy &&& checks its details

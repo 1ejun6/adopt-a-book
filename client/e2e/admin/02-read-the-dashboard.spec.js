@@ -101,7 +101,8 @@ test('admin reads the dashboard and jumps to the waiting work', async ({ page, a
 
   // 7. back > Today's pickups lists up to 5 confirmed pickups ||| says none &&& View all opens Today's pickup
   const { today } = await openDashboard(page)
-  const todays = page.locator('section', { has: page.getByRole('heading', { name: "Today's pickups" }) })
+  //@ChitanyaBharathi > last() > the dashboard's own <section> contains this one too
+  const todays = page.locator('section', { has: page.getByRole('heading', { name: "Today's pickups" }) }).last()
   const pickups = todays.getByRole('link', { name: /^View appointment for/ })
   await expect(todays.getByRole('status')).toHaveCount(0)
   if (today.appointments.length) {

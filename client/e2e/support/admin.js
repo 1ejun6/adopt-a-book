@@ -11,6 +11,12 @@ import { createTemporaryAdmin, deleteTemporaryAdmin, demoAdminState } from './ad
 //@ChitanyaBharathi > • journeys that log out (3.1, 3.14) set test.use({ ownAdmin: true }) > logging out signs that admin out everywhere
 //@ChitanyaBharathi > • customers never log in > their requests, pickups &&& rsvps are written with the service key
 
+//@ChitanyaBharathi > the admin list endpoints every journey waits on
+export const BOOKS = '/admin/books'
+export const APPLICATIONS = '/admin/applications'
+export const APPOINTMENTS = '/admin/appointments'
+export const DRIVES = '/admin/drives'
+
 export const adminNavLinks = ['Home', 'Book Inventory', 'Adoption Applications', 'Appointments', 'Drives']
 export const PAGE_SIZE = 15
 export const TIMESLOT = '10:30–11:00'
@@ -236,6 +242,13 @@ export const toast = (page, text) => page.locator('[data-sonner-toast]').filter(
 export const dialog = page => page.getByRole('dialog')
 export const badge = (scope, status) => scope.locator(`[data-status="${status}"]`)
 export const selectedCount = (page, count) => listMain(page).getByRole('status').filter({ hasText: `${count} selected` })
+//@ChitanyaBharathi > the buttons that appear once rows are ticked (Approve, Delete, Close registration…)
+export const selectionButton = (page, name) => listMain(page).getByRole('group').getByRole('button', { name, exact: true })
+//@ChitanyaBharathi > the hint beside those buttons > a <p role="status"> inside the bar's own role="status", so target the <p>
+export const selectionHint = (page, text) => listMain(page).locator('p[role="status"]').filter({ hasText: text })
+//@ChitanyaBharathi > a list's filter dropdown, e.g. "Appointment status", "Drive status", "Application order"
+export const listSelect = (page, name) => listMain(page).getByRole('combobox', { name })
+export const optionsOf = async select => (await select.locator('option').allTextContents()).map(text => text.trim())
 //@ChitanyaBharathi > a details window field > <dt>label</dt><dd>value</dd>
 export const field = (scope, label) => scope.locator('dt', { hasText: new RegExp(`^${label}$`) }).locator('xpath=following-sibling::dd[1]')
 
@@ -268,6 +281,14 @@ export async function search(page, endpoint, text) {
   const response = nextResponse(page, endpoint, url => (url.searchParams.get('search') || '') === text)
   await listSearch(page).fill(text)
   return (await response).json()
+}
+
+//@ChitanyaBharathi > clicks a list tab &&& waits for that tab's list > filter is the query it should send, e.g. { status: 'approved' } \ { view: 'past' }
+export async function openTab(page, endpoint, label, filter) {
+  const [[key, value]] = Object.entries(filter)
+  const list = nextList(page, endpoint, url => url.searchParams.get(key) === value)
+  await tab(page, label).click()
+  return (await list).json()
 }
 
 //@ChitanyaBharathi > waits for the next list response after an action

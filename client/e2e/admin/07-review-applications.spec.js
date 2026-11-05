@@ -1,18 +1,7 @@
 import {
-  test, expect, goTo, badge, confirmation, dialog, field, listMain, nextList, openList, row, rowCheckbox, rows, search, seedAdoption, tab, toast,
+  test, expect, APPLICATIONS, badge, BOOKS, confirmation, dialog, field, goTo, listSelect, nextList, openList, openTab, row, rowCheckbox, rows, search, seedAdoption, selectionButton, tab, toast,
 } from '../support/admin.js'
 
-const APPLICATIONS = '/admin/applications'
-const BOOKS = '/admin/books'
-const sortSelect = page => listMain(page).getByRole('combobox', { name: 'Application order' })
-const actionButton = (page, name) => listMain(page).getByRole('group').getByRole('button', { name, exact: true })
-
-//@ChitanyaBharathi > switches status tab &&& waits for that list
-async function openTab(page, label, status) {
-  const list = nextList(page, APPLICATIONS, url => url.searchParams.get('status') === status)
-  await tab(page, label).click()
-  return (await list).json()
-}
 
 //@ChitanyaBharathi > journey 3.7 > the admin approves one new request &&& turns one down
 test('admin reviews adoption applications', async ({ page, admin }) => {
@@ -22,7 +11,7 @@ test('admin reviews adoption applications', async ({ page, admin }) => {
   // 1. opens Adoption Applications > Pending &&& Oldest first selected, 5 tabs with the server's counts
   const first = await openList(page, '/admin/applications', APPLICATIONS)
   await expect(tab(page, 'Pending')).toHaveAttribute('aria-selected', 'true')
-  await expect(sortSelect(page)).toHaveValue('oldest')
+  await expect(listSelect(page, 'Application order')).toHaveValue('oldest')
   await expect(page.getByRole('tab', { name: `All applications ${first.counts.all}` })).toBeVisible()
   for (const status of ['pending', 'approved', 'rejected', 'cancelled']) {
     const label = status[0].toUpperCase() + status.slice(1)
@@ -43,7 +32,7 @@ test('admin reviews adoption applications', async ({ page, admin }) => {
 
   // 3. switches to Newest first > the two rows swap places
   const newest = nextList(page, APPLICATIONS, url => url.searchParams.get('sort') === 'newest')
-  await sortSelect(page).selectOption('newest')
+  await listSelect(page, 'Application order').selectOption('newest')
   await newest
   await expect(rows(page).nth(0)).toContainText(newer.book.title)
   await expect(rows(page).nth(1)).toContainText(older.book.title)
@@ -74,7 +63,7 @@ test('admin reviews adoption applications', async ({ page, admin }) => {
   await afterApprove
   await expect(rows(page)).toHaveCount(1)
   await expect(row(page, older.customer.email)).toHaveCount(0)
-  await openTab(page, 'Approved', 'approved')
+  await openTab(page, APPLICATIONS, 'Approved', { status: 'approved' })
   await expect(badge(row(page, older.customer.email), 'approved')).toBeVisible()
 
   // 6. Book Inventory > that book is now reserved &&& Edit is disabled
@@ -90,13 +79,13 @@ test('admin reviews adoption applications', async ({ page, admin }) => {
   await expect(tab(page, 'Pending')).toHaveAttribute('aria-selected', 'true')
   await search(page, APPLICATIONS, admin.tag)
   await rowCheckbox(page, newer.customer.email).click()
-  await actionButton(page, 'Reject').click()
+  await selectionButton(page, 'Reject').click()
   const reject = confirmation(page, 'Reject application?')
   await expect(reject).toContainText(`${newer.customer.name} — ${newer.book.title}`)
   await expect(reject.getByRole('button', { name: 'Reject' })).toHaveAttribute('data-variant', 'destructive')
   await reject.getByRole('button', { name: 'Reject' }).click()
   await expect(toast(page, '1 application rejected')).toBeVisible()
-  await openTab(page, 'Rejected', 'rejected')
+  await openTab(page, APPLICATIONS, 'Rejected', { status: 'rejected' })
   await expect(badge(row(page, newer.customer.email), 'rejected')).toBeVisible()
 
   // 8. opens the rejected request > no Approve or Reject

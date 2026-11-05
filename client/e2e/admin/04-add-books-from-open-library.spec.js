@@ -1,7 +1,6 @@
 import { isApi, json, trackApiRequests } from '../support/guest.js'
-import { test, expect, badge, dialog, defaultStation, rows, row, search, stations, taggedTitle, toast } from '../support/admin.js'
+import { test, expect, badge, BOOKS, defaultStation, dialog, row, rows, search, stations, taggedTitle, toast } from '../support/admin.js'
 
-const BOOKS = '/admin/books'
 
 //@ChitanyaBharathi > /admin/open-library always faked > the real site is slow &&& its results change
 //@ChitanyaBharathi > descriptions are filled in so the server doesn't go back to open library for one

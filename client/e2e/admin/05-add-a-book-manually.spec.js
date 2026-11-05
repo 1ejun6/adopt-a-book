@@ -1,7 +1,6 @@
 import { isApi, trackApiRequests } from '../support/guest.js'
-import { test, expect, confirmation, coverFiles, defaultStation, dialog, row, rows, search, taggedTitle, toast } from '../support/admin.js'
+import { test, expect, BOOKS, confirmation, coverFiles, defaultStation, dialog, row, rows, search, taggedTitle, toast } from '../support/admin.js'
 
-const BOOKS = '/admin/books'
 const COVER = '/admin/books/cover'
 const ERROR_TOAST = 'Please check the highlighted fields. Title and collection area are required; enter only one subject.'
 

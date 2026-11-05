@@ -1,11 +1,9 @@
 import { isApi, json, trackApiRequests } from '../support/guest.js'
 import { slowly } from '../support/customer.js'
 import {
-  test, expect, badge, confirmation, createBook, dialog, field, listMain, nextList, row, rowCheckbox, rows, search, seedAdoption, selectedCount, taggedTitle, toast,
+  test, expect, badge, BOOKS, confirmation, createBook, dialog, field, nextList, row, rowCheckbox, rows, search, seedAdoption, selectedCount, selectionButton, selectionHint, taggedTitle, toast,
 } from '../support/admin.js'
 
-const BOOKS = '/admin/books'
-const actionButton = (page, name) => listMain(page).getByRole('group').getByRole('button', { name, exact: true })
 
 //@ChitanyaBharathi > journey 3.6 > the admin fixes a book's details &&& removes copies added by mistake
 test('admin edits a book and deletes two others', async ({ page, admin }) => {
@@ -22,11 +20,11 @@ test('admin edits a book and deletes two others', async ({ page, admin }) => {
   // 1. ticks one available book > "1 selected" with Edit &&& Delete
   await rowCheckbox(page, first.title).click()
   await expect(selectedCount(page, 1)).toBeVisible()
-  await expect(actionButton(page, 'Edit')).toBeEnabled()
-  await expect(actionButton(page, 'Delete')).toBeEnabled()
+  await expect(selectionButton(page, 'Edit')).toBeEnabled()
+  await expect(selectionButton(page, 'Delete')).toBeEnabled()
 
   // 2. clicks Edit > Edit book filled in, with its available badge &&& Save changes
-  await actionButton(page, 'Edit').click()
+  await selectionButton(page, 'Edit').click()
   const form = dialog(page)
   await expect(form.getByRole('heading', { name: 'Edit book' })).toBeVisible()
   await expect(form.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue(first.title)
@@ -60,18 +58,18 @@ test('admin edits a book and deletes two others', async ({ page, admin }) => {
   await rowCheckbox(page, second.title).click()
   await rowCheckbox(page, third.title).click()
   await expect(selectedCount(page, 2)).toBeVisible()
-  await expect(actionButton(page, 'Edit')).toBeDisabled()
+  await expect(selectionButton(page, 'Edit')).toBeDisabled()
 
   // 6. also ticks the reserved book > "Only available books can be deleted." &&& both actions disabled
   await rowCheckbox(page, reserved.title).click()
-  await expect(listMain(page).locator('p[role="status"]').filter({ hasText: 'Only available books can be deleted.' })).toBeVisible()
-  await expect(actionButton(page, 'Delete')).toBeDisabled()
-  await expect(actionButton(page, 'Edit')).toBeDisabled()
+  await expect(selectionHint(page, 'Only available books can be deleted.')).toBeVisible()
+  await expect(selectionButton(page, 'Delete')).toBeDisabled()
+  await expect(selectionButton(page, 'Edit')).toBeDisabled()
 
   // 7. unticks the reserved book, Delete, then Cancel > both titles listed with the warning, no DELETE sent
   await rowCheckbox(page, reserved.title).click()
   const api = trackApiRequests(page)
-  await actionButton(page, 'Delete').click()
+  await selectionButton(page, 'Delete').click()
   const ask = confirmation(page, 'Delete books?')
   await expect(ask).toBeVisible()
   await expect(ask).toContainText('related applications, appointments, and watchlist entries will be permanently deleted')
@@ -88,9 +86,9 @@ test('admin edits a book and deletes two others', async ({ page, admin }) => {
     await route.continue()
   })
   const reloaded = nextList(page, BOOKS)
-  await actionButton(page, 'Delete').click()
+  await selectionButton(page, 'Delete').click()
   await confirmation(page, 'Delete books?').getByRole('button', { name: 'Delete' }).click()
-  await expect(actionButton(page, 'Deleting…')).toBeVisible()
+  await expect(selectionButton(page, 'Deleting…')).toBeVisible()
   const { counts } = await (await reloaded).json()
   const deleted = toast(page, '2 deleted')
   await expect(deleted).toBeVisible()
@@ -113,7 +111,7 @@ test('🔌 a failed delete keeps the book', async ({ page, admin }) => {
   await page.goto('/admin/books')
   await search(page, BOOKS, admin.tag)
   await rowCheckbox(page, book.title).click()
-  await actionButton(page, 'Delete').click()
+  await selectionButton(page, 'Delete').click()
   await confirmation(page, 'Delete book?').getByRole('button', { name: 'Delete' }).click()
   await expect(toast(page, 'error deleting book(s)!')).toBeVisible()
   await expect(row(page, book.title)).toBeVisible()

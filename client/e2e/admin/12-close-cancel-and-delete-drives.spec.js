@@ -1,16 +1,8 @@
 import { singaporeDate, driveCard, driveSearch } from '../support/guest.js'
 import {
-  test, expect, badge, confirmation, createDrive, dialog, listMain, nextList, pickDate, row, rowCheckbox, rows, search, selectedCount, tab, toast,
+  test, expect, badge, confirmation, createDrive, dialog, DRIVES, listMain, listSelect, nextList, openTab, optionsOf, pickDate, row, rowCheckbox, rows, search, selectedCount, selectionButton, toast,
 } from '../support/admin.js'
 
-const DRIVES = '/admin/drives'
-const actionButton = (page, name) => listMain(page).getByRole('group').getByRole('button', { name, exact: true })
-
-async function openView(page, label, view) {
-  const list = nextList(page, DRIVES, url => url.searchParams.get('view') === view)
-  await tab(page, label).click()
-  return (await list).json()
-}
 
 //@ChitanyaBharathi > journey 3.12 > the admin closes a full drive, cancels one &&& removes two made by mistake
 test('admin closes, cancels and deletes drives', async ({ page, browser, admin }) => {
@@ -27,11 +19,11 @@ test('admin closes, cancels and deletes drives', async ({ page, browser, admin }
   await rowCheckbox(page, toClose.title).click()
   await expect(selectedCount(page, 1)).toBeVisible()
   for (const name of ['Edit', 'Close registration', 'Cancel drives', 'Delete']) {
-    await expect(actionButton(page, name)).toBeEnabled()
+    await expect(selectionButton(page, name)).toBeEnabled()
   }
 
   // 2. Close registration &&& confirm > "existing registrations remain", then "1 drive closed" &&& a closed badge
-  await actionButton(page, 'Close registration').click()
+  await selectionButton(page, 'Close registration').click()
   const close = confirmation(page, 'Close registration?')
   await expect(close).toContainText('Stop new registrations. Existing registrations remain.')
   await expect(close).toContainText(toClose.title)
@@ -55,8 +47,8 @@ test('admin closes, cancels and deletes drives', async ({ page, browser, admin }
 
   // 4. ticks the closed drive again > Close registration disabled, Cancel drives not
   await rowCheckbox(page, toClose.title).click()
-  await expect(actionButton(page, 'Close registration')).toBeDisabled()
-  await expect(actionButton(page, 'Cancel drives')).toBeEnabled()
+  await expect(selectionButton(page, 'Close registration')).toBeDisabled()
+  await expect(selectionButton(page, 'Cancel drives')).toBeEnabled()
   await rowCheckbox(page, toClose.title).click()
 
   // 5. opens a different drive &&& Cancel drive, then confirms > "registrations remain for reference", "1 drive cancelled", it moves to Past
@@ -70,11 +62,11 @@ test('admin closes, cancels and deletes drives', async ({ page, browser, admin }
   await expect(row(page, toCancel.title)).toHaveCount(0)
 
   // 6. Past > no checkboxes, Closed \ Cancelled in the dropdown, &&& the cancelled drive's details have no books \ actions
-  await openView(page, 'Past', 'past')
+  await openTab(page, DRIVES, 'Past', { view: 'past' })
   await expect(badge(row(page, toCancel.title), 'cancelled')).toBeVisible()
   await expect(listMain(page).getByRole('checkbox')).toHaveCount(0)
-  const statusSelect = listMain(page).getByRole('combobox', { name: 'Drive status' })
-  expect((await statusSelect.locator('option').allTextContents()).map(text => text.trim())).toEqual(['All statuses', 'Closed', 'Cancelled'])
+  const statusSelect = listSelect(page, 'Drive status')
+  expect(await optionsOf(statusSelect)).toEqual(['All statuses', 'Closed', 'Cancelled'])
   await row(page, toCancel.title).click()
   await expect(details.getByRole('heading', { name: 'Drive details' })).toBeVisible()
   await expect(details.getByRole('heading', { name: 'Available books' })).toHaveCount(0)
@@ -84,10 +76,10 @@ test('admin closes, cancels and deletes drives', async ({ page, browser, admin }
   await page.keyboard.press('Escape')
 
   // 7. back to Upcoming, ticks the 2 remaining open drives &&& Delete > "permanently deleted", then "2 drives deleted"
-  await openView(page, 'Upcoming', 'upcoming')
+  await openTab(page, DRIVES, 'Upcoming', { view: 'upcoming' })
   await rowCheckbox(page, mistakeOne.title).click()
   await rowCheckbox(page, mistakeTwo.title).click()
-  await actionButton(page, 'Delete').click()
+  await selectionButton(page, 'Delete').click()
   const remove = confirmation(page, 'Delete drives?')
   await expect(remove).toContainText('These drives and their registrations will be permanently deleted.')
   await remove.getByRole('button', { name: 'Delete' }).click()
@@ -117,7 +109,7 @@ test('🔌 closing drives that fail part-way reports both results', async ({ pag
   await search(page, DRIVES, admin.tag)
   await rowCheckbox(page, one.title).click()
   await rowCheckbox(page, two.title).click()
-  await actionButton(page, 'Close registration').click()
+  await selectionButton(page, 'Close registration').click()
   const reloaded = nextList(page, DRIVES)
   await confirmation(page, 'Close registration?').getByRole('button', { name: 'Close registration' }).click()
   await expect(toast(page, '1 drive closed')).toBeVisible()

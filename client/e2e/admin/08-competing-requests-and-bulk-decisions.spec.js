@@ -1,17 +1,8 @@
 import { isApi } from '../support/guest.js'
 import {
-  test, expect, confirmation, createBook, dialog, listMain, newCustomer, nextList, requestBook, row, rowCheckbox, rows, search, tab, toast,
+  test, expect, APPLICATIONS, confirmation, createBook, dialog, listMain, newCustomer, nextList, openTab, requestBook, row, rowCheckbox, rows, search, selectionButton, selectionHint, toast,
 } from '../support/admin.js'
 
-const APPLICATIONS = '/admin/applications'
-const actionButton = (page, name) => listMain(page).getByRole('group').getByRole('button', { name, exact: true })
-const hint = (page, text) => listMain(page).locator('p[role="status"]').filter({ hasText: text })
-
-async function openTab(page, label, status) {
-  const list = nextList(page, APPLICATIONS, url => url.searchParams.get('status') === status)
-  await tab(page, label).click()
-  await list
-}
 
 //@ChitanyaBharathi > journey 3.8 > two readers ask for one copy &&& the admin decides several requests at once
 test('admin decides competing requests in bulk', async ({ page, admin }) => {
@@ -31,18 +22,18 @@ test('admin decides competing requests in bulk', async ({ page, admin }) => {
   // 1. ticks both requests for book A > "Choose one reader per copy…"; Approve disabled, Reject not
   await rowCheckbox(page, one.email).click()
   await rowCheckbox(page, two.email).click()
-  await expect(hint(page, 'Choose one reader per copy to approve requests.')).toBeVisible()
-  await expect(actionButton(page, 'Approve')).toBeDisabled()
-  await expect(actionButton(page, 'Reject')).toBeEnabled()
+  await expect(selectionHint(page, 'Choose one reader per copy to approve requests.')).toBeVisible()
+  await expect(selectionButton(page, 'Approve')).toBeDisabled()
+  await expect(selectionButton(page, 'Reject')).toBeEnabled()
 
   // 2. unticks reader 2 &&& ticks reader 3 (book B) > Approve enabled
   await rowCheckbox(page, two.email).click()
   await rowCheckbox(page, three.email).click()
-  await expect(hint(page, 'Choose one reader per copy')).toHaveCount(0)
-  await expect(actionButton(page, 'Approve')).toBeEnabled()
+  await expect(selectionHint(page, 'Choose one reader per copy')).toHaveCount(0)
+  await expect(selectionButton(page, 'Approve')).toBeEnabled()
 
   // 3. Approve &&& confirm > "Approve applications?" lists both readers, then "2 applications approved"
-  await actionButton(page, 'Approve').click()
+  await selectionButton(page, 'Approve').click()
   const approve = confirmation(page, 'Approve applications?')
   await expect(approve).toContainText(`${one.name} — ${bookA.title}`)
   await expect(approve).toContainText(`${three.name} — ${bookB.title}`)
@@ -50,20 +41,20 @@ test('admin decides competing requests in bulk', async ({ page, admin }) => {
   await expect(toast(page, '2 applications approved')).toBeVisible()
 
   // 4. Rejected tab > reader 2's request for book A was rejected automatically
-  await openTab(page, 'Rejected', 'rejected')
+  await openTab(page, APPLICATIONS, 'Rejected', { status: 'rejected' })
   await expect(rows(page)).toHaveCount(1)
   await expect(row(page, two.email)).toContainText(bookA.title)
 
   // 5. All applications, ticks an approved request > "Only pending applications…" &&& both buttons disabled
-  await openTab(page, 'All applications', 'all')
+  await openTab(page, APPLICATIONS, 'All applications', { status: 'all' })
   await expect(rows(page)).toHaveCount(3)
   await rowCheckbox(page, one.email).click()
-  await expect(hint(page, 'Only pending applications can be approved or rejected.')).toBeVisible()
-  await expect(actionButton(page, 'Approve')).toBeDisabled()
-  await expect(actionButton(page, 'Reject')).toBeDisabled()
+  await expect(selectionHint(page, 'Only pending applications can be approved or rejected.')).toBeVisible()
+  await expect(selectionButton(page, 'Approve')).toBeDisabled()
+  await expect(selectionButton(page, 'Reject')).toBeDisabled()
 
   // 6. Approved tab > no checkboxes
-  await openTab(page, 'Approved', 'approved')
+  await openTab(page, APPLICATIONS, 'Approved', { status: 'approved' })
   await expect(rows(page)).toHaveCount(2)
   await expect(listMain(page).getByRole('checkbox')).toHaveCount(0)
 })
@@ -87,7 +78,7 @@ test.describe('🔌 decisions the real data cannot make fail', () => {
     await search(page, APPLICATIONS, admin.tag)
     await rowCheckbox(page, first.email).click()
     await rowCheckbox(page, second.email).click()
-    await actionButton(page, 'Approve').click()
+    await selectionButton(page, 'Approve').click()
     const reloaded = nextList(page, APPLICATIONS)
     await confirmation(page, 'Approve applications?').getByRole('button', { name: 'Approve' }).click()
     await expect(toast(page, '1 application approved')).toBeVisible()
