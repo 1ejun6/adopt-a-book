@@ -36,7 +36,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
-  //@ChitanyaBharathi > seeds the database first only when e2e_seed=true > never touches data otherwise
+  //@ChitanyaBharathi > logs the demo admin in once &&& sweeps leftover temporary admins > never resets the database
   globalSetup: './e2e/support/global-setup.js',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {

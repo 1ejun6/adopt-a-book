@@ -50,12 +50,34 @@ export function singaporeDate(daysFromToday, from = new Date()) {
   return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' })
 }
 
-//@ChitanyaBharathi > the same split the drives page makes > past = before today in Singapore
+//@ChitanyaBharathi > the same split the drives page makes > past = before today in Singapore \ cancelled
+const isPast = (drive, today) => drive.eventdate < today || drive.status === 'cancelled'
 export function upcomingDrives(drives, today = singaporeDate(0)) {
-  return drives.filter(drive => drive.eventdate >= today)
+  return drives.filter(drive => !isPast(drive, today))
 }
 export function pastDrives(drives, today = singaporeDate(0)) {
-  return drives.filter(drive => drive.eventdate < today)
+  return drives.filter(drive => isPast(drive, today))
+}
+export const pastTab = page => page.getByRole('tab', { name: /^Past \/ cancelled/ })
+
+//@ChitanyaBharathi > login \ register remember where the guest was heading in ?redirect= > undefined = no redirect at all
+export async function expectPage(page, pathname, redirect) {
+  await expect(page).toHaveURL(url => url.pathname === pathname && url.searchParams.get('redirect') === (redirect ?? null))
+}
+
+//@ChitanyaBharathi > holds matching requests until release() > shows what the page draws from saved data alone
+//@ChitanyaBharathi > release() lets them through &&& waits for the answer so a later goto doesn't abort it
+export async function holdRequests(page, match) {
+  let open
+  const held = new Promise(resolve => { open = resolve })
+  const handler = async route => { await held; await route.continue() }
+  await page.route(match, handler)
+  return async () => {
+    const answered = page.waitForResponse(response => match(new URL(response.url())))
+    open()
+    await answered
+    await page.unroute(match, handler)
+  }
 }
 
 //@ChitanyaBharathi > the same order the drives page uses > date first, id breaks ties

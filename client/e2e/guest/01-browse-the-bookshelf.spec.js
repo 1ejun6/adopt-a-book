@@ -11,7 +11,8 @@ test('guest browses the bookshelf and reads about a book', async ({ page, contex
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Shared stories')
   expect(books).toHaveLength(5)
   for (const [index, book] of books.entries()) {
-    await expect(bookSpines(page).nth(index).getByRole('heading', { level: 2 })).toHaveText(book.title)
+    //@ChitanyaBharathi > each spine is a button named after its book
+    await expect(bookSpines(page).nth(index)).toHaveAccessibleName(`${book.title} by ${(book.authors || []).join(', ')}`)
   }
 
   // 2. hovers the mouse over a spine

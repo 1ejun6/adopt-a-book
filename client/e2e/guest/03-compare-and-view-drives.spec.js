@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import {
   driveCard, driveCards, driveSearch, driveTitles, expectDrivesShown, fakeDrive, matchesSearch, nextResponse,
-  openDrivesPage, pickDrive, serveFakeDrives, showDrive, singaporeDate, sortSelect, statusSelect, stubGoogleMaps,
+  openDrivesPage, pastTab, pickDrive, serveFakeDrives, showDrive, singaporeDate, sortSelect, statusSelect, stubGoogleMaps,
   upcomingDrives,
 } from '../support/guest.js'
 
@@ -88,14 +88,14 @@ test.describe('🔌 drives the seed does not have', () => {
     ])
     await page.goto('/drives')
     await expect(page.getByRole('tab', { name: /upcoming/ })).toContainText('1')
-    await expect(page.getByRole('tab', { name: /past/ })).toContainText('2')
+    await expect(pastTab(page)).toContainText('2')
 
-    await page.getByRole('tab', { name: /past/ }).click()
+    await pastTab(page).click()
     await expect(driveTitles(page)).toHaveText(['last month swap', 'last week swap'])
     await expect(driveCards(page).first()).not.toContainText('slots left')
   })
 
-  // 9. opens a closed, cancelled &&& ended drive
+  // 9. opens a closed, cancelled &&& ended drive > cancelled ones sit under Past / cancelled with the ended ones
   test('closed, cancelled and ended drives explain why there is no rsvp', async ({ page }) => {
     await serveFakeDrives(page, [
       fakeDrive({ title: 'closed swap', status: 'closed' }),
@@ -105,20 +105,22 @@ test.describe('🔌 drives the seed does not have', () => {
     await page.goto('/drives')
     const dialog = page.getByRole('dialog')
 
+    await expect(driveCard(page, 'cancelled swap')).toHaveCount(0)
+    await driveCard(page, 'closed swap').click()
+    await expect(dialog).toContainText('registration has closed')
+    await expect(dialog.getByRole('button', { name: 'rsvp' })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+
+    await pastTab(page).click()
     for (const [title, message] of [
-      ['closed swap', 'registration has closed'],
       ['cancelled swap', 'this drive has been cancelled'],
+      ['ended swap', 'this drive has ended'],
     ]) {
       await driveCard(page, title).click()
       await expect(dialog).toContainText(message)
       await expect(dialog.getByRole('button', { name: 'rsvp' })).toHaveCount(0)
       await page.keyboard.press('Escape')
     }
-
-    await page.getByRole('tab', { name: /past/ }).click()
-    await driveCard(page, 'ended swap').click()
-    await expect(dialog).toContainText('this drive has ended')
-    await expect(dialog.getByRole('button', { name: 'rsvp' })).toHaveCount(0)
   })
 
   // 10. has 12 drives to look through

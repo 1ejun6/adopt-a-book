@@ -424,7 +424,7 @@ flowchart LR
 - **A pickup due today that isn't confirmed shows under Overdue**, not **Awaiting confirmation** or **Today's pickup**. That's intentional (`matchesView()` in `Appointments.vue`), and journey 3.10 relies on it.
 - **Application details always says "No reason stated."** Customers can't give a reason yet, so the server never sends one.
 - **The dashboard opens Appointments tabs through navigation state, not the URL.** There's no `/admin/appointments?view=today` link to open directly, so journeys click the dashboard instead of using `page.goto()`.
-- **Reserved and adopted books can't be deleted**, so tagged books from 3.3, 3.6, 3.7 – 3.10 pile up in the test database. Running with `e2e_seed=true` resets users and demo activity, but `seed.sql` doesn't remove extra books. The team needs to decide between a cleanup step (for example, `/clear` before `/seed` in `global-setup.js`) or living with the tagged leftovers.
+- **Reserved and adopted books can't be deleted** through `DELETE /admin/books`, so the fixture's cleanup deletes those tagged books straight from the database instead. If a run crashes before cleanup, its tagged books, drives and customers stay behind.
 - **Deleting the fresh admin may fail if it created records.** Drives store `createdby`. Before building the fixture, check that deleting an admin user doesn't fail on foreign keys (or delete the journey's drives first, as step 5 of the fixture does).
 
 ---

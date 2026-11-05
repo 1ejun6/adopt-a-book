@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { isRsvpable, openDrivesPage, pickDrive, showDrive, toast, upcomingDrives } from '../support/guest.js'
+import { expectPage, isRsvpable, openDrivesPage, pickDrive, showDrive, toast, upcomingDrives } from '../support/guest.js'
 
 //@ChitanyaBharathi > journey 1.4 > a guest finds a drive they like, tries to rsvp &&& signs up to be able to
 test('guest tries to rsvp, creates an account and is sent to login', async ({ page }) => {
@@ -7,6 +7,8 @@ test('guest tries to rsvp, creates an account and is sent to login', async ({ pa
 
   // 1. opens an open drive &&& clicks rsvp
   const drive = pickDrive(upcomingDrives(await openDrivesPage(page)), 'upcoming open drive with free slots', isRsvpable)
+  //@ChitanyaBharathi > signing up \ logging in brings the guest back to this same drive
+  const backToDrive = `/customer/drives?drive=${drive.id}`
   await (await showDrive(page, drive)).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByRole('button', { name: 'rsvp' }).click()
@@ -21,14 +23,15 @@ test('guest tries to rsvp, creates an account and is sent to login', async ({ pa
   // 2. clicks create account
   await prompt.getByRole('button', { name: 'create account' }).click()
   await expect(dialog).toBeHidden()
-  await expect(page).toHaveURL('/register')
-  await expect(page.getByRole('heading', { name: 'Create Your Account' })).toBeVisible()
+  await expectPage(page, '/register', backToDrive)
+  await expect(page.getByRole('heading', { name: 'Create account' })).toBeVisible()
 
-  // 3. fills in the form &&& ticks show password
+  // 3. fills in the form &&& presses the eye to show the password
   await page.getByLabel('Name', { exact: true }).fill('E2E Guest')
   await page.getByLabel('Email', { exact: true }).fill(email)
   await page.getByLabel('Password', { exact: true }).fill('a-strong-password-123')
-  await page.getByRole('checkbox', { name: 'show password' }).click()
+  await page.getByRole('checkbox', { name: 'Adventure' }).check()
+  await page.getByRole('button', { name: /^show password$/i }).click()
   await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('type', 'text')
 
   // 4. clicks Register
@@ -36,13 +39,13 @@ test('guest tries to rsvp, creates an account and is sent to login', async ({ pa
   await register.click()
   await expect(page.getByRole('button', { name: 'Registering…' })).toBeVisible()
   await expect(toast(page, 'registration successful')).toBeVisible()
-  await expect(page).toHaveURL('/login')
+  await expectPage(page, '/login', backToDrive)
 
   // 5. goes back to a drive, clicks rsvp, then log in
   await page.getByRole('link', { name: 'Adoption Drives' }).click()
   await (await showDrive(page, drive)).click()
   await dialog.getByRole('button', { name: 'rsvp' }).click()
   await toast(page, 'log in to rsvp').getByRole('button', { name: 'log in' }).click()
-  await expect(page).toHaveURL('/login')
+  await expectPage(page, '/login', backToDrive)
   await expect(page.getByRole('heading', { name: 'Login' })).toBeVisible()
 })
