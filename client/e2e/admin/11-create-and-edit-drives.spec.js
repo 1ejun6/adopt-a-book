@@ -113,10 +113,12 @@ test.describe('Admin create and edit adoption drives', () => {
 
     // Edits the drive
     await page.getByRole('dialog').getByRole('button', { name: 'Edit' }).click();
-    await expect(page.getByRole('heading', { name: 'Edit drive' })).toBeVisible();
-    await page.getByLabel('Drive title').fill(renamed);
-    await page.getByLabel('Maximum capacity').fill('25');
-    await page.getByRole('dialog').getByRole('button', { name: 'Save drive' }).click();
+    const editDialog = page.getByRole('dialog', { name: 'Edit drive' });
+    await expect(editDialog).toBeVisible();
+    await expect(editDialog.getByText(/1 selected/)).toBeVisible();
+    await editDialog.getByLabel('Drive title').fill(renamed);
+    await editDialog.getByLabel('Maximum capacity').fill('25');
+    await editDialog.getByRole('button', { name: 'Save drive' }).click();
     await expect(page.getByText('adoption drive updated successfully')).toBeVisible();
 
     await page.getByRole('main').getByRole('searchbox').first().fill(renamed);
