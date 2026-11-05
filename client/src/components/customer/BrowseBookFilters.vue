@@ -60,21 +60,25 @@ import genres from '../../../../shared/genres.json';
 
 <template>
   <!--@sree-sanjana06 > shared toolbar for search and filters-->
-  <AppToolbar v-model:search="filters.search" searchPlaceholder="Search by title, author or ISBN...">
+  <AppToolbar v-model:search="filters.search" searchId="browse-search" searchPlaceholder="Search by title, author or ISBN...">
 
     <template #filters>
       <!--@sree-sanjana06 > choose a genre instead of typing it-->
-      <select v-model="filters.subject" class="w-44 rounded-lg border p-2.5 text-sm">
+      <label for="browse-genre" class="flex min-w-0 flex-col gap-2 text-sm">Genre
+      <select id="browse-genre" v-model="filters.subject" class="min-h-11 w-full rounded-lg border p-2.5 text-sm sm:w-44">
         <option value="">All genres</option>
         <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
       </select>
+      </label>
 
       <!--@sree-sanjana06 > sort available books-->
-      <select v-model="filters.sort" class="rounded-lg border p-2.5 text-sm">
+      <label for="browse-sort" class="flex min-w-0 flex-col gap-2 text-sm">Sort by
+      <select id="browse-sort" v-model="filters.sort" class="min-h-11 rounded-lg border p-2.5 text-sm">
         <option value="title">Title A–Z</option>
         <option value="author">Author A–Z</option>
         <option value="newest">Newest</option>
       </select>
+      </label>
     </template>
 
   </AppToolbar>

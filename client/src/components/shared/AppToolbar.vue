@@ -21,9 +21,9 @@ const search = defineModel('search', { type: String, default: '' });
 
         <!--@lee-hlmilk > search & page filters-->
         <!--@lee-hlmilk > stack controls on mobile > sm puts search &&& filters in one row > matching padding/leading aligns their heights-->
-        <div class="flex min-w-0 flex-col gap-2.5 lg:flex-row lg:flex-wrap">
+        <div class="flex min-w-0 flex-col gap-2.5 lg:flex-row lg:flex-wrap lg:items-end">
             <AppSearchInput v-model="search" class="min-w-0 lg:flex-1" :id="props.searchId" :aria-describedby="props.searchDescription" :aria-label="props.searchLabel || props.searchPlaceholder" :placeholder="props.searchPlaceholder" :disabled="props.searchDisabled" />
-            <div v-if="$slots.filters || $slots.actions" class="flex min-w-0 flex-col gap-2.5 sm:flex-row sm:flex-wrap">
+            <div v-if="$slots.filters || $slots.actions" class="flex min-w-0 flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-end">
                 <slot name="filters" />
                 <slot name="actions" />
             </div>

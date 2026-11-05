@@ -58,7 +58,7 @@ async function saveComment() {
           <p :role="error ? 'alert' : undefined">{{ error || (editing ? 'edit your note' : 'saved to watchlist') }}</p>
           <p class="truncate text-muted-foreground" :title="entry.bookid.title">{{ entry.bookid.title }}</p>
         </div>
-        <button type="button" title="dismiss" @click="dismiss">
+        <button type="button" class="-m-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg p-2" title="Dismiss" aria-label="Dismiss" @click="dismiss">
           <HugeiconsIcon :icon="Cancel01Icon" class="size-5" aria-hidden="true" />
         </button>
       </div>

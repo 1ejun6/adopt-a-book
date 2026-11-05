@@ -2,10 +2,12 @@
 import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { ArrowLeft01Icon, ArrowRight01Icon, Delete02Icon } from '@hugeicons/core-free-icons';
 import { Button } from '@/components/ui/button';
+import { RouterLink } from 'vue-router';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 const props = defineProps({
   entries: { type: Array, default: () => [] },
   busyIds: { type: Set, default: () => new Set() },
+  requestIds: { type: Map, default: () => new Map() },
 });
 defineEmits(['select', 'remove']);
 const track = ref(null),
@@ -81,19 +83,28 @@ onBeforeUnmount(() => observer?.disconnect());
             vertical
             wrap
           />
-          <span class="availability">{{
-            entry.bookid.status === 'available'
-              ? 'Available to request'
-              : 'Unavailable for new requests'
-          }}</span>
+          <span class="metadata">
+            <span class="availability">{{
+              entry.bookid.status === 'available'
+                ? 'Available to request'
+                : 'Unavailable for new requests'
+            }}</span>
+            <span class="collection">Collection: {{ entry.bookid.collectionarea || entry.bookid.mrtstation?.name || 'Not provided' }}</span>
+          </span>
         </button>
-        <Button
-          variant="ghost"
-          :disabled="busyIds.has(entry.bookid.id)"
-          :aria-label="`Remove ${entry.bookid.title} from saved books`"
-          @click="$emit('remove', entry.bookid)"
-          ><HugeiconsIcon :icon="Delete02Icon" class="size-4" aria-hidden="true" /></Button
-        >
+        <div class="actions">
+          <RouterLink v-if="props.requestIds.get(entry.bookid.id)" class="inline-flex min-h-11 items-center text-sm underline underline-offset-4" :to="{ name: 'customerAdoptions', query: { request: props.requestIds.get(entry.bookid.id) } }">View my request<span class="sr-only"> for {{ entry.bookid.title }}</span></RouterLink>
+          <Button
+            variant="outline"
+            class="w-full text-destructive"
+            :disabled="busyIds.has(entry.bookid.id)"
+            :aria-label="`Remove ${entry.bookid.title} from saved books`"
+            @click="$emit('remove', entry.bookid)"
+          >
+            <HugeiconsIcon :icon="Delete02Icon" class="size-4 shrink-0" aria-hidden="true" />
+            <span>Remove</span>
+          </Button>
+        </div>
       </li>
     </ul>
   </div>
@@ -122,12 +133,30 @@ onBeforeUnmount(() => observer?.disconnect());
   gap: 0.75rem;
 }
 .preview {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.75rem;
   text-align: left;
-  flex: 1;
+}
+.metadata {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
 }
 .availability {
   display: block;
-  font-size: 0.75rem;
-  margin-top: 0.75rem;
+  color: var(--foreground);
+}
+.collection {
+  display: block;
+  color: var(--muted-foreground);
+}
+.actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 </style>

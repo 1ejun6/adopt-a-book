@@ -1,5 +1,7 @@
 <script setup>
 import AppPage from '@/components/shared/AppPage.vue';
+import { useSavedBookActions } from '@/composables/useSavedBookActions';
+import { useAdoptionsStore } from '@/stores/adoptions';
 import { h, ref, computed, onBeforeUnmount, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 import { useWatchlistStore } from '@/stores/watchlist';
@@ -12,8 +14,10 @@ import CustomerBookCard from '@/components/customer/CustomerBookCard.vue';
 import WatchlistCommentToast from '@/components/customer/WatchlistCommentToast.vue';
 
 const store = useWatchlistStore();
+const adoptions = useAdoptionsStore();
 const { entries: watchlist, savedIds, commentsByBook: notes, entriesByBook, loading, loadError: error } = storeToRefs(store);
-const deleting = computed(() => new Set(store.entries.filter(entry => store.pendingOperations.has(entry.bookid?.id)).map(entry => entry.id)));
+const { busyIds, removeEntry: removeSavedEntry } = useSavedBookActions();
+const deleting = computed(() => new Set(store.entries.filter(entry => busyIds.value.has(entry.bookid?.id)).map(entry => entry.id)));
 const dialogs = ref(null);
 const noteToasts = new Set();
 async function loadWatchlist() {
@@ -45,7 +49,8 @@ function removePreviewBook(book) {
 async function removeEntry(entry, closePreview = false) {
   if (deleting.value.has(entry.id)) return;
   try {
-    await store.removeEntry(entry.id);
+    const result = await removeSavedEntry(entry);
+    if (!result) return;
     toast.success('removed from watchlist');
     if (closePreview) dialogs.value?.closeBookDetails(entry.bookid);
   } catch (failure) {
@@ -55,6 +60,7 @@ async function removeEntry(entry, closePreview = false) {
 }
 
 onMounted(loadWatchlist);
+onMounted(() => adoptions.fetchApplications().catch(() => { /* Details retains its retryable request check. */ }));
 onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
 </script>
 
@@ -89,6 +95,7 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
     <!--@sree-sanjana06 > display saved books using shared customer card-->
     <section v-else class="grid auto-rows-fr gap-5 md:grid-cols-2 lg:grid-cols-4">
       <CustomerBookCard v-for="entry in watchlist" :key="entry.id" :book="entry.bookid" variant="watchlist"
+        :requestId="adoptions.existingRequestIds.get(entry.bookid.id)"
         :busy="deleting.has(entry.id)" @preview="dialogs?.openBookDetails($event)" @remove="removeEntry(entry)" />
     </section>
 
@@ -96,24 +103,24 @@ onBeforeUnmount(() => { noteToasts.forEach(id => toast.dismiss(id)); });
     <!--@sree-sanjana06 > existing book details and adoption request popups-->
     <CustomerBookDialogs ref="dialogs" :savedIds="savedIds">
       <template #book-action="{ book }">
-        <button type="button" class="rounded-lg p-2 text-destructive" title="Remove from watchlist"
+        <button type="button" class="washi-tape-hover min-h-11 min-w-11 shrink-0 rounded-lg p-2 text-destructive" title="Remove from watchlist"
           :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="removePreviewBook(book)">
           <HugeiconsIcon :icon="Delete02Icon" class="size-6" aria-hidden="true" />
           <span class="sr-only">Remove from watchlist</span>
         </button>
       </template>
       <template #details="{ book }">
-        <section class="space-y-2">
-          <h3>Your private note</h3>
-          <p class="text-muted-foreground">{{ notes.get(book?.id) || 'no note added yet' }}</p>
+        <section class="space-y-2 rounded-lg border p-3.5">
+          <div class="flex items-center justify-between gap-2.5">
+            <h3>Your private note</h3>
+            <Button type="button" variant="outline" size="sm"
+              :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="editPreviewNote(book)">
+              <HugeiconsIcon :icon="PencilEdit02Icon" class="size-4 shrink-0" aria-hidden="true" />
+              <span>Edit note</span>
+            </Button>
+          </div>
+          <p class="text-sm text-muted-foreground [overflow-wrap:anywhere]">{{ notes.get(book?.id) || 'no note added yet' }}</p>
         </section>
-      </template>
-      <template #extra-actions="{ book }">
-        <Button variant="outline" class="w-full" title="Edit note"
-          :disabled="deleting.has(entriesByBook.get(book?.id)?.id)" @click="editPreviewNote(book)">
-          <HugeiconsIcon :icon="PencilEdit02Icon" class="size-4" aria-hidden="true" />
-          <span class="sr-only">Edit note</span>
-        </Button>
       </template>
     </CustomerBookDialogs>
   </AppPage>

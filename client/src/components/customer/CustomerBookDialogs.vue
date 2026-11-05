@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, nextTick, watch, onBeforeUnmount } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { api } from '@/lib/api';
 import { storeToRefs } from 'pinia';
 import { useAdoptionsStore } from '@/stores/adoptions';
@@ -20,6 +20,10 @@ const props = defineProps({
   busyIds: { type: Set, default: () => new Set() },
 });
 const emit = defineEmits(['save']);
+const route = useRoute();
+const router = useRouter();
+const targetError = ref('');
+let targetBook = '';
 const dialogBook = ref(null);
 const dialogOpen = ref(false);
 const detailsLoading = ref(false);
@@ -134,8 +138,8 @@ async function openBookDetails(book, options = {}) {
     })
     .catch(error => {
       if (current()) {
-        detailsError.value = error.message;
-        showerror(error, retry);
+        detailsError.value = error.status === 404 ? 'This copy is no longer listed. Close this dialog to browse other books.' : error.message;
+        showerror({ message: detailsError.value }, retry);
       }
     })
     .finally(() => {
@@ -168,9 +172,14 @@ async function backToBook() {
   dialogTrigger = trigger;
 }
 function restoreRequestFocus(event) {
+  if (requestDialogOpen.value || dialogOpen.value) return;
   event.preventDefault();
-  if (!dialogOpen.value && dialogTrigger?.isConnected) {
+  if (dialogTrigger?.isConnected && dialogTrigger !== document.body) {
     dialogTrigger.focus({ preventScroll: true });
+  } else {
+    const heading = document.querySelector('main h1');
+    heading?.setAttribute('tabindex', '-1');
+    heading?.focus({ preventScroll: true });
   }
 }
 
@@ -258,6 +267,12 @@ watch(
   { flush: 'sync' },
 );
 watch(dialogOpen, async value => {
+  if (!value && targetBook && !requestDialogOpen.value) {
+    const query = { ...route.query };
+    delete query.book;
+    targetBook = '';
+    await router.replace({ query });
+  }
   if (!value && returnToAdoption.value) {
     const back = returnToAdoption.value;
     returnToAdoption.value = null;
@@ -265,6 +280,28 @@ watch(dialogOpen, async value => {
     await back();
   }
 });
+//@lee-hlmilk > validate shared copy links before fetching > preserve the catalogue filters when the dialog closes
+watch(() => route.query.book, value => {
+  if (route.name !== 'customerBooks') return;
+  if (!value) {
+    targetError.value = '';
+    if (targetBook) {
+      targetBook = '';
+      dialogOpen.value = false;
+    }
+    return;
+  }
+  if (value === targetBook) return;
+  targetError.value = '';
+  if (typeof value !== 'string' || !/^[\da-f]{8}-[\da-f]{4}-[1-8][\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i.test(value)) {
+    targetBook = '';
+    dialogOpen.value = false;
+    targetError.value = 'This book link is invalid. Browse the available books instead.';
+    return;
+  }
+  targetBook = value;
+  openBookDetails({ id: value });
+}, { immediate: true });
 watch(
   requestDialogOpen,
   value => {
@@ -290,7 +327,8 @@ defineExpose({ openBookDetails, closeBookDetails });
 </script>
 
 <template>
-  <AppBookPreviewDialog @retry="openBookDetails(dialogBook, { viewOnly, onReturn: returnToAdoption })" v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError"
+  <p v-if="targetError" role="alert">{{ targetError }} <RouterLink class="underline min-h-11 inline-flex items-center" :to="{ query: { ...route.query, book: undefined } }">Browse available books</RouterLink></p>
+  <AppBookPreviewDialog @close-auto-focus="restoreRequestFocus" @retry="openBookDetails(dialogBook, { viewOnly, onReturn: returnToAdoption })" v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError"
     :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)"
     @save="emit('save', $event)">
     <template v-if="$slots['book-action']" #book-action>

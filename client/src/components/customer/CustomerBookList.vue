@@ -1,5 +1,6 @@
 <script setup>
 import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useSavedBookActions } from '@/composables/useSavedBookActions';
 import { toast } from 'vue-sonner';
 import { useWatchlistStore } from '@/stores/watchlist';
 import { storeToRefs } from 'pinia';
@@ -15,7 +16,7 @@ const props = defineProps({
 const dialogs = ref(null);
 const store = useWatchlistStore();
 const { savedIds, loading: watchlistLoading, loadError: watchlistError } = storeToRefs(store);
-const busyIds = computed(() => new Set(store.pendingOperations.keys()));
+const { busyIds, toggleBook } = useSavedBookActions();
 const canSave = computed(() => store.loaded && !watchlistLoading.value && !watchlistError.value);
 const commentToasts = new Set();
 
@@ -39,7 +40,8 @@ async function toggleSave(book) {
   if (!canSave.value || busyIds.value.has(book.id)) return;
   const trigger = document.activeElement;
   try {
-    const result = await store.toggleBook(book);
+    const result = await toggleBook(book);
+    if (!result) return;
     if (result.removed) {
       toast.dismiss(`watchlist-comment-${book.id}`);
       toast.success('removed from watchlist');

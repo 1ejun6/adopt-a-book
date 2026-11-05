@@ -1,5 +1,6 @@
 <script setup>
-import { pickupTimes as timeSlots, availablePickupSlot } from '@/lib/pickupTimes';
+import { computed } from 'vue';
+import { pickupTimes as timeSlots, availablePickupSlot, availablePickupTimes } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
 
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ defineProps({
   today: String,
 });
 const draft = defineModel('draft', { type: Object, required: true });
+const insufficientTimes = computed(() => !!draft.value.appointmentdate && availablePickupTimes(draft.value.appointmentdate).length < 3);
 const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
 </script>
 <template>
@@ -84,7 +86,7 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
       <fieldset class="space-y-2" :disabled="saving" aria-describedby="pickup-time-help">
         <legend class="text-sm">Three times you’re available (SGT)</legend>
         <p id="pickup-time-help" class="text-xs text-muted-foreground">
-          Choose three times. The team will confirm one.
+          Choose three different hourly times on the same date. The team will confirm one.
         </p>
         <div v-for="(_, index) in draft.timeslots" :key="index" class="space-y-1">
           <label :for="index === 0 ? 'pickup-timeslot' : `pickup-timeslot-${index}`" class="text-sm"
@@ -127,7 +129,7 @@ const emit = defineEmits(['review', 'focus-field', 'back', 'summary-ref']);
         @click="emit('back')"
         >Back</Button
       >
-      <Button type="submit" class="flex-1" :disabled="saving || uncertain || !eligible">
+      <Button type="submit" class="flex-1" :disabled="saving || uncertain || !eligible || insufficientTimes">
         Review pickup request
       </Button>
     </div>
