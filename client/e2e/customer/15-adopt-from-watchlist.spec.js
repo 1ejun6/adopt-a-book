@@ -47,7 +47,8 @@ test('customer adopts a book directly from their watchlist and follows it in my 
 
   // 5. clicks View my request to follow the deep-link into My Adoptions
   await viewRequestLink.click()
-  await expect(page).toHaveURL(/\/customer\/adoption\?request=/)
+  //@brod > the page consumes ?request= once the dialog opens > the href check above covers the deep-link
+  await expect(page).toHaveURL(/\/customer\/adoption/)
   const adoptionDialog = page.getByRole('dialog')
   await expect(adoptionDialog.getByRole('heading', { name: 'Adoption details' })).toBeVisible()
   await expect(adoptionDialog).toContainText(book.title)
