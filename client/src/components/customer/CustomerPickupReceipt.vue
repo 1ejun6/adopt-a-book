@@ -2,7 +2,7 @@
 import { pickupTimeText } from '@/lib/pickupTimes';
 import { Button } from '@/components/ui/button';
 
-import { displayDate, pickupStatus, getApplicationStatus, recordId } from '@/lib/adoptions';
+import { displayDate, pickupStatus, getApplicationStatus } from '@/lib/adoptions';
 
 defineProps({
   result: String,
@@ -45,12 +45,6 @@ const emit = defineEmits(['edit', 'leave']);
     Your three times have been sent. The team will select one; check Waiting in My Adoptions for
     confirmation.
   </p>
-  <details class="text-sm">
-    <summary class="min-h-11 cursor-pointer py-3 underline underline-offset-4">
-      Reference details
-    </summary>
-    <p class="select-all [overflow-wrap:anywhere]">Pickup reference: {{ recordId(receipt) }}</p>
-  </details>
   <div class="adoption-actions">
     <Button
       v-if="result === 'current' && operation?.kind === 'save' && manageable"

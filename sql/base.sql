@@ -10,6 +10,8 @@ create table if not exists public.users (
   updatedat timestamptz not null default now()
 );
 
+alter table public.users add column if not exists preferredgenres text[] not null default '{}';
+
 create unique index if not exists users_email_unique_idx on public.users (lower(email));
 
 create table if not exists public.books (

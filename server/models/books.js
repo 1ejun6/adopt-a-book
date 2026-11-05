@@ -143,4 +143,12 @@ async function inventory(query) {
   };
 }
 
-module.exports = { bookschema, bookupdateschema, createbook, getbookbyid, listingschema, listingupdateschema, ownedbooks, editbook, deletebooks, publicbooks, publicfields, catalogueschema, catalogue, inventoryschema, inventory };
+async function shelf(preferredgenres = []) {
+  let query = supabase.from("books").select(publicfields).eq("status", "available");
+  if (preferredgenres.length) query = query.overlaps("subjects", preferredgenres);
+  const { data, error } = await query.order("title").order("id").limit(100);
+  if (error) throw error;
+  return data.map(mapbook);
+}
+
+module.exports = { shelf, bookschema, bookupdateschema, createbook, getbookbyid, listingschema, listingupdateschema, ownedbooks, editbook, deletebooks, publicbooks, publicfields, catalogueschema, catalogue, inventoryschema, inventory };

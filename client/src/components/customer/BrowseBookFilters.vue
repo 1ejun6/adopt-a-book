@@ -55,7 +55,7 @@ watch(() => [route.query.search, route.query.subject, route.query.sort, route.qu
 onBeforeUnmount(() => clearTimeout(searchtimer));
 
 //@sree-sanjana06 > genre options based on existing book categories
-const genres = ['Adventure','Art','Biography','Business','Children', 'Comics','Cooking', 'Fantasy','Fiction','Health', 'Historical fiction','History','Horror','Mystery','Nonfiction','Philosophy','Poetry','Religion','Romance','Science','Science fiction','Self-help','Technology','Thriller','Travel','Young adult'];
+import genres from '../../../../shared/genres.json';
 </script>
 
 <template>

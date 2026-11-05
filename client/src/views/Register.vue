@@ -8,18 +8,21 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'vue-sonner'
 
+import GenrePicker from '@/components/customer/GenrePicker.vue';
+
 const router = useRouter();
 const showPassword = ref(false);
-const form = reactive({ name: '', email: '', password: '', loading: false });
+const form = reactive({ name: '', email: '', password: '', preferredgenres: [], loading: false });
 
 async function register() {
     if (form.loading) { return; }
+    if (!form.preferredgenres.length) { toast.error("Choose at least one favourite genre"); return; }
     form.loading = true;
 
     try {
         const data = {
             method: 'POST',
-            body: { name: form.name.trim(), email: form.email.trim(), password: form.password }
+            body: { name: form.name.trim(), email: form.email.trim(), password: form.password, preferredgenres: form.preferredgenres }
         };
 
         const response = await api('/register', data);
@@ -55,6 +58,7 @@ async function register() {
                 <label class="flex min-h-11 items-center gap-2.5">
                     <Checkbox v-model="showPassword" /> show password
                 </label>
+                <GenrePicker v-model="form.preferredgenres" :disabled="form.loading" />
                 <Button type="submit" class="w-full min-h-11" :disabled="form.loading">{{ form.loading ? 'Registering…' : 'Register' }}</Button>
             </form>
         </div>

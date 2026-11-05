@@ -8,7 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
+import GenrePicker from '@/components/customer/GenrePicker.vue';
 const auth = useAuthStore();
+const preferredgenres = ref([]), savingPreferences = ref(false), preferencesError = ref('');
+const preferencesChanged = computed(() => JSON.stringify([...preferredgenres.value].sort()) !== JSON.stringify([...(account.value?.preferredgenres || [])].sort()));
 
 const account = ref(null), loading = ref(true), loadError = ref('');
 const activePanel = ref('profile');
@@ -43,6 +46,7 @@ async function loadAccount() {
     if (id !== requestId || request.signal.aborted) return;
     if (!response.account) throw new Error('could not load your account > please try again');
     account.value = response.account;
+    preferredgenres.value = [...(response.account.preferredgenres || [])];
     Object.assign(draft, { name: response.account.name, email: response.account.email });
   } catch (error) {
     if (id !== requestId || request.signal.aborted) return;
@@ -76,6 +80,28 @@ async function saveProfile() {
     profileErrorElement.value?.focus();
   } finally {
     savingProfile.value = false;
+    saveControllers.delete(request);
+  }
+}
+
+async function savePreferences() {
+  if (savingPreferences.value || !preferredgenres.value.length || !preferencesChanged.value) return;
+  const request = new AbortController();
+  saveControllers.add(request);
+  savingPreferences.value = true;
+  preferencesError.value = '';
+  try {
+    const response = await api('/customer/preferences', {
+      method: 'PATCH', body: { preferredgenres: preferredgenres.value }, signal: request.signal,
+    });
+    if (request.signal.aborted) return;
+    account.value.preferredgenres = response.preferredgenres;
+    preferredgenres.value = [...response.preferredgenres];
+    toast.success('Favourite genres saved');
+  } catch (error) {
+    if (!request.signal.aborted) preferencesError.value = error.message;
+  } finally {
+    savingPreferences.value = false;
     saveControllers.delete(request);
   }
 }
@@ -144,7 +170,7 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
             <p class="identity-email">{{ account.email }}</p>
           </div>
         </div>
-        <div class="section-nav" role="tablist" aria-label="Account sections" @keydown="navigateTabs">
+        <div class="section-nav" role="tablist" aria-orientation="vertical" aria-label="Account sections" @keydown="navigateTabs">
           <button id="profile-tab" ref="profileTab" type="button" role="tab" :data-active="activePanel === 'profile' ? true : undefined" :aria-selected="activePanel === 'profile'" aria-controls="profile-panel" :tabindex="activePanel === 'profile' ? 0 : -1" @click="activePanel = 'profile'">
             <UserRound aria-hidden="true" />
             Profile details
@@ -188,6 +214,14 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
                 {{ savingProfile ? 'Updating…' : 'Update' }}
               </Button>
             </footer>
+          </form>
+          <form id="preferences" :aria-busy="savingPreferences" @submit.prevent="savePreferences">
+            <GenrePicker v-model="preferredgenres" :disabled="savingPreferences" />
+            <p v-if="preferencesError" role="alert" class="form-error">{{ preferencesError }}</p>
+            <p v-if="!preferredgenres.length" class="field-note">Choose at least one genre to save your preferences.</p>
+            <Button type="submit" :disabled="savingPreferences || !preferredgenres.length || !preferencesChanged">
+              {{ savingPreferences ? 'Saving…' : 'Save favourite genres' }}
+            </Button>
           </form>
         </section>
 

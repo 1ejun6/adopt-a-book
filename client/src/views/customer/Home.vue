@@ -1,7 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { RouterLink } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
@@ -17,6 +16,7 @@ const auth = useAuthStore(),
   watchlist = useWatchlistStore();
 const { entries, savedIds, loading: savedLoading, loadError: savedError } = storeToRefs(watchlist);
 const busyIds = computed(() => new Set(watchlist.pendingOperations.keys()));
+const preferredgenres = ref([]);
 const pool = ref([]),
   selection = ref([]),
   loading = ref(true),
@@ -53,12 +53,12 @@ async function loadShelf() {
   loading.value = true;
   error.value = '';
   try {
-    const response = await api('/books', {
-      query: { status: 'available', limit: 100 },
+    const response = await api('/customer/shelf', {
       signal: controller.signal,
     });
     if (current !== generation) return;
     if (!Array.isArray(response.books)) throw new Error('Could not load available books.');
+    preferredgenres.value = response.preferredgenres || [];
     pool.value = [
       ...new Map(
         response.books
@@ -91,6 +91,7 @@ async function toggle(book) {
 watch(
   () => auth.user?.id,
   () => {
+    preferredgenres.value = [];
     pool.value = [];
     selection.value = [];
     announcement.value = '';
@@ -115,12 +116,18 @@ onBeforeUnmount(() => {
     </header>
     <section aria-labelledby="shelf-heading" class="discovery">
       <div class="section-heading">
-        <h2 id="shelf-heading">Available on the shelf</h2>
-        <Button
-          variant="outline"
+        <div>
+          <h2 id="shelf-heading">Available on the shelf</h2>
+          <p class="shelf-note">{{ preferredgenres.length ? 'Based on your favourite genres' : 'Discover your next favourite read' }}</p>
+        </div>
+        <button
+          type="button"
+          class="inline-flex size-14 shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0"
+          aria-label="Random"
+          title="Random"
           :disabled="loading || !!error || pool.length < 2"
           @click="shuffle()"
-          ><img :src="dice" alt="" class="size-4" />Random</Button
+          ><img :src="dice" alt="" class="size-9" /></button
         >
       </div>
       <div v-if="error" class="state" role="alert">
@@ -134,11 +141,8 @@ onBeforeUnmount(() => {
         :saved-ids="savedIds"
         @select="dialogs?.openBookDetails($event)"
       />
-      <p v-else class="state">The shelf is empty for now. Check back for more stories.</p>
+      <p v-else class="state">No available books match your favourite genres right now.</p>
       <p class="sr-only" role="status" aria-live="polite">{{ announcement }}</p>
-      <RouterLink :to="{ name: 'customerBooks' }" class="browse-link"
-        >Browse all books →</RouterLink
-      >
     </section>
     <section aria-labelledby="saved-heading" class="saved-section">
       <div class="section-heading">
@@ -212,13 +216,10 @@ onBeforeUnmount(() => {
   border-radius: 1.25rem;
   padding: clamp(1rem, 4vw, 2rem);
 }
-.browse-link {
-  display: block;
-  width: fit-content;
-  margin: 1.5rem auto 0;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+.shelf-note {
+  margin-top: 0.375rem;
   font-size: 0.875rem;
+  color: var(--muted-foreground);
 }
 .state {
   padding: 2rem 0;

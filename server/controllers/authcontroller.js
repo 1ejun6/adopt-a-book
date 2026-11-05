@@ -44,8 +44,9 @@ async function logout(req, res) {
 async function register(req, res) {
   let authuserid;
   try {
-    require("../utils/validation").rejectfields(req.body, ["name", "email", "password"]);
+    require("../utils/validation").rejectfields(req.body, ["name", "email", "password", "preferredgenres"]);
     const { name, email, password } = req.body;
+    const preferredgenres = require("../utils/preferences").preferredgenresschema.parse(req.body.preferredgenres);
     if (!name || !email || !password) {
       return res.status(422).json({ error: "all fields are required" });
     }
@@ -76,6 +77,7 @@ async function register(req, res) {
     authuserid = data.user.id;
     await user.createaccount({
       id: authuserid,
+      preferredgenres,
       name,
       email: normalizedemail,
       role: "customer"

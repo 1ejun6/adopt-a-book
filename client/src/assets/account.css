@@ -6,8 +6,9 @@
 .identity-details { min-width: 0; overflow-wrap: anywhere; }
 .identity-name { font-family: var(--font-heading); font-size: 1.25rem; }
 .identity-email { margin-top: 3px; font-size: 0.75rem; color: var(--muted-foreground); }
-.section-nav { display: flex; gap: 4px; }
-.section-nav button { display: flex; align-items: center; text-align: center; }
+.section-nav { display: flex; flex-direction: column; gap: 4px; border-bottom: 0; }
+.section-nav [role='tab'] { display: flex; align-items: center; justify-content: flex-start; text-align: left; width: 100%; border-radius: 6px; margin: 0; }
+.section-nav svg { width: 16px; height: 16px; flex-shrink: 0; }
 .account-content { min-width: 0; }
 .panel-title { display: flex; align-items: center; gap: 10px; }
 .section-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: var(--primary); }
