@@ -49,8 +49,12 @@ test('guest uses the site on their phone', async ({ page }) => {
   const drive = pickDrive(upcomingDrives(drives), 'upcoming open drive with free slots', isRsvpable)
   await (await showDrive(page, drive)).tap()
   const rsvp = dialog.getByRole('button', { name: 'rsvp' })
-  await rsvp.scrollIntoViewIfNeeded()
-  await expect(rsvp).toBeInViewport()
+  //@brod > wait for drive books to settle so dynamic content doesn't push rsvp out of viewport
+  await dialog.locator('[aria-busy="true"]').waitFor({ state: 'detached', timeout: 5000 }).catch(() => {})
+  await expect(async () => {
+    await rsvp.scrollIntoViewIfNeeded()
+    await expect(rsvp).toBeInViewport()
+  }).toPass()
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
 

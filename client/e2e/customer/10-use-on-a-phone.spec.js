@@ -65,8 +65,12 @@ test('customer uses the site on their phone', async ({ page, customer }) => {
   await (await showDrive(page, drive)).tap()
   await expectFitsScreen(page, dialog)
   const rsvp = dialog.getByRole('button', { name: 'rsvp', exact: true })
-  await rsvp.scrollIntoViewIfNeeded()
-  await expect(rsvp).toBeInViewport()
+  //@brod > wait for drive books to settle so dynamic content doesn't push rsvp out of viewport
+  await dialog.locator('[aria-busy="true"]').waitFor({ state: 'detached', timeout: 5000 }).catch(() => {})
+  await expect(async () => {
+    await rsvp.scrollIntoViewIfNeeded()
+    await expect(rsvp).toBeInViewport()
+  }).toPass()
   await page.keyboard.press('Escape')
 
   // 6. opens ☰ &&& taps Logout
