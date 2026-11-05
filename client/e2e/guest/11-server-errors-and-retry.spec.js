@@ -26,5 +26,5 @@ test('guest sees an error on the drives page and tries again', async ({ page }) 
   await page.unrouteAll()
   await page.getByRole('button', { name: 'try again' }).click()
 
-  await expect(page.getByText(/adoption drives found/)).toBeVisible()
+  await expect(page.getByText(/of [0-9]+ adoption drives/)).toBeVisible()
 })

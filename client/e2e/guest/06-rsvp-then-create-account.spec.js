@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test('guest tries to rsvp and creates an account', async ({ page }) => {
   await page.goto('/drives')
-  await expect(page.getByText(/adoption drives found/)).toBeVisible()
+  await expect(page.getByText(/of [0-9]+ adoption drives/)).toBeVisible()
 
   await page.getByRole('button', { name: 'open', exact: true }).click()
   await page.getByRole('main').getByRole('heading', { level: 3 }).first().click()

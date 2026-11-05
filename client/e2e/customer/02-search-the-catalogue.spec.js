@@ -1,48 +1,51 @@
-import { test, expect } from '@playwright/test'
-import { demoCustomer } from '../support/env.js'
+import { test, expect } from '@playwright/test';
+import { demoCustomer } from '../support/env.js';
 
-test.beforeEach(async ({ page }) => {
-  await page.goto('/login')
-  await page.getByRole('textbox', { name: 'Email' }).fill(demoCustomer.email)
-  await page.getByRole('textbox', { name: 'Password' }).fill(demoCustomer.password)
-  await page.getByRole('button', { name: 'Login', exact: true }).click()
-  await expect(page).toHaveURL(/customer/)
-})
+test.describe('Customer searches the catalogue', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/login');
+    await page.getByRole('textbox', { name: 'Email' }).fill(demoCustomer.email);
+    await page.getByRole('textbox', { name: 'Password' }).fill(demoCustomer.password);
+    await page.getByRole('textbox', { name: 'Password' }).press('Enter');
+    await expect(page.getByText('login successful')).toBeVisible();
+  });
 
-test('customer searches, filters and sorts the books', async ({ page }) => {
-  await page.getByRole('banner').getByRole('link', { name: 'Browse Books' }).click()
-  await expect(page.getByText(/books found/)).toBeVisible()
+  test('customer searches, filters and sorts the books', async ({ page }) => {
+    await page.getByRole('link', { name: 'Browse Books' }).click();
+    await page.getByRole('tab', { name: /^Other genres/ }).click();
 
-  const firstTitle = (await page.getByRole('main').locator('article strong').first().textContent()).trim()
+    // search for a book
+    await page.getByRole('searchbox', { name: /Search by title/ }).fill('Born a Crime');
+    await expect(page).toHaveURL(/search=/);
+    await expect(page.getByRole('button', { name: 'View details for Born a Crime' })).toBeVisible();
 
-  await page.getByRole('searchbox', { name: /Search by title/ }).fill(firstTitle)
-  await expect(page).toHaveURL(/search=/)
-  await expect(page.getByRole('main').getByText(firstTitle).first()).toBeVisible()
+    // clear the search
+    await page.getByRole('button', { name: /^Clear Search by title/ }).click();
+    await expect(page).not.toHaveURL(/search=/);
 
-  await page.getByRole('searchbox', { name: /Search by title/ }).fill('')
-  await expect(page).not.toHaveURL(/search=/)
+    // filter by genre
+    await page.getByRole('combobox', { name: 'Genre' }).selectOption('Biography');
+    await expect(page).toHaveURL(/subject=/);
 
-  await page.locator('select').filter({ hasText: 'All genres' }).selectOption({ index: 1 })
-  await expect(page).toHaveURL(/subject=/)
+    // sort by author > it stays after a reload
+    await page.getByRole('combobox', { name: 'Sort by' }).selectOption('Author A–Z');
+    await expect(page).toHaveURL(/sort=author/);
+    await page.reload();
+    await expect(page).toHaveURL(/sort=author/);
+    await expect(page.getByRole('combobox', { name: 'Sort by' })).toHaveValue('author');
 
-  await page.locator('select').filter({ hasText: 'Title A–Z' }).selectOption('author')
-  await expect(page).toHaveURL(/sort=author/)
+    // a search with no matches
+    await page.getByRole('searchbox', { name: /Search by title/ }).fill('zzzz-no-such-book');
+    await expect(page.getByText('No matching books')).toBeVisible();
+  });
 
-  await page.reload()
-  await expect(page).toHaveURL(/sort=author/)
-  await expect(page.getByText(/books found/)).toBeVisible()
+  test('customer goes to the next page of books', async ({ page }) => {
+    await page.getByRole('link', { name: 'Browse Books' }).click();
 
-  await page.getByRole('searchbox', { name: /Search by title/ }).fill('zzzz-no-such-book')
-  await expect(page.getByText('0 books found', { exact: true })).toBeVisible()
-})
-
-test('customer goes to the next page of books', async ({ page }) => {
-  await page.getByRole('banner').getByRole('link', { name: 'Browse Books' }).click()
-  await expect(page.getByText(/books found/)).toBeVisible()
-
-  // "My genres" only has a few books > "Other genres" has enough for a second page
-  await page.getByRole('tab', { name: 'Other genres' }).click()
-  await page.getByRole('button', { name: 'Next Page' }).click()
-  await expect(page).toHaveURL(/page=2/)
-  await expect(page.getByText(/^Page 2 of \d+$/)).toBeVisible()
-})
+    // "My genres" only has a few books > "Other genres" has enough for a second page
+    await page.getByRole('tab', { name: /^Other genres/ }).click();
+    await page.getByRole('button', { name: 'Next page' }).click();
+    await expect(page).toHaveURL(/page=2/);
+    await expect(page.getByText(/^Page 2 of \d+$/)).toBeVisible();
+  });
+});

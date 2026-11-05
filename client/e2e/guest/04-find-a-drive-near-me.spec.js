@@ -9,7 +9,7 @@ test.describe('guest allows location access', () => {
     await page.getByRole('link', { name: 'Adoption Drives' }).click()
 
     await expect(page).toHaveURL(/drives/)
-    await expect(page.getByText(/adoption drives found/)).toBeVisible()
+    await expect(page.getByText(/of [0-9]+ adoption drives/)).toBeVisible()
 
     await page.getByRole('button', { name: 'use current location' }).click()
     // the location box fills in with their address
@@ -21,7 +21,7 @@ test.describe('guest allows location access', () => {
     await expect(page.getByText('Distance: 20 km')).toBeVisible()
 
     await page.getByRole('button', { name: 'Search', exact: true }).click()
-    await expect(page.getByText(/adoption drives found/)).toBeVisible()
+    await expect(page.getByText(/of [0-9]+ adoption drives/)).toBeVisible()
   })
 })
 

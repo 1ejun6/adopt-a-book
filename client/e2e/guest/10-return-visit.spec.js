@@ -5,10 +5,10 @@ test('guest comes back and the books and drives still load', async ({ page }) =>
   await expect(page.locator('.book-spine')).toHaveCount(5)
 
   await page.goto('/drives')
-  await expect(page.getByText(/adoption drives found/)).toBeVisible()
+  await expect(page.getByText(/of [0-9]+ adoption drives/)).toBeVisible()
 
   await page.reload()
-  await expect(page.getByText(/adoption drives found/)).toBeVisible()
+  await expect(page.getByText(/of [0-9]+ adoption drives/)).toBeVisible()
 
   await page.goto('/')
   await expect(page.locator('.book-spine')).toHaveCount(5)
@@ -24,5 +24,5 @@ test('guest with broken saved data still gets the books and drives', async ({ pa
   await expect(page.locator('.book-spine')).toHaveCount(5)
 
   await page.goto('/drives')
-  await expect(page.getByText(/adoption drives found/)).toBeVisible()
+  await expect(page.getByText(/of [0-9]+ adoption drives/)).toBeVisible()
 })
