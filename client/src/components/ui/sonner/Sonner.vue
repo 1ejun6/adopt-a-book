@@ -5,7 +5,7 @@ import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, InformationCircl
 </script>
 
 <template>
-  <Toaster position="top-center" :duration="1000" close-button :mobileOffset="10" class="quietToaster">
+  <Toaster position="top-center" :duration="4000" close-button :mobileOffset="10" class="quietToaster">
     <template #success-icon>
       <HugeiconsIcon :icon="CheckmarkCircle02Icon" :size="20" />
     </template>

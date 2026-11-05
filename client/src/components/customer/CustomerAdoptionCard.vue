@@ -4,7 +4,7 @@ import { Alert02Icon } from '@hugeicons/core-free-icons';
 import { Badge } from '@/components/ui/badge';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 import CustomerAdoptionRow from './CustomerAdoptionRow.vue';
-import { bookAuthors, displayDate, getApplicationStatus, pickupStatus } from '@/lib/adoptions';
+import { bookAuthors, displayDate, getApplicationStatus, pickupStatus, hasPickupOptions } from '@/lib/adoptions';
 
 const props = defineProps({
   record: { type: Object, required: true },
@@ -23,7 +23,7 @@ const warning = computed(
     props.record.warning ||
     (!props.verified && props.record.appointment ? 'Pickup status unavailable' : ''),
 );
-const overdue = computed(() => warning.value === 'Pickup date has passed');
+const overdue = computed(() => warning.value === 'Pickup times have passed');
 const pickupOutcome = computed(() =>
   !props.record.history &&
   ['cancelled', 'rejected'].includes(getApplicationStatus(props.record.appointment))
@@ -49,7 +49,7 @@ function openRecord() {
 <template>
   <CustomerAdoptionRow
     :id="`adoption-${record.id}`"
-    :label="`${actionLabel} for ${title}${overdue ? '. Pickup date has passed' : ''}`"
+    :label="`${actionLabel} for ${title}${overdue ? '. Pickup times have passed' : ''}`"
     @open="openRecord"
   >
     <template #book>
@@ -72,11 +72,12 @@ function openRecord() {
       </p>
     </template>
     <template #pickup>
-      <template v-if="showPickup">
+      <p v-if="hasPickupOptions(record.appointment)" class="text-sm">{{ displayDate(record.appointment.appointmentdate) }} · Three times proposed</p>
+      <template v-else-if="showPickup">
         <p
           class="adoption-row__date"
           :class="{ 'adoption-row__date--past': overdue }"
-          :title="overdue ? 'Pickup date has passed' : undefined"
+          :title="overdue ? 'Pickup times have passed' : undefined"
         >
           <HugeiconsIcon
             v-if="overdue"

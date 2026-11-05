@@ -4,9 +4,9 @@ import { FocusScope } from 'reka-ui';
 import { toast } from 'vue-sonner';
 import { Cancel01Icon, CancelCircleIcon, CheckmarkCircle02Icon, PencilEdit02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/vue';
-import { api } from '@/lib/api';
+import { useWatchlistStore } from '@/stores/watchlist';
+const store = useWatchlistStore();
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 const props = defineProps({
   entry: { type: Object, required: true },
@@ -35,7 +35,7 @@ async function saveComment() {
   busy.value = true;
   error.value = '';
   try {
-    await api(`/watchlist/${props.entry.id}`, { method: 'PATCH', body: { comments: comment.value.trim() } });
+    await store.updateComment(props.entry.id, comment.value.trim());
     emit('saved', { id: props.entry.id, comments: comment.value.trim() });
     dismiss();
     toast.success('comment saved', { duration: 1000, style: { pointerEvents: 'auto' } });
@@ -58,14 +58,28 @@ async function saveComment() {
           <p :role="error ? 'alert' : undefined">{{ error || (editing ? 'edit your note' : 'saved to watchlist') }}</p>
           <p class="truncate text-muted-foreground" :title="entry.bookid.title">{{ entry.bookid.title }}</p>
         </div>
-        <button type="button" title="dismiss" @click="dismiss">
+        <button type="button" class="-m-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg p-2" title="Dismiss" aria-label="Dismiss" @click="dismiss">
           <HugeiconsIcon :icon="Cancel01Icon" class="size-5" aria-hidden="true" />
         </button>
       </div>
-      <form class="flex gap-2.5" @submit.prevent="saveComment">
-        <Input v-model="comment" maxlength="300" :disabled="busy" placeholder="optional comment" class="text-sm" />
-        <Button type="submit" class="shrink-0" :disabled="busy">{{ busy ? 'saving…' : 'save' }}</Button>
-      </form>
+      <form class="space-y-3" @submit.prevent="saveComment">
+      <label class="block space-y-2">
+      <span>Private note (optional)</span>
+      <textarea  v-model="comment" rows="3" maxlength="300" :disabled="busy" placeholder="Write a note about this book..."  class="block w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"/>
+      </label>
+      <div class="flex items-center justify-between gap-3">
+        <p class="text-xs text-muted-foreground">
+          {{ comment.length }}/300 characters
+        </p>
+      <Button type="submit" :disabled="busy">
+        {{ busy ? 'Saving…' : 'Save note' }}
+      </Button>
+  </div>
+</form>
+
+
+
+
     </div>
   </FocusScope>
 </template>

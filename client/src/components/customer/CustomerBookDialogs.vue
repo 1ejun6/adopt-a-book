@@ -1,9 +1,14 @@
 <script setup>
 import { ref, computed, nextTick, watch, onBeforeUnmount } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { api } from '@/lib/api';
-import { bookId, getApplicationStatus, recordId } from '@/lib/adoptions';
-import { auth } from '@/lib/auth';
+import { storeToRefs } from 'pinia';
+import { useAdoptionsStore } from '@/stores/adoptions';
+const adoptions = useAdoptionsStore();
+const { applicationsForBook, applicationsLoading, applicationsError } = storeToRefs(adoptions);
+import { hasExistingAdoption, getApplicationStatus, recordId } from '@/lib/adoptions';
+import { useAuthStore } from '@/stores/auth'
+const auth = useAuthStore();
 import { toast } from 'vue-sonner';
 import { Button } from '@/components/ui/button';
 import AppBookPreviewDialog from '@/components/shared/AppBookPreviewDialog.vue';
@@ -15,6 +20,10 @@ const props = defineProps({
   busyIds: { type: Set, default: () => new Set() },
 });
 const emit = defineEmits(['save']);
+const route = useRoute();
+const router = useRouter();
+const targetError = ref('');
+let targetBook = '';
 const dialogBook = ref(null);
 const dialogOpen = ref(false);
 const detailsLoading = ref(false);
@@ -27,36 +36,14 @@ const requestUncertain = ref(false);
 const receiptWarning = ref('');
 const submittedApplication = ref(null);
 const actionLoading = ref(false);
-const applications = ref([]);
-const applicationsLoading = ref(false);
-const applicationsError = ref('');
-const activeStatuses = [
-  'pending',
-  'pending review',
-  'approved',
-  'pickup requested',
-  'pickup confirmed',
-  'collected',
-  'completed',
-];
 let loadid = 0;
 let controller;
 let dialogTrigger;
 const returnToAdoption = ref(null);
 
-async function getapplications(signal) {
-  const response = await api('/applications', { method: 'GET', signal });
-  if (!Array.isArray(response.adoptionapplications)) {
-    throw new Error('Could not check your requests. Please try again.');
-  }
-  return response.adoptionapplications;
-}
+const getapplications = () => adoptions.fetchApplications({ force: true });
 const matchingApplications = computed(() =>
-  applications.value.filter(
-    application =>
-      bookId(application) === dialogBook.value?.id &&
-      activeStatuses.includes(getApplicationStatus(application)),
-  ),
+  applicationsForBook.value(dialogBook.value?.id).filter(hasExistingAdoption),
 );
 const hasExistingRequest = computed(() => matchingApplications.value.length > 0);
 const existingApplication = computed(() => {
@@ -86,6 +73,7 @@ const canRequestBook = computed(
     !requestSubmitted.value &&
     !requestUncertain.value &&
     !hasExistingRequest.value &&
+    !adoptions.pendingWrites.has(`book:${dialogBook.value?.id}`) &&
     dialogBook.value?.status === 'available',
 );
 const requestButtonLabel = computed(() => {
@@ -137,9 +125,6 @@ async function openBookDetails(book, options = {}) {
   receiptWarning.value = '';
   submittedApplication.value = null;
   actionLoading.value = false;
-  applications.value = [];
-  applicationsError.value = '';
-  applicationsLoading.value = !viewOnly.value;
 
   const details = api(`/books/${book.id}`, { method: 'GET', signal: request.signal })
     .then(response => {
@@ -153,8 +138,8 @@ async function openBookDetails(book, options = {}) {
     })
     .catch(error => {
       if (current()) {
-        detailsError.value = error.message;
-        showerror(error, retry);
+        detailsError.value = error.status === 404 ? 'This copy is no longer listed. Close this dialog to browse other books.' : error.message;
+        showerror({ message: detailsError.value }, retry);
       }
     })
     .finally(() => {
@@ -164,22 +149,7 @@ async function openBookDetails(book, options = {}) {
     });
   const requests = viewOnly.value
     ? Promise.resolve()
-    : getapplications(request.signal)
-        .then(records => {
-          if (current()) {
-            applications.value = records;
-          }
-        })
-        .catch(error => {
-          if (current()) {
-            applicationsError.value = error.message;
-          }
-        })
-        .finally(() => {
-          if (current()) {
-            applicationsLoading.value = false;
-          }
-        });
+    : getapplications().catch(() => { });
   await Promise.all([details, requests]);
 }
 async function openRequestDialog() {
@@ -202,9 +172,14 @@ async function backToBook() {
   dialogTrigger = trigger;
 }
 function restoreRequestFocus(event) {
+  if (requestDialogOpen.value || dialogOpen.value) return;
   event.preventDefault();
-  if (!dialogOpen.value && dialogTrigger?.isConnected) {
+  if (dialogTrigger?.isConnected && dialogTrigger !== document.body) {
     dialogTrigger.focus({ preventScroll: true });
+  } else {
+    const heading = document.querySelector('main h1');
+    heading?.setAttribute('tabindex', '-1');
+    heading?.focus({ preventScroll: true });
   }
 }
 
@@ -214,9 +189,9 @@ async function checkRequestStatus() {
   const book = dialogBook.value;
   actionLoading.value = true;
   try {
-    const records = await getapplications();
+    const freshBook = await adoptions.reconcileApplication(book.id);
     if (id !== loadid) return;
-    applications.value = records;
+    dialogBook.value = freshBook;
     if (hasExistingRequest.value) {
       submittedApplication.value = existingApplication.value;
       requestSubmitted.value = true;
@@ -249,13 +224,11 @@ async function requestCopy() {
   controller = request;
   actionLoading.value = true;
   requestError.value = '';
-  applicationsError.value = '';
   try {
-    const records = await getapplications(request.signal);
+    await getapplications();
     if (id !== loadid) {
       return;
     }
-    applications.value = records;
     if (hasExistingRequest.value) {
       requestError.value =
         'You already have a request for this book. View your request in My Adoptions.';
@@ -265,32 +238,12 @@ async function requestCopy() {
       requestError.value = 'This book is no longer available for requests.';
       return;
     }
-    await api('/applications', {
-      method: 'POST',
-      body: { bookid: book.id },
-      signal: request.signal,
-    });
-    if (id !== loadid) {
-      return;
-    }
+    const { refreshed } = await adoptions.submitApplication(book.id);
+    if (id !== loadid) return;
     requestSubmitted.value = true;
-    // A failed tracking refresh must not turn an accepted submission into a retryable request.
-    try {
-      const saved = await getapplications(request.signal);
-      if (id !== loadid) {
-        return;
-      }
-      applications.value = saved;
-      submittedApplication.value = existingApplication.value;
-      if (!applicationId.value) {
-        receiptWarning.value =
-          'Your request was sent. View My Adoptions to check its tracking details.';
-      }
-    } catch {
-      if (id === loadid) {
-        receiptWarning.value =
-          'Your request was sent, but we couldn’t refresh its details. View My Adoptions to check.';
-      }
+    submittedApplication.value = existingApplication.value;
+    if (!refreshed || !applicationId.value) {
+      receiptWarning.value = 'Your request was sent, but we couldn’t refresh its details. View My Adoptions to check.';
     }
   } catch {
     if (id === loadid) {
@@ -314,6 +267,12 @@ watch(
   { flush: 'sync' },
 );
 watch(dialogOpen, async value => {
+  if (!value && targetBook && !requestDialogOpen.value) {
+    const query = { ...route.query };
+    delete query.book;
+    targetBook = '';
+    await router.replace({ query });
+  }
   if (!value && returnToAdoption.value) {
     const back = returnToAdoption.value;
     returnToAdoption.value = null;
@@ -321,6 +280,28 @@ watch(dialogOpen, async value => {
     await back();
   }
 });
+//@lee-hlmilk > validate shared copy links before fetching > preserve the catalogue filters when the dialog closes
+watch(() => route.query.book, value => {
+  if (route.name !== 'customerBooks') return;
+  if (!value) {
+    targetError.value = '';
+    if (targetBook) {
+      targetBook = '';
+      dialogOpen.value = false;
+    }
+    return;
+  }
+  if (value === targetBook) return;
+  targetError.value = '';
+  if (typeof value !== 'string' || !/^[\da-f]{8}-[\da-f]{4}-[1-8][\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i.test(value)) {
+    targetBook = '';
+    dialogOpen.value = false;
+    targetError.value = 'This book link is invalid. Browse the available books instead.';
+    return;
+  }
+  targetBook = value;
+  openBookDetails({ id: value });
+}, { immediate: true });
 watch(
   requestDialogOpen,
   value => {
@@ -330,6 +311,12 @@ watch(
   },
   { flush: 'sync' },
 );
+watch(() => auth.user?.id, () => {
+  cancelload();
+  dialogOpen.value = false;
+  requestDialogOpen.value = false;
+  dialogBook.value = null;
+});
 onBeforeUnmount(cancelload);
 function closeBookDetails(book) {
   if (!book || dialogBook.value?.id === book.id) {
@@ -340,15 +327,18 @@ defineExpose({ openBookDetails, closeBookDetails });
 </script>
 
 <template>
-  <AppBookPreviewDialog v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading"
-    :error="detailsError" :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave"
-    :busy="props.busyIds.has(dialogBook?.id)" @save="emit('save', $event)">
+  <p v-if="targetError" role="alert">{{ targetError }} <RouterLink class="underline min-h-11 inline-flex items-center" :to="{ query: { ...route.query, book: undefined } }">Browse available books</RouterLink></p>
+  <AppBookPreviewDialog @close-auto-focus="restoreRequestFocus" @retry="openBookDetails(dialogBook, { viewOnly, onReturn: returnToAdoption })" v-model:open="dialogOpen" :book="dialogBook" :loading="detailsLoading" :error="detailsError"
+    :saved="props.savedIds.has(dialogBook?.id)" :canSave="props.canSave" :busy="props.busyIds.has(dialogBook?.id)"
+    @save="emit('save', $event)">
     <template v-if="$slots['book-action']" #book-action>
       <slot name="book-action" :book="dialogBook" />
     </template>
-    <template v-if="$slots.details" #details><slot name="details" :book="dialogBook" /></template>
+    <template v-if="$slots.details" #details>
+      <slot name="details" :book="dialogBook" />
+    </template>
     <template v-if="viewOnly && returnToAdoption" #actions>
-      <Button type="button" variant="outline"  @click="dialogOpen = false">Back to adoption details</Button>
+      <Button type="button" variant="outline" @click="dialogOpen = false">Back to adoption details</Button>
     </template>
     <template v-else-if="!viewOnly" #actions>
       <slot name="extra-actions" :book="dialogBook" />
@@ -372,20 +362,19 @@ defineExpose({ openBookDetails, closeBookDetails });
         <Button v-if="hasExistingRequest" asChild class="w-full">
           <RouterLink :to="requestLink">View my request</RouterLink>
         </Button>
-        <Button v-else class="w-full" :disabled="!canRequestBook"
-          @click="openRequestDialog">
+        <Button v-else class="w-full" :disabled="!canRequestBook" @click="openRequestDialog">
           {{ requestButtonLabel }}
         </Button>
-        <button v-if="applicationsError" type="button"
-          class="min-h-11 text-sm underline underline-offset-4" @click="openBookDetails(dialogBook)">
+        <button v-if="applicationsError" type="button" class="min-h-11 text-sm underline underline-offset-4"
+          @click="openBookDetails(dialogBook)">
           Retry request check
         </button>
       </div>
     </template>
   </AppBookPreviewDialog>
-  <RequestCopyDialog v-model:open="requestDialogOpen" :book="dialogBook" :reader="auth.user"
-    :loading="actionLoading" :submitted="requestSubmitted" :existing="hasExistingRequest"
-    :disabled="!!applicationsError || requestUncertain" :uncertain="requestUncertain" :applicationStatus="getApplicationStatus(submittedApplication || existingApplication)" :error="requestError" :receiptWarning="receiptWarning"
-    :applicationId="applicationId" @submit="requestCopy" @check="checkRequestStatus" @back="backToBook"
-    @restore-focus="restoreRequestFocus" />
+  <RequestCopyDialog v-model:open="requestDialogOpen" :book="dialogBook" :reader="auth.user" :loading="actionLoading"
+    :submitted="requestSubmitted" :existing="hasExistingRequest" :disabled="!!applicationsError || requestUncertain"
+    :uncertain="requestUncertain" :applicationStatus="getApplicationStatus(submittedApplication || existingApplication)"
+    :error="requestError" :receiptWarning="receiptWarning" :applicationId="applicationId" @submit="requestCopy"
+    @check="checkRequestStatus" @back="backToBook" @restore-focus="restoreRequestFocus" />
 </template>

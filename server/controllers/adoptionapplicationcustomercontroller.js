@@ -33,8 +33,8 @@ const createadoptionapplication = async (req, res) => {
     }
 
     const adoptionapplicationdata = { userid, bookid };
-    await adopt.addadoptionapplication(adoptionapplicationdata);
-    return res.status(201).json({ message: "adoption application submitted successfully" });
+    const application = await adopt.addadoptionapplication(adoptionapplicationdata);
+    return res.status(201).json({ message: "adoption application submitted successfully", adoptionapplication: { ...application, bookid: book } });
   } catch (err) {
     console.log(err);
     return res.status(errorstatus(err)).json({ error: errormessage(err, "error creating adoption application") });

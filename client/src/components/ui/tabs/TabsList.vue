@@ -1,7 +1,6 @@
 <script setup>
 import { reactiveOmit } from '@vueuse/core';
 import { TabsList } from 'reka-ui';
-import { cn } from '@/lib/utils';
 
 const props = defineProps({
   loop: { type: Boolean, required: false },
@@ -15,7 +14,7 @@ const delegatedProps = reactiveOmit(props, 'class');
 
 <template>
   <TabsList data-slot="tabs-list" v-bind="delegatedProps"
-    :class="cn('inline-flex flex-wrap gap-2.5', props.class)">
+    :class="props.class">
     <slot />
   </TabsList>
 </template>

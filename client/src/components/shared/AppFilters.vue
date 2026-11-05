@@ -24,7 +24,7 @@ const genre = defineModel('genre', { type: String, default: 'all' });
             <slot name="tabs" :counts="counts" :status="status">
                 <Tabs v-model="status">
                     <TabsList>
-                        <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value" class="h-auto min-h-11 max-w-full gap-2.5 py-2 text-left">
+                        <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value" class="h-auto  max-w-full gap-2.5 py-2 text-left">
                             <slot name="tab" :tab="tab" :count="counts[tab.value]">
                                 {{ tab.label }}
                                 <Badge v-if="!tab.status && counts[tab.value] != null" class="bg-primary">

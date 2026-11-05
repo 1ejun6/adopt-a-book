@@ -27,6 +27,25 @@ const sliderValue = computed({
 });
 //@ChitanyaBharathi > keep device coordinates ready until search applies selected distance
 const location = ref(null);
+const usingCurrentLocation = ref(false);
+const nearestStation = ref(null);
+const locationInput = ref(null);
+const locationLabel = computed(() => { if (!location.value) return '';
+  if (usingCurrentLocation.value) {
+    if (nearestStation.value?.name) {
+      return `Near ${nearestStation.value.name}`;
+   }
+
+    return `${Number(location.value.lat).toFixed(4)}, ${Number(location.value.lng).toFixed(4)}`;
+  }
+
+  return location.value.name || query.value.trim();
+});
+
+function changeLocation() {
+  clear();
+  locationInput.value?.$el?.focus();
+}
 const loading = ref(false);
 let requestId = 0;
 let controller;
@@ -50,6 +69,7 @@ async function lookup(body) {
     const result = await api('/locations/nearby', { method: 'POST', signal: controller.signal, body: { ...body, radiusKm: radius.value } });
     if (id !== requestId) return;
     location.value = result.location;
+    nearestStation.value = result.nearestStation;
     stationIds.value = result.stations.map(station => station.id).join(',');
     emit('change', result);
     toast.success('location filter applied');
@@ -81,6 +101,7 @@ function nearMe() {
       //@ChitanyaBharathi > near me button if clicked, empties the input search box
       if (id !== requestId) return;
       clear();
+      usingCurrentLocation.value = true;
       location.value = { name: 'your current location', lat: position.coords.latitude, lng: position.coords.longitude };
       loading.value = false;
       toast.info('current location ready', { description: 'adjust distance & click search' });
@@ -103,9 +124,13 @@ function nearMe() {
 watch(query, value => {
   if (clearing) return;
   cancelLookup();
-  if (!value.trim()) clear();
-  else location.value = null;
-}, { flush: 'sync' });
+  if (!value.trim()) {
+  clear();
+} else {
+  location.value = null;
+  nearestStation.value = null;
+  usingCurrentLocation.value = false;
+}});
 
 function clear() {
   cancelLookup();
@@ -116,6 +141,8 @@ function clear() {
   location.value = null;
   stationIds.value = '';
   emit('change', null);
+  usingCurrentLocation.value = false;
+  nearestStation.value = null;
 }
 
 defineExpose({ clear });
@@ -131,10 +158,29 @@ defineExpose({ clear });
           <HugeiconsIcon :icon="Location08Icon" aria-hidden="true" />
           <span class="sr-only">use current location</span>
         </Button>
-        <Input :id="inputId" v-model="query" type="search" :placeholder="props.placeholder" class="flex-1" />
+        <Input ref="locationInput" :id="inputId" v-model="query" type="search" :placeholder="props.placeholder" class="flex-1" />
         <Button type="submit" :disabled="loading || (!query.trim() && !location)">search</Button>
       </div>
     </Field>
+
+    <div v-if="location" class="flex items-start justify-between gap-3 text-sm" role="status">
+  <div class="min-w-0 space-y-1">
+    <p class="text-muted-foreground">
+      {{ usingCurrentLocation ? 'Using your current location' : 'Selected location' }}
+    </p>
+    <p class="break-words">
+      {{ locationLabel }}
+    </p>
+
+    <p v-if="usingCurrentLocation && !nearestStation" class="text-xs text-muted-foreground">
+      Select Search to find nearby MRT stations.
+    </p>
+  </div>
+
+    <button type="button" class="shrink-0 underline underline-offset-4" :disabled="loading" @click="changeLocation">
+      Change
+    </button>
+    </div>
 
     <!-- Choose a distance first; only Search applies it. -->
     <Field v-if="query.trim() || location" class="flex-row items-center">

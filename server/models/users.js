@@ -6,6 +6,7 @@ const userschema = z.object({
   id: z.uuid(),
   name: z.string().trim().min(1),
   email: z.email().transform((email) => email.toLowerCase()),
+  preferredgenres: require("../utils/preferences").preferredgenresschema.optional(),
   role: z.enum(["customer", "admin"]).default("customer")
 });
 
@@ -40,4 +41,8 @@ const findonebyemailexcludingid = (email, id) => one(supabase.from("users").sele
 
 const findcustomerbyid = (id) => one(supabase.from("users").select("*").eq("id", id).eq("role", "customer"));
 
-module.exports = { userschema, findonebyemail, findbyid, createaccount, findadminaccounts, findadminbyid, findonebyemailexcludingid, findcustomerbyid };
+async function updatepreferences(id, preferredgenres) {
+  return one(supabase.from("users").update({ preferredgenres }).eq("id", id).eq("role", "customer").select("*"));
+}
+
+module.exports = { updatepreferences, userschema, findonebyemail, findbyid, createaccount, findadminaccounts, findadminbyid, findonebyemailexcludingid, findcustomerbyid };

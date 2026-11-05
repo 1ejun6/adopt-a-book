@@ -5,7 +5,7 @@ import { toast } from 'vue-sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { Checkbox } from '@/components/ui/checkbox';
+import AppPasswordInput from '@/components/shared/AppPasswordInput.vue';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const props = defineProps({ account: { type: Object, required: true } });
@@ -16,7 +16,6 @@ const error = ref('');
 const errorMessage = ref(null);
 const draft = reactive({ name: '', email: '' });
 const passwords = reactive({ password: '', confirmation: '' });
-const showPassword = ref(false);
 const passwordExpanded = ref(false);
 const confirmationTouched = ref(false);
 const mismatch = computed(() => confirmationTouched.value && passwords.password !== passwords.confirmation);
@@ -35,7 +34,6 @@ watch(open, value => {
   if (value) Object.assign(draft, { name: props.account.name, email: props.account.email });
   error.value = '';
   Object.assign(passwords, { password: '', confirmation: '' });
-  showPassword.value = false;
   passwordExpanded.value = false;
   confirmationTouched.value = false;
 });
@@ -106,18 +104,17 @@ async function saveDetails() {
           <div v-show="passwordExpanded" id="account-password-fields" class="space-y-4">
             <Field>
               <FieldLabel for="account-new-password">New password</FieldLabel>
-              <Input id="account-new-password" v-model="passwords.password" :type="showPassword ? 'text' : 'password'"
+              <AppPasswordInput label="new password" id="account-new-password" v-model="passwords.password"
                  autocomplete="new-password" :spellcheck="false" autocapitalize="none" :disabled="saving" />
             </Field>
             <Field>
               <FieldLabel for="account-confirm-password">Confirm new password</FieldLabel>
-              <Input id="account-confirm-password" v-model="passwords.confirmation" :type="showPassword ? 'text' : 'password'"
+              <AppPasswordInput label="confirmation password" id="account-confirm-password" v-model="passwords.confirmation"
                  autocomplete="new-password" :spellcheck="false" autocapitalize="none" :disabled="saving"
                 :aria-invalid="mismatch || undefined" :aria-describedby="mismatch ? 'account-password-mismatch' : undefined"
                 @blur="confirmationTouched = true" />
               <p v-if="mismatch" id="account-password-mismatch" class="text-destructive" role="alert">Passwords do not match.</p>
             </Field>
-            <label class="flex min-h-11 items-center gap-2.5"><Checkbox v-model="showPassword" :disabled="saving" /> Show passwords</label>
           </div>
         </section>
         <div class="space-y-2 pt-1">

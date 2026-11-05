@@ -57,12 +57,12 @@ async function handleOpenChange(nextOpen) {
           <DialogFooter class="flex-col sm:flex-row">
             <!--@lee-hlmilk > footer replaces default buttons > extraActions adds buttons while retaining the defaults-->
             <slot name="footer">
-              <Button class="min-h-11" type="button" variant="outline" :disabled="submitting" @click="handleOpenChange(false)">
+              <Button type="button" variant="outline" :disabled="submitting" @click="handleOpenChange(false)">
                 Cancel
               </Button>
               <!--@lee-hlmilk > extra footer actions > eg. add &&& continue-->
               <slot name="extraActions" />
-              <Button type="submit" class="flex-1 min-h-11" :disabled="submitting">
+              <Button type="submit" class="flex-1 " :disabled="submitting">
                 {{ submitting ? submittingLabel : submitLabel }}
               </Button>
             </slot>

@@ -10,7 +10,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <div data-slot="dialog-footer" :class="cn('flex gap-2.5 border-t pt-5', props.class)
+  <div data-slot="dialog-footer" :class="cn('flex flex-wrap gap-2.5 border-t pt-5', props.class)
     ">
     <slot />
     <DialogClose v-if="showCloseButton" asChild>

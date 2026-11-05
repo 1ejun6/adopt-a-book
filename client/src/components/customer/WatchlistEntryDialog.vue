@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, useId, watch } from 'vue';
-import { api } from '@/lib/api';
+import { useWatchlistStore } from '@/stores/watchlist';
+const store = useWatchlistStore();
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -32,9 +33,8 @@ async function submit() {
   error.value = '';
   try {
     //@sree-sanjana06 > delete entry from backend and update page immediately
-    await api(`/watchlist/${id}`, edit
-      ? { method: 'PATCH', body: { comments } } //@sree-sanjana06 > partial
-      : { method: 'DELETE' });
+    if (edit) await store.updateComment(id, comments);
+    else await store.removeEntry(id);
     if (edit) emit('saved', { id, comments });
     else emit('removed', id);
     open.value = false;

@@ -80,8 +80,9 @@ async function removedrives(ids, userid) {
   return data;
 }
 async function cancelrsvp(id, userid) {
-  const { error } = await supabase.rpc("cancel_drive_rsvp", { drive_id: id, customer_id: userid });
+  const { data, error } = await supabase.rpc("cancel_drive_rsvp", { drive_id: id, customer_id: userid });
   if (error) throw error;
+  return data;
 }
 
 const discoveryfilters = z.object({

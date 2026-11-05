@@ -64,7 +64,7 @@ const updateadoptionapplication = async (req, res) => {
   } catch (err) {
     console.log(err);
     return res.status(errorstatus(err)).json({
-      error: "error updating adoption application status"
+      error: errormessage(err, "error updating adoption application status")
     });
   }
 };

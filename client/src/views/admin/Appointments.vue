@@ -1,11 +1,17 @@
 <script setup>
+import { useAdminRecord } from '@/composables/useAdminRecord';
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
-import { formatDate, todayInSingapore } from '@/lib/date';
+import { currentTime } from '@/lib/clock';
+import { availablePickupSlot } from '@/lib/pickupTimes';
+import { pickupMatchesView, pendingPickupState } from '../../../../shared/pickups.mjs';
+import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
+import { formatDate } from '@/lib/date';
 import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
+import AdminPickupOptions from '@/components/admin/AdminPickupOptions.vue';
 import AdminList from '@/components/admin/AdminList.vue';
 import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue';
 import BookIdentity from '@/components/shared/AppBookIdentity.vue';
@@ -22,14 +28,14 @@ const appointmentFields = computed(() => [
     { label: 'Customer', value: selectedAppointment.value?.customer },
     { label: 'Email', value: selectedAppointment.value?.email },
     { label: 'Collection date', value: selectedAppointment.value?.appointmentdate ? formatDate(selectedAppointment.value.appointmentdate) : null },
-    { label: 'Time', value: selectedAppointment.value?.timeslot },
+    { label: 'Time', value: selectedAppointment.value?.status === 'pending confirmation' && selectedAppointment.value?.optionsby === 'customer' ? 'Choose from the three times below' : selectedAppointment.value?.timeslot },
     { label: 'Location', value: selectedAppointment.value?.location }
 ]);
 const detailsHint = computed(() => selectedAppointment.value ? actionHint([selectedAppointment.value], selectedAppointment.value.status === 'pending confirmation' ? 'appointment confirmed' : 'collected') : '');
 const detailsOpen = ref(false);
+const { detailError, detailLoading, refreshDetail } = useAdminRecord(selectedAppointment, detailsOpen, '/admin/appointments', 'appointment', { busy: () => saving.value });
 const saving = ref(false);
 const { confirm } = useConfirmation();
-const today = ref(todayInSingapore());
 
 const viewTabs = [
     { value: 'awaiting', label: 'Awaiting confirmation' },
@@ -55,19 +61,18 @@ const emptyTitles = {
 };
 
 //@lee-hlmilk > today's pickups must be confirmed > pending requests due today ||| earlier belong in overdue
+async function pickupOptionsUpdated(appointment) {
+    selectedAppointment.value = { ...selectedAppointment.value, ...appointment };
+    if (appointment.status === 'appointment confirmed') toast.success('Pickup confirmed. The customer can view the selected time in My Adoptions.');
+    await fetchAppointments();
+        await refreshDetail();
+}
 function matchesView(appointment, view) {
-    const active = ['pending confirmation', 'appointment confirmed'].includes(appointment.status);
-    if (view === 'awaiting') { return appointment.status === 'pending confirmation' && appointment.appointmentdate > today.value; }
-    if (view === 'history') { return !active; }
-    if (!active) { return false; }
-    if (view === 'today') { return appointment.status === 'appointment confirmed' && appointment.appointmentdate === today.value; }
-    return view === 'upcoming' ? appointment.appointmentdate > today.value :
-        appointment.appointmentdate < today.value || (appointment.status === 'pending confirmation' && appointment.appointmentdate === today.value);
+    return pickupMatchesView(appointment, view, currentTime.value);
 }
 //@lee-hlmilk > appointment rows include customer &&& book relations > no full application lookup
 const { rows: appointments, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchAppointments } = useServerPagination({
-    endpoint: '/admin/appointments', filters, selectedIds, read: response => response.appointments,
-    onResponse: response => { today.value = response.today; }
+    busy: () => saving.value, endpoint: '/admin/appointments', filters, selectedIds, read: response => response.appointments
 });
 const hasFilters = computed(() => filters.search.trim() || filters.date || filters.status !== 'all');
 const emptyFilterHint = computed(() => filters.view === 'today'
@@ -79,12 +84,14 @@ const selectedAppointments = computed(() => appointments.value.filter(appointmen
 
 //@lee-hlmilk > mirror action availability for feedback > SQL remains responsible for validating each transition
 function actionHint(rows, status) {
+    if (status === 'appointment confirmed' && rows.some(appointment => pendingPickupState(appointment, currentTime.value) !== 'awaiting')) return 'No future pickup time is available, or details are incomplete. Ask the customer to reschedule.';
+    if (status === 'appointment confirmed' && rows.some(appointment => appointment.pickupoptions?.length)) return 'Open the appointment and select one of the customer’s available times.';
     const requiredStatus = status === 'collected' ? 'appointment confirmed' : 'pending confirmation';
     if (rows.some(appointment => appointment.status !== requiredStatus)) {
         if (status === 'rejected') { return 'Only pending appointments can be rejected.'; }
         return status === 'collected' ? 'Only confirmed appointments can be marked collected.' : 'Only appointments awaiting confirmation can be confirmed.';
     }
-    if (status === 'appointment confirmed' && rows.some(appointment => appointment.appointmentdate < today.value)) { return 'Past appointments cannot be confirmed. The customer needs to reschedule.'; }
+    if (status === 'appointment confirmed' && rows.some(appointment => !availablePickupSlot(appointment))) { return 'The pickup time has passed or is incomplete. The customer needs to reschedule.'; }
     if (rows.some(appointment => appointment.book?.status !== 'reserved')) { return 'The copy must still be reserved for collection.'; }
     return '';
 }
@@ -106,7 +113,7 @@ function openAppointment(appointment) {
 
 //@lee-hlmilk > API updates one appointment per request > report partial failures &&& reload authoritative statuses
 async function updateAppointments(status, rows = selectedAppointments.value) {
-    if (loading.value || saving.value || !rows.length || actionHint(rows, status)) { return; }
+    if (detailLoading.value || detailError.value || loading.value || saving.value || !rows.length || actionHint(rows, status)) { return; }
     const targets = [...rows];
     const single = targets.length === 1;
     const action = {
@@ -130,7 +137,6 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
     //@lee-hlmilk > a dashboard link can load details outside this page > retain that record for confirmation checks
     const current = targets.map(target => appointments.value.find(appointment => appointment.id === target.id) || (selectedAppointment.value?.id === target.id ? selectedAppointment.value : null));
     if (current.some(appointment => !appointment) || actionHint(current, status)) { toast.error('These appointments have changed. Select them again.'); return; }
-    detailsOpen.value = false;
     saving.value = true;
     let completed = 0;
     const failures = [];
@@ -144,6 +150,7 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
         if (completed) { toast.success(`${completed} ${completed === 1 ? 'appointment' : 'appointments'} ${status === 'collected' ? 'marked collected' : status === 'rejected' ? 'rejected' : 'confirmed'}`); }
         if (failures.length) { toast.error(`${failures.length} ${failures.length === 1 ? 'update' : 'updates'} failed`, { description: failures.join('\n'), style: { whiteSpace: 'pre-line' } }); }
         await fetchAppointments();
+        await refreshDetail();
     } finally { saving.value = false; }
 }
 
@@ -163,13 +170,14 @@ async function loadAppointmentLink() {
     } catch (error) { toast.error(error.message); }
     finally { router.replace({ state: { appointment: null } }); }
 }
+useVisibleRefresh(async () => { await fetchAppointments(); await refreshDetail(); }, { interval: true, busy: () => loading.value || saving.value });
 fetchAppointments().then(loadAppointmentLink);
 
 </script>
 
 <template>
     <!--@lee-hlmilk > list models update local filters &&& page > History disables selection while keeping record details available-->
-    <AdminList title="Appointments" description="Manage appointments and book collections."
+    <AdminList @retry="fetchAppointments" title="Appointments" description="Manage appointments and book collections."
         v-model:search="filters.search" v-model:tab="filters.view" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="appointments" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving"
         :selectable="filters.view !== 'history'"
@@ -194,8 +202,8 @@ fetchAppointments().then(loadAppointmentLink);
             <p v-if="confirmHint && collectHint" class="text-sm text-muted-foreground" role="status">
                 {{ selectionHint }}
             </p>
-            <Button class="min-h-11" :disabled="loading || saving || !!confirmHint" @click="updateAppointments('appointment confirmed')">Confirm appointments</Button>
-            <Button class="min-h-11" variant="outline" :disabled="loading || saving || !!collectHint" @click="updateAppointments('collected')">Mark collected</Button>
+            <Button :disabled="detailLoading || !!detailError || loading || saving || !!confirmHint" @click="updateAppointments('appointment confirmed')">Confirm</Button>
+            <Button variant="outline" :disabled="detailLoading || !!detailError || loading || saving || !!collectHint" @click="updateAppointments('collected')">Mark collected</Button>
         </template>
         <template #cellCustomer="{ row }">
             <p class="break-words lg:truncate">{{ row.customer }}</p>
@@ -205,29 +213,31 @@ fetchAppointments().then(loadAppointmentLink);
             <BookIdentity :title="row.booktitle" :author="row.book?.authors?.join(', ') || 'Unknown Author'" :cover="row.book?.coverurl" />
         </template>
         <template #cellCollection="{ row }">
-            <p>{{ formatDate(row.appointmentdate) }} · {{ row.timeslot }}</p>
+            <p>{{ formatDate(row.appointmentdate) }} · {{ row.status === 'pending confirmation' && row.optionsby === 'customer' ? 'Three times proposed' : row.timeslot }}</p>
             <p class="text-muted-foreground">{{ row.location }}</p>
         </template>
-        <template #cellStatus="{ value }"><StatusBadge :status="value" /></template>
+        <template #cellStatus="{ value, row }"><StatusBadge :status="value" /><p v-if="value === 'pending confirmation' && pendingPickupState(row, currentTime) !== 'awaiting'" class="text-sm text-destructive">Needs attention: no future pickup time or incomplete details</p><p v-else-if="value === 'pending confirmation' && row.pickupoptions?.length" class="text-sm text-muted-foreground">Select a proposed time</p></template>
         <template #empty>
             <h2>{{ hasFilters ? 'No matching appointments' : emptyTitles[filters.view] }}</h2>
             <p class="text-sm text-muted-foreground">{{ hasFilters ? emptyFilterHint : 'Pickup bookings will appear in their corresponding view.' }}</p>
         </template>
     </AdminList>
 
-    <AdminDetailsDialog v-if="selectedAppointment" :open="detailsOpen" title="Appointment details"
+    <AdminDetailsDialog :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedAppointment" :open="detailsOpen" title="Appointment details"
         :book="{ ...selectedAppointment.book, title: selectedAppointment.booktitle }" :status="selectedAppointment.status"
-        :fields="appointmentFields" @update:open="detailsOpen = $event">
+        :fields="appointmentFields" @update:open="!saving && (detailsOpen = $event)">
         <!--@lee-hlmilk > completed ||| inactive appointments are read-only > active pickups show the next step-->
         <p v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" class="text-muted-foreground">
             {{ detailsHint || (selectedAppointment.status === 'pending confirmation' ? 'Confirm after checking the requested date, time, and location.' : 'Mark collected only after the customer has physically received the book.') }}
         </p>
+        <AdminPickupOptions v-if="selectedAppointment.status === 'pending confirmation' && selectedAppointment.optionsby === 'customer' && selectedAppointment.pickupoptions?.length === 3 && selectedAppointment.book?.status === 'reserved'"
+            :disabled="detailLoading || !!detailError" :key="selectedAppointment.id" :appointment="selectedAppointment" v-model:saving="saving" @updated="pickupOptionsUpdated" />
         <template v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" #actions>
             <template v-if="selectedAppointment.status === 'pending confirmation'">
-                <Button type="button" variant="destructive" class="flex-1 min-h-11" :disabled="loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])">Reject appointment</Button>
-                <Button type="button" class="flex-1 min-h-11" :disabled="loading || saving || !!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])">Confirm appointment</Button>
+                <Button type="button" variant="destructive" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])">Reject</Button>
+                <Button v-if="!selectedAppointment.pickupoptions?.length" type="button" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])">Confirm</Button>
             </template>
-            <Button v-else type="button" class="w-full min-h-11" :disabled="!!detailsHint" @click="updateAppointments('collected', [selectedAppointment])">Mark collected</Button>
+            <Button v-else type="button" class="w-full " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('collected', [selectedAppointment])">Mark collected</Button>
         </template>
     </AdminDetailsDialog>
 </template>

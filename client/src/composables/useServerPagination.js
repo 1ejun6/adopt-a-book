@@ -1,9 +1,10 @@
+import { useVisibleRefresh } from '@/composables/useVisibleRefresh';
 import { computed, onScopeDispose, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { api } from '@/lib/api';
 
 //@lee-hlmilk > views own filters/actions > this composable owns server pages &&& request state
-export function useServerPagination({ endpoint, filters, selectedIds, query = () => ({ ...filters }), read, beforeLoad = () => {}, onResponse = () => {} }) {
+export function useServerPagination({ endpoint, filters, selectedIds, query = () => ({ ...filters }), read, busy = () => false, beforeLoad = () => {}, onResponse = () => {} }) {
     const rows = ref([]);
     const page = ref(1);
     const pageSize = 15;
@@ -57,6 +58,7 @@ export function useServerPagination({ endpoint, filters, selectedIds, query = ()
         timer = setTimeout(refresh, filters.search !== requestedSearch ? 250 : 0);
     });
 
+    useVisibleRefresh(refresh, { busy: () => loading.value || busy() });
     onScopeDispose(() => { disposed = true; requestId++; clearTimeout(timer); });
     return { rows, page, pageSize, total, counts, pageCount, loading, loadError, refresh };
 }

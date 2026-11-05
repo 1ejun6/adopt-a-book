@@ -5,6 +5,8 @@ import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 
 //@lee-hlmilk > shared details layout > views supply fields &&& content &&& actions through props &&& slots
 const props = defineProps({
+    busy: Boolean,
+    error: { type: String, default: '' },
     open: { type: Boolean, default: false },
     title: { type: String, required: true },
     book: { type: Object, default: null },
@@ -12,13 +14,14 @@ const props = defineProps({
     description: { type: String, default: '' },
     fields: { type: Array, default: () => [] }
 });
-const emit = defineEmits(['update:open']);
+const emit = defineEmits(['update:open', 'retry']);
 </script>
 
 <template>
     <!--@lee-hlmilk > open is read from the view > update:open asks the view to store X ||| Escape ||| outside-click changes-->
-    <Dialog :open="props.open" @update:open="emit('update:open', $event)">
-        <DialogContent :aria-describedby="undefined" class="inset-3 max-h-[calc(100dvh-1.5rem)] p-4">
+    <Dialog :open="props.open" @update:open="!busy && emit('update:open', $event)">
+        <DialogContent :showCloseButton="!busy" :aria-describedby="undefined" class="p-4">
+            <p v-if="error" role="alert">{{ error }} Actions are unavailable until details refresh. <button type="button" class="underline min-h-11" :disabled="busy" @click="emit('retry')">Retry details</button></p>
             <DialogHeader>
                 <DialogTitle>{{ props.title }}</DialogTitle>
             </DialogHeader>
@@ -42,12 +45,12 @@ const emit = defineEmits(['update:open']);
                         <dd class="min-w-0"><slot :name="`field-${field.key || field.label}`" :field="field">{{ field.value || 'Not provided' }}</slot></dd>
                     </template>
                 </dl>
-                <slot />
+                <fieldset :disabled="busy || !!error" :inert="busy || !!error" class="min-w-0"><slot /></fieldset>
             </div>
             <!--@lee-hlmilk > read-only records omit actions > no empty footer ||| separator-->
             <template v-if="$slots.actions">
                 <hr>
-                <DialogFooter class="flex-col sm:flex-row"><slot name="actions" /></DialogFooter>
+                <DialogFooter class="flex-col sm:flex-row"><fieldset :disabled="busy || !!error" :inert="busy || !!error" class="flex flex-wrap gap-3 w-full min-w-0"><slot name="actions" /></fieldset></DialogFooter>
             </template>
         </DialogContent>
     </Dialog>

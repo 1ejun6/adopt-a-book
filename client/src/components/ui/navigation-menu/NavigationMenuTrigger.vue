@@ -19,7 +19,7 @@ const forwardedProps = useForwardProps(delegatedProps);
 
 <template>
   <NavigationMenuTrigger data-slot="navigation-menu-trigger" v-bind="forwardedProps"
-    :class="cn('washi-tape-hover rounded-lg p-2.5 text-sm', props.class)">
+    :class="cn('washi-tape-hover min-h-11 rounded-lg p-2.5 text-sm', props.class)">
     <!--@1ejun6 > trigger label-->
     <slot />
     <HugeiconsIcon :icon="ArrowDown01Icon" class="ml-1 size-3" aria-hidden="true" />

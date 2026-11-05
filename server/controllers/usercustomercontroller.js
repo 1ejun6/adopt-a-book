@@ -91,4 +91,28 @@ async function updatepassword(req, res) {
   }
 }
 
-module.exports = { home, readaccount, updateaccount, updatepassword };
+async function updatepreferences(req, res) {
+  try {
+    require("../utils/validation").rejectfields(req.body, ["preferredgenres"]);
+    const preferredgenres = require("../utils/preferences").preferredgenresschema.parse(req.body.preferredgenres);
+    const account = await user.updatepreferences(req.user.id, preferredgenres);
+    if (!account) return res.status(404).json({ error: "customer account not found" });
+    return res.json({ preferredgenres: account.preferredgenres });
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not save preferences") });
+  }
+}
+
+async function readshelf(req, res) {
+  try {
+    const account = await user.findcustomerbyid(req.user.id);
+    if (!account) return res.status(404).json({ error: "customer account not found" });
+    const preferredgenres = account.preferredgenres || [];
+    const books = await require("../models/books").shelf(preferredgenres);
+    return res.json({ books, preferredgenres });
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not load your shelf") });
+  }
+}
+
+module.exports = { updatepreferences, readshelf, home, readaccount, updateaccount, updatepassword };

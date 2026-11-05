@@ -24,9 +24,9 @@ const resolvedPageCount = computed(() => props.pageCount ?? getPageCount(props.t
         </p>
         <Pagination v-model:page="page" :total="total" :itemsPerPage="pageSize"
             :disabled="disabled" class="flex items-center sm:gap-2.5">
-            <PaginationPrevious aria-label="Previous page" class="min-h-11 min-w-11" />
+            <PaginationPrevious aria-label="Previous page" class=" min-w-11" />
             <span aria-live="polite">Page {{ page }} of {{ resolvedPageCount }}</span>
-            <PaginationNext aria-label="Next page" class="min-h-11 min-w-11" />
+            <PaginationNext aria-label="Next page" class=" min-w-11" />
         </Pagination>
     </div>
 </template>

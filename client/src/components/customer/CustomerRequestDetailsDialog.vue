@@ -1,6 +1,8 @@
 <script setup>
+import { pickupTimeText } from '@/lib/pickupTimes';
 import { computed, nextTick, ref, watch, watchEffect } from 'vue';
-import { api } from '@/lib/api';
+import { useAdoptionsStore } from '@/stores/adoptions';
+const adoptions = useAdoptionsStore();
 import { formatDate } from '@/lib/utils';
 import CustomerAdoptionInformation from './CustomerAdoptionInformation.vue';
 import { Button } from '@/components/ui/button';
@@ -85,8 +87,8 @@ async function withdraw() {
   saving.value = true;
   error.value = '';
   try {
-    await api(`/applications/${props.record.id}`, { method: 'DELETE' });
-    await finishWithdrawal();
+    await adoptions.withdrawApplication(props.record.id);
+    await finishWithdrawal(false);
   } catch {
     uncertain.value = true;
     await checkStatus();
@@ -123,45 +125,19 @@ watchEffect(() => {
     <p v-if="error" ref="errorNode" tabindex="-1" role="alert" class="text-sm text-destructive">
       {{ error }}
     </p>
-    <Button
-      v-if="uncertain"
-      type="button"
-      variant="outline"
-
-      :disabled="saving"
-      @click="checkStatus"
-      >Check status again</Button
-    >
+    <Button v-if="uncertain" type="button" variant="outline" :disabled="saving" @click="checkStatus">Check status
+      again</Button>
     <p v-if="refreshWarning" role="status" class="text-sm">{{ refreshWarning }}</p>
     <section v-if="withdrawn" class="space-y-4" role="status">
       <p>Your request has been withdrawn and moved to History.</p>
-      <Button type="button"  :disabled="saving" @click="emit('history')"
-        >View in History</Button
-      >
+      <Button type="button" :disabled="saving" @click="emit('history')">View in History</Button>
     </section>
-    <section
-      v-else-if="confirming"
-      class="space-y-3 rounded-lg bg-badge-rose/40 p-4"
-      aria-label="Confirm withdrawal"
-    >
+    <section v-else-if="confirming" class="space-y-3 rounded-lg bg-badge-rose/40 p-4" aria-label="Confirm withdrawal">
       <p class="text-sm">You can request this book again if it is still available.</p>
       <div class="adoption-actions">
-        <Button
-          type="button"
-          variant="destructive"
-
-          :disabled="saving || uncertain || !ready || !record.canWithdraw"
-          @click="withdraw"
-          >{{ saving ? 'Withdrawing…' : 'Withdraw request' }}</Button
-        >
-        <Button
-          type="button"
-          variant="outline"
-
-          :disabled="saving"
-          @click="confirming = false"
-          >Keep request</Button
-        >
+        <Button type="button" variant="destructive" :disabled="saving || uncertain || !ready || !record.canWithdraw"
+          @click="withdraw">{{ saving ? 'Withdrawing…' : 'Withdraw request' }}</Button>
+        <Button type="button" variant="outline" :disabled="saving" @click="confirming = false">Keep request</Button>
       </div>
     </section>
     <template v-else>
@@ -173,17 +149,17 @@ watchEffect(() => {
             {{
               Number.isFinite(Date.parse(currentPickup.appointmentdate))
                 ? formatDate(currentPickup.appointmentdate, {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })
                 : 'Date unavailable'
             }}
           </dd>
           <dt class="text-muted-foreground">Time</dt>
           <dd class="[overflow-wrap:anywhere]">
-            {{ currentPickup.timeslot ? `${currentPickup.timeslot} SGT` : 'Time unavailable' }}
+            {{ pickupTimeText(currentPickup) }} SGT
           </dd>
           <dt class="text-muted-foreground">Location</dt>
           <dd class="[overflow-wrap:anywhere]">
@@ -191,31 +167,15 @@ watchEffect(() => {
           </dd>
         </dl>
       </section>
-      <CustomerAdoptionInformation
-        :record="record"
-        :appointment="currentPickup"
-        @pickup-record="emit('pickup-record', $event)"
-      />
+      <CustomerAdoptionInformation :record="record" :appointment="currentPickup"
+        @pickup-record="emit('pickup-record', $event)" />
       <div class="adoption-actions">
-        <Button type="button" variant="outline" :disabled="saving" @click="open = false"
-          >Back to my adoptions</Button
-        >
-        <Button
-          v-if="record.action"
-          :disabled="!ready || saving"
-          type="button"
-
-          @click="emit('pickup', record)"
-          >{{ record.actionLabel }}</Button
-        >
+        <Button type="button" variant="outline" :disabled="saving" @click="open = false">Back to my adoptions</Button>
+        <Button v-if="record.action" :disabled="!ready || saving" type="button" @click="emit('pickup', record)">{{
+          record.actionLabel }}</Button>
       </div>
-      <button
-        v-if="record.canWithdraw && !uncertain"
-        :disabled="!ready || saving"
-        type="button"
-        class="min-h-11 text-sm text-destructive underline underline-offset-4"
-        @click="confirming = true"
-      >
+      <button v-if="record.canWithdraw && !uncertain" :disabled="!ready || saving" type="button"
+        class="min-h-11 text-sm text-destructive underline underline-offset-4" @click="confirming = true">
         Withdraw request
       </button>
     </template>

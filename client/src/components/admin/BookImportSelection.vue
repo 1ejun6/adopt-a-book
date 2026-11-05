@@ -86,22 +86,22 @@ watch(() => props.importedIds, ids => {
         <fieldset :disabled="props.submitting" class="min-w-0 space-y-5">
             <div class="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <h2>{{ reviewing ? 'Choose collection locations' : 'Find on Open Library' }}</h2>
-                <Button class="min-h-11" v-if="!reviewing" type="button" variant="outline" @click="emit('manual')">Enter manually</Button>
+                <Button v-if="!reviewing" type="button" variant="outline" @click="emit('manual')">Enter manually</Button>
             </div>
             <p v-if="reviewing" class="text-muted-foreground">Check the selected books against the physical copies. Choose an MRT station for each book before adding them.</p>
             <Field v-else>
                 <FieldLabel for="book-search">Search by title, author or ISBN</FieldLabel>
                 <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-                    <Input id="book-search" :modelValue="props.query" type="search" class="flex-1 md:text-base min-h-11"
+                    <Input id="book-search" :modelValue="props.query" type="search" class="flex-1  "
                         @update:modelValue="emit('update:query', $event)" />
-                    <Button type="submit" class="shrink-0 min-h-11" :disabled="props.lookup.loading || !props.query.trim()">{{ props.lookup.loading ? 'Searching…' : 'Search' }}</Button>
+                    <Button type="submit" class="shrink-0 " :disabled="props.lookup.loading || !props.query.trim()">{{ props.lookup.loading ? 'Searching…' : 'Search' }}</Button>
                 </div>
             </Field>
             <p v-if="props.lookup.loading" role="status">Searching Open Library…</p>
             <template v-else-if="props.lookup.searched">
                 <div class="flex items-center justify-between gap-2.5">
                     <p role="status">{{ reviewing ? `${reviewBooks.length} books to add` : `${results.length} results · ${selectedIds.length} selected` }}</p>
-                    <Button class="min-h-11" v-if="!reviewing" type="button" :disabled="props.lookup.loading || !selectedIds.length" @click="reviewSelection">Next</Button>
+                    <Button v-if="!reviewing" type="button" :disabled="props.lookup.loading || !selectedIds.length" @click="reviewSelection">Next</Button>
                 </div>
                 <!--@lee-hlmilk > share table markup &&& checkbox logic with admin lists > import-specific controls use slots-->
                 <AdminTable :rows="rows" :columns="columns" :selectedIds="reviewing ? [] : selectedIds"
@@ -122,7 +122,7 @@ watch(() => props.importedIds, ids => {
                         </select>
                     </template>
                     <template #cellActions="{ row }">
-                        <Button class="min-h-11" type="button" variant="outline" :aria-label="`Remove ${row.title}`" @click.stop="removeBook(row.id)">Remove</Button>
+                        <Button type="button" variant="outline" :aria-label="`Remove ${row.title}`" @click.stop="removeBook(row.id)">Remove</Button>
                     </template>
                     <template #empty>
                         <p class="text-muted-foreground">{{ reviewing ? 'No books selected. Go back to results to choose books to add.' : 'Try another title, author or ISBN, or enter the book manually.' }}</p>
@@ -130,8 +130,8 @@ watch(() => props.importedIds, ids => {
                 </AdminTable>
             </template>
             <div v-if="reviewing" class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-                <Button class="min-h-11" type="button" variant="outline" @click="reviewing = false">Back to results</Button>
-                <Button class="min-h-11" type="submit" :disabled="!canImport">{{ props.submitting ? 'Adding…' : `Add ${reviewBooks.length} ${reviewBooks.length === 1 ? 'book' : 'books'}` }}</Button>
+                <Button type="button" variant="outline" @click="reviewing = false">Back to results</Button>
+                <Button type="submit" :disabled="!canImport">{{ props.submitting ? 'Adding…' : `Add ${reviewBooks.length} ${reviewBooks.length === 1 ? 'book' : 'books'}` }}</Button>
             </div>
         </fieldset>
     </form>

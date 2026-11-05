@@ -31,6 +31,6 @@ const forwarded = useForwardPropsEmits(props, emits);
     </SliderTrack>
 
     <SliderThumb v-for="(_, key) in modelValue" :key="key" data-slot="slider-thumb"
-      class="bg-foreground size-5 rounded-full" />
+      class="grid size-11 place-items-center rounded-full bg-foreground bg-clip-content p-3" />
   </SliderRoot>
 </template>

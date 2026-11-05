@@ -68,20 +68,28 @@ h1, h2, h3, h4, h5, h6 {
 @layer components {
   .washi-tape-hover:hover,
   .washi-tape-hover[data-active],
-  .washi-tape-hover[data-state='active'],
-  .washi-row[data-state='selected'] {
-    background: var(--primary);
-  }
+  .washi-row[data-state='selected'] { background: var(--primary); }
 
+  [role='tablist'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    min-width: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  [role='tab'] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0.5rem 0.625rem;
+    border-radius: 8px 8px 0 0;
+    font-size: 0.875rem;
+    white-space: normal;
+  }
+  [role='tab'][aria-selected='true'] { background: var(--badge-rose); }
   form { @apply space-y-5; }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  /*@1ejun6 > use these styles only in this situation */
-  /*@1ejun6 > https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover &&& https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer */
-  /*@lee-hlmilk > native file buttons are pseudo-elements > include them so Choose File keeps the custom cursor */
-  *, ::file-selector-button {
-    cursor: url('./front.svg') 26 15, auto !important; /*@1ejun6 > fallback cursor > overwrite */
-  }
 }
 .dialog-body { @apply space-y-2.5 p-5; }
