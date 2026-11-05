@@ -6,13 +6,15 @@ import { ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 //@lee-hlmilk > shadcn calendar composition > Reka handles date navigation &&& keyboard selection
 const props = defineProps({
     modelValue: { type: Object, default: undefined },
+    minValue: { type: Object, default: undefined },
+    disabled: { type: Boolean, default: false },
     defaultPlaceholder: { type: Object, default: undefined }
 });
 const emit = defineEmits(['update:modelValue']);
 </script>
 
 <template>
-    <CalendarRoot v-slot="{ grid, weekDays }" :modelValue="props.modelValue" :defaultPlaceholder="props.defaultPlaceholder"
+    <CalendarRoot v-slot="{ grid, weekDays }" :modelValue="props.modelValue" :defaultPlaceholder="props.defaultPlaceholder" :minValue="props.minValue" :disabled="props.disabled"
         locale="en-SG" weekdayFormat="short" fixedWeeks initialFocus class="max-w-[calc(100vw-2rem)] overflow-x-auto p-2.5"
         @update:modelValue="emit('update:modelValue', $event)">
         <CalendarHeader class="flex items-center justify-between gap-2.5">
@@ -34,7 +36,7 @@ const emit = defineEmits(['update:modelValue']);
                 <CalendarGridRow v-for="(week, index) in month.rows" :key="index">
                     <CalendarCell v-for="day in week" :key="day.toString()" :date="day" class="text-center">
                         <CalendarCellTrigger :day="day" :month="month.value"
-                            class="inline-flex size-11 items-center justify-center rounded-lg border border-transparent hover:bg-primary data-[selected]:bg-primary data-[selected]:border-foreground data-[today]:font-bold data-[outside-view]:text-muted-foreground data-[outside-view]:opacity-50" />
+                            class="inline-flex size-11 items-center justify-center rounded-lg border border-transparent hover:bg-primary data-[selected]:bg-primary data-[selected]:border-foreground data-[disabled]:opacity-40 data-[disabled]:pointer-events-none data-[today]:font-bold data-[outside-view]:text-muted-foreground data-[outside-view]:opacity-50" />
                     </CalendarCell>
                 </CalendarGridRow>
             </CalendarGridBody>

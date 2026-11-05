@@ -13,7 +13,8 @@ import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AdminTabs from '@/components/admin/AdminTabs.vue';
+import { TabsContent } from '@/components/ui/tabs';
 
 const loading = ref(false);
 const pickups = ref(null);
@@ -113,13 +114,8 @@ fetchDashboard();
         <header class="border-b bg-primary p-5">
           <h2 id="attention-title">Needs attention</h2>
         </header>
-        <Tabs v-model="selectedQueue">
-          <TabsList aria-label="Attention queues" class="gap-0">
-            <TabsTrigger v-for="(queue, index) in attentionQueues" :key="queue.label" :value="index"
-              class="flex-1 text-center">
-              {{ queue.label }} <Badge variant="neutral">{{ queue.count ?? '—' }}</Badge>
-            </TabsTrigger>
-          </TabsList>
+        <AdminTabs v-model="selectedQueue" :tabs="attentionQueues.map((queue, index) => ({ value: index, ...queue }))" label="Attention queues">
+          <template #tab="{ tab }">{{ tab.label }} <Badge variant="neutral">{{ tab.count ?? '—' }}</Badge></template>
           <!--@lee-hlmilk > stack the panels so the tallest preview sets their shared height -->
           <div class="grid">
             <TabsContent v-for="({ queue, record, book }, index) in attentionPreviews" :key="queue.label" :value="index"
@@ -185,7 +181,7 @@ fetchDashboard();
                 </div>
             </TabsContent>
           </div>
-        </Tabs>
+        </AdminTabs>
       </section>
 
       <section class="min-w-0 self-stretch overflow-hidden rounded-lg border" aria-labelledby="collections-title">

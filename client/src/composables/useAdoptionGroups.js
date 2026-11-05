@@ -1,4 +1,5 @@
 import { computed } from 'vue';
+import { historyOutcome, historyAdoptionTabs } from '@/lib/myAdoptionsPresentation';
 import {
   recordId,
   getApplicationDate,
@@ -62,6 +63,8 @@ export function useAdoptionGroups({ records, appointments }) {
     result.history.sort((a, b) => entryDate(b) - entryDate(a) || stable(a, b));
     return result;
   });
+  const historyGroups = computed(() => Object.fromEntries(historyAdoptionTabs.map(item => [item.value, item.value === 'all' ? groups.value.history : groups.value.history.filter(entry => historyOutcome(entry) === item.value)])));
+  const historyCounts = computed(() => Object.fromEntries(historyAdoptionTabs.map(item => [item.value, historyGroups.value[item.value].length])));
   const counts = computed(() =>
     Object.fromEntries(journeyTabs.map((item) => [item.value, groups.value[item.value].length])),
   );
@@ -100,11 +103,10 @@ export function useAdoptionGroups({ records, appointments }) {
       activeAdoptionStages.map((item) => [item.value, stageGroups.value[item.value].length]),
     ),
   );
-  const defaultStage = computed(
-    () => ['needs-action', 'pickups', 'waiting'].find((value) => stageCounts.value[value]) || 'all',
-  );
+  const defaultStage = computed(() => 'all');
 
   return {
+    historyGroups, historyCounts,
     entryWaiting, waitingGroups, waitingCounts, defaultWaiting,
     entryAction,
     actionGroups,

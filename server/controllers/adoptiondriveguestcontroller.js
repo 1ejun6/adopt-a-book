@@ -17,4 +17,13 @@ async function getguestdrive(req, res) {
     return res.status(errorstatus(error)).json({ error: errormessage(error, "could not load drive") });
   }
 }
-module.exports = { getguestalldrives, getguestdrive };
+async function getdrivebooks(req, res) {
+  try {
+    const drive = await drives.publicdrives(req.params.id);
+    if (!drive) return res.status(404).json({ error: "drive not found" });
+    return res.json({ books: await drives.drivebooks(req.params.id) });
+  } catch (error) {
+    return res.status(errorstatus(error)).json({ error: errormessage(error, "could not load drive books") });
+  }
+}
+module.exports = { getdrivebooks, getguestalldrives, getguestdrive };

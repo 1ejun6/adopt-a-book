@@ -1,6 +1,6 @@
 <script setup>
 import AppIcon from '@/components/shared/AppIcon.vue';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { api } from '@/lib/api';
 import { availablePickupSlot } from '@/lib/pickupTimes';
 import { displayDate } from '@/lib/adoptions';
@@ -10,6 +10,7 @@ const props = defineProps({ disabled: Boolean, appointment: { type: Object, requ
 const saving = defineModel('saving', { type: Boolean });
 const emit = defineEmits(['updated']);
 const selected = ref('');
+const sameDate = computed(() => new Set(props.appointment.pickupoptions.map(slot => slot.appointmentdate)).size === 1);
 const error = ref('');
 const uncertain = ref(false);
 watch(
@@ -63,17 +64,15 @@ async function confirmTime() {
 </script>
 
 <template>
-  <form class="space-y-3 rounded-lg border p-4" @submit.prevent="confirmTime">
+  <form class="space-y-4" @submit.prevent="confirmTime">
     <fieldset :disabled="disabled || saving || uncertain" class="space-y-3">
-      <legend class="text-lg">Confirm a time</legend>
-      <p class="text-sm text-muted-foreground">
-        The customer is available at these proposed times. Select one to confirm pickup at
-        {{ appointment.location }}.
-      </p>
+      <legend class="text-sm">Confirm a time · SGT</legend>
+      <p class="text-sm text-muted-foreground">choose one of the customer’s available times</p>
+      <div class="flex flex-wrap gap-3">
       <label
         v-for="(slot, index) in appointment.pickupoptions"
         :key="index"
-        class="flex min-h-11 items-center gap-3 rounded-lg border p-3"
+        class="flex min-h-11 flex-1 basis-48 items-center gap-3 rounded-lg border px-3 py-2 has-checked:border-success-foreground has-checked:bg-badge-green has-disabled:opacity-50"
       >
         <input
           v-model="selected"
@@ -82,23 +81,24 @@ async function confirmTime() {
           :value="String(index)"
           :disabled="!availablePickupSlot(slot)"
           required
-          class="size-4 shrink-0"
+          class="size-4 shrink-0 accent-success-foreground"
         />
         <span
-          >{{ displayDate(slot.appointmentdate) }} · {{ slot.timeslot }} SGT
-          <span v-if="!availablePickupSlot(slot)"> — time has passed</span>
+          ><template v-if="!sameDate">{{ displayDate(slot.appointmentdate) }} · </template>{{ slot.timeslot }}
+          <span v-if="!availablePickupSlot(slot)"> · time has passed</span>
         </span>
       </label>
+      </div>
     </fieldset>
     <p v-if="error" class="text-sm text-destructive" role="alert">{{ error }}</p>
-    <Button v-if="uncertain" type="button" :disabled="saving" @click="checkStatus"
+    <div class="flex gap-3 border-t pt-5">
+    <slot name="actions" :disabled="uncertain" />
+    <Button v-if="uncertain" class="flex-1" type="button" :disabled="saving" @click="checkStatus"
        :loading="saving"><AppIcon name="refresh" /><span class="sr-only">Check latest status</span></Button
     >
-    <Button v-else type="submit" :disabled="disabled || saving || selected === '' || !availablePickupSlot(appointment.pickupoptions[Number(selected)])" :loading="saving"><AppIcon name="success" />{{
+    <Button v-else type="submit" class="flex-1 border-success-foreground text-success-foreground hover:bg-badge-green" title="Confirm selected time" :disabled="disabled || saving || selected === '' || !availablePickupSlot(appointment.pickupoptions[Number(selected)])" :loading="saving"><AppIcon name="success" class="text-success-foreground" /><span class="sr-only">{{
       saving ? 'Confirming…' : 'Confirm selected time'
-    }}</Button>
-    <p class="text-sm text-muted-foreground">
-      Reject to request new availability.
-    </p>
+    }}</span></Button>
+    </div>
   </form>
 </template>

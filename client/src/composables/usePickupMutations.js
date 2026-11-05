@@ -137,6 +137,7 @@ export function usePickupMutations(props, state, review) {
     if (
       !validPickupDate(draft.appointmentdate) ||
       draft.appointmentdate < today.value ||
+      draft.timeslots.length !== 2 || new Set(draft.timeslots).size !== 2 ||
       !draft.timeslots.every((timeslot) =>
         availablePickupSlot({ appointmentdate: draft.appointmentdate, timeslot }),
       )

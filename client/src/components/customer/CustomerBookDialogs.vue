@@ -395,7 +395,7 @@ defineExpose({ openBookDetails, closeBookDetails });
     :record="selectedRequest" :appointment="selectedPickup" :ready="adoptions.ready"
     :requestsReady="adoptions.applicationsLoaded && !applicationsLoading && !applicationsError"
     :reconcile="reconcilePickup" :refresh="adoptions.refresh" :complete="pickupChanged" :withdrawn="requestWithdrawn"
-    @appointment="selectedPickupId = recordId($event)" @history="backFromRequest" @restore-focus="restoreRequestFocus" />
+    @appointment="selectedPickupId = recordId($event)" @history="backFromRequest" @back-book="backFromRequest" @restore-focus="restoreRequestFocus" />
   <RequestCopyDialog v-model:open="requestDialogOpen" :book="dialogBook" :reader="auth.user" :loading="actionLoading"
     :submitted="requestSubmitted" :existing="hasExistingRequest" :disabled="!!applicationsError || requestUncertain"
     :uncertain="requestUncertain" :applicationStatus="getApplicationStatus(submittedApplication || existingApplication)"

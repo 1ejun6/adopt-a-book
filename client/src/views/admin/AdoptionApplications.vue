@@ -8,9 +8,11 @@ import { formatDate, formatDateTime } from '@/lib/date';
 import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminList from '@/components/admin/AdminList.vue';
-import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue';
+import AppFilterSelect from '@/components/shared/AppFilterSelect.vue';
+import AppBookPreviewDialog from '@/components/shared/AppBookPreviewDialog.vue';
 import BookIdentity from '@/components/shared/AppBookIdentity.vue';
 import StatusBadge from '@/components/shared/AppStatusBadge.vue';
+import StatusLegend from '@/components/shared/AppStatusLegend.vue';
 import { Button } from '@/components/ui/button';
 
 const selectedIds = ref([]);
@@ -28,20 +30,21 @@ const { detailError, detailLoading, refreshDetail } = useAdminRecord(selectedApp
 const saving = ref(false);
 const savingAction = ref('');
 const { confirm } = useConfirmation();
-const filters = reactive({ search: '', status: 'pending', sort: 'oldest' });
+const filters = reactive({ search: '', status: 'all', sort: 'oldest' });
 
 const statusTabs = [
-    { value: 'all', label: 'All applications' },
+    { value: 'all', label: 'All' },
     { value: 'pending', label: 'Pending', status: 'pending' },
     { value: 'approved', label: 'Approved', status: 'approved' },
     { value: 'rejected', label: 'Rejected', status: 'rejected' },
     { value: 'cancelled', label: 'Cancelled', status: 'cancelled' }
 ];
+const applicationStatuses = statusTabs.filter(tab => tab.status);
 const columns = [
     { key: 'applicant', label: 'Applicant', class: 'w-1/5', mobileClass: 'col-span-2 flex items-baseline gap-2' },
-    { key: 'book', label: 'Requested copy', class: 'w-2/5', mobileClass: 'col-start-1 row-start-1', hideMobileLabel: true },
+    { key: 'book', label: 'Requested copy', class: 'w-2/5', mobileClass: 'col-start-1 row-start-1' },
     { key: 'submitted', label: 'Date submitted', class: 'w-1/5', mobileClass: 'col-span-2 flex items-baseline gap-2' },
-    { key: 'status', label: 'Status', mobileClass: 'col-start-2 row-start-1', hideMobileLabel: true }
+    { key: 'status', label: 'Status', class: 'text-center', mobileClass: 'col-start-2 row-start-1' }
 ];
 //@lee-hlmilk > filters &&& totals come from SQL > selection stays scoped to the returned page
 const { rows: applications, page, pageSize, total, counts, pageCount, loading, loadError, refresh: fetchApplications } = useServerPagination({
@@ -71,9 +74,7 @@ async function decideApplications(status, rows = selectedApplications.value) {
     if (detailLoading.value || detailError.value || loading.value || saving.value || !rows.length || decisionHint(rows)) { return; }
     if (status === 'approved' && new Set(rows.map(application => application.bookid.id)).size !== rows.length) { return; }
     const targets = [...rows];
-    if (!await confirm(`${status === 'approved' ? 'Approve' : 'Reject'} ${targets.length === 1 ? 'application' : 'applications'}?`, {
-        description: (status === 'approved' ? 'Each approved copy becomes reserved. Competing pending requests will be rejected.' : 'The selected pending requests will be rejected.') +
-            '\n' + targets.map(application => `${application.userid?.name || 'Unknown applicant'} — ${application.bookid.title}`).join('\n'),
+    if (!await confirm(`${status === 'approved' ? 'Approve' : 'Reject'} ${targets.length === 1 ? 'application' : `${targets.length} applications`}?`, {
         actionLabel: status === 'approved' ? 'Approve' : 'Reject', destructive: status === 'rejected'
     })) { return; }
     if (loading.value || saving.value) { return; }
@@ -102,24 +103,28 @@ fetchApplications();
 
 <template>
     <!--@lee-hlmilk > AdminList updates view-owned models > applications contains only the matching server page-->
-    <AdminList @retry="fetchApplications" title="Adoption applications" description="Approval reserves a copy for collection."
+    <AdminList @retry="fetchApplications" title="Adoption applications" description="approval reserves a copy for collection"
         v-model:search="filters.search" v-model:tab="filters.status" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="applications" :columns="columns" :tabs="statusTabs" :counts="counts" :loading="loading" :disabled="saving"
         :selectable="['all', 'pending'].includes(filters.status)"
-        :error="loadError" searchPlaceholder="Search by Applicant, Book, Author..."
+        :error="loadError" searchPlaceholder="Search by applicant, book or author..."
+        :emptyKey="JSON.stringify(filters)"
+        :emptyTitle="pendingEmpty ? 'No pending applications' : filters.search.trim() ? 'No matching applications' : 'No applications in this view'"
+        :emptyDescription="pendingEmpty ? 'You’re all caught up.' : filters.search.trim() ? 'Try another search term or status.' : 'New requests will appear here. Try another status or search term.'"
+        :emptyAction="pendingEmpty ? { label: 'View all applications', onClick: () => { filters.status = 'all'; } } : null"
         :pagination="{ itemLabel: 'applications', total, pageSize, pageCount }" @openRow="openApplication">
         <template #filters>
-            <select v-model="filters.sort" aria-label="Application order" class="w-full min-w-0 rounded-lg border px-3 sm:w-auto text-base min-h-11">
+            <AppFilterSelect v-model="filters.sort" aria-label="Application order">
                 <option value="oldest">Oldest first</option>
                 <option value="newest">Newest first</option>
-            </select>
+            </AppFilterSelect>
         </template>
         <template #selectionActions>
             <p v-if="selectionHint || approvalConflict" class="text-sm text-muted-foreground" role="status">
                 {{ selectionHint || 'Choose one reader per copy to approve requests.' }}
             </p>
-            <Button :disabled="detailLoading || !!detailError || loading || saving || !!selectionHint || approvalConflict" @click="decideApplications('approved')" :loading="saving && savingAction === 'approved'"><AppIcon name="success" />Approve</Button>
-            <Button variant="destructive" :disabled="detailLoading || !!detailError || loading || saving || !!selectionHint" @click="decideApplications('rejected')" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" />Reject</Button>
+            <Button title="Approve" :disabled="detailLoading || !!detailError || loading || saving || !!selectionHint || approvalConflict" @click="decideApplications('approved')" :loading="saving && savingAction === 'approved'"><AppIcon name="success" class="text-success-foreground" /><span class="sr-only">Approve</span></Button>
+            <Button title="Reject" variant="destructive" :disabled="detailLoading || !!detailError || loading || saving || !!selectionHint" @click="decideApplications('rejected')" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" /><span class="sr-only">Reject</span></Button>
         </template>
         <template #cellApplicant="{ row }">
             <p class="break-words lg:truncate">{{ row.userid?.name || 'Unknown applicant' }}</p>
@@ -129,22 +134,19 @@ fetchApplications();
             <BookIdentity :title="row.bookid?.title || 'Untitled'" :author="row.bookid?.authors?.join(', ') || 'Unknown Author'" :cover="row.bookid?.coverurl" />
         </template>
         <template #cellSubmitted="{ row }">{{ formatDate(row.createdat) }}</template>
-        <template #cellStatus="{ value }"><StatusBadge :status="value" /></template>
-        <template #empty>
-            <h2>{{ pendingEmpty ? 'No pending applications' : filters.search.trim() ? 'No matching applications' : 'No applications in this view' }}</h2>
-            <p class="text-sm text-muted-foreground">{{ pendingEmpty ? 'You’re all caught up.' : filters.search.trim() ? 'Try another search term or status.' : 'New requests will appear here. Try another status or search term.' }}</p>
-            <Button v-if="pendingEmpty" variant="outline" class="mt-2.5 " @click="filters.status = 'all'"><AppIcon name="request" />View all applications</Button>
-        </template>
+        <template #legend><StatusLegend :statuses="applicationStatuses" /></template>
+        <template #cellStatus="{ value }"><div class="flex items-center justify-center"><StatusBadge :status="value" dot :title="value" /></div></template>
     </AdminList>
 
-    <AdminDetailsDialog :loading="detailLoading" :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedApplication" :open="detailsOpen" title="Application details"
-        :book="selectedApplication.bookid" :status="selectedApplication.status" :fields="applicationFields" @update:open="detailsOpen = $event">
-        <p v-if="selectedApplication.status === 'pending' && detailsHint" class="text-muted-foreground">{{ detailsHint }}</p>
+    <AppBookPreviewDialog :loading="detailLoading" :error="detailError" :preventClose="saving || detailLoading" @retry="refreshDetail" v-if="selectedApplication" v-model:open="detailsOpen" title="Application details" subtitle="details for the selected application"
+        :book="selectedApplication.bookid" :metadata="applicationFields" fullDescription>
+        <template #book-action><StatusBadge :status="selectedApplication.status" dot :title="selectedApplication.status" class="shrink-0" /></template>
+        <template v-if="selectedApplication.status === 'pending' && detailsHint" #details><p class="text-muted-foreground">{{ detailsHint }}</p></template>
         <!--@lee-hlmilk > reviewed applications are read-only > decision actions remain available only for pending requests-->
         <template v-if="selectedApplication.status === 'pending'" #actions>
             <!--@lee-hlmilk > both flex-1 buttons share the footer width > pass one record to the same bulk-capable action-->
-            <Button type="button" variant="destructive" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="decideApplications('rejected', [selectedApplication])" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" />Reject</Button>
-            <Button type="button" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="decideApplications('approved', [selectedApplication])" :loading="saving && savingAction === 'approved'"><AppIcon name="success" />Approve</Button>
+            <Button type="button" title="Reject" variant="destructive" class="flex-1" :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="decideApplications('rejected', [selectedApplication])" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" /><span class="sr-only">Reject</span></Button>
+            <Button type="button" title="Approve" class="flex-1" :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="decideApplications('approved', [selectedApplication])" :loading="saving && savingAction === 'approved'"><AppIcon name="success" class="text-success-foreground" /><span class="sr-only">Approve</span></Button>
         </template>
-    </AdminDetailsDialog>
+    </AppBookPreviewDialog>
 </template>

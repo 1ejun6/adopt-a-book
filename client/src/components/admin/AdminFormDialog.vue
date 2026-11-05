@@ -16,6 +16,7 @@ const props = defineProps({
   showFooterSeparator: { type: Boolean, default: true },
   noValidate: { type: Boolean, default: false }, //@lee-hlmilk > let parent validate on submit &&& show toast > native validation otherwise blocks submit event
   hideForm: { type: Boolean, default: false }, //@lee-hlmilk > hide form when in search-only step > eg. open library lookup before selecting a book
+  footerClass: { type: null, default: null },
   contentClass: { type: null, default: null }
 });
 
@@ -29,8 +30,8 @@ watch(open, isOpen => { if (!isOpen) { cancel(); } });
 async function handleOpenChange(nextOpen) {
   if (nextOpen) { open.value = true; return; }
   if (props.submitting) { return; }
-  if (props.dirty && !await confirm('Discard your changes?', {
-    description: 'Your unsaved changes will be lost.', actionLabel: 'Discard', cancelLabel: 'Keep editing', destructive: true
+  if (props.dirty && !await confirm('Discard changes?', {
+    actionLabel: 'Discard', cancelLabel: 'Keep editing', destructive: true
   })) { return; }
   if (!props.submitting) { open.value = false; }
 }
@@ -38,14 +39,17 @@ async function handleOpenChange(nextOpen) {
 
 <template>
   <Dialog :open="open" @update:open="handleOpenChange">
-    <DialogContent v-bind="props.description ? {} : { 'aria-describedby': undefined }" class="p-4" :class="props.contentClass" :showCloseButton="!submitting">
+    <DialogContent v-bind="props.description ? {} : { 'aria-describedby': undefined }" :class="props.contentClass" :showCloseButton="!submitting">
       <DialogHeader>
-        <DialogTitle>{{ title }}</DialogTitle>
+        <div class="flex flex-wrap items-center gap-3">
+          <DialogTitle class="flex min-h-9 items-center">{{ title }}</DialogTitle>
+          <slot name="headerAside" />
+        </div>
         <DialogDescription v-if="description">{{ description }}</DialogDescription>
       </DialogHeader>
 
       <!--@lee-hlmilk > dialog body &&& form-->
-      <div class="space-y-5">
+      <div class="dialog-body space-y-5">
         <!--@lee-hlmilk > optional top slot > eg. mode toggle ||| open library search-->
         <slot name="top" />
 
@@ -53,9 +57,9 @@ async function handleOpenChange(nextOpen) {
         <!--@lee-hlmilk > forward the original submit event so forms can inspect controls &&& the clicked submitter-->
         <form v-if="!hideForm" :novalidate="props.noValidate" @submit.prevent="emit('submit', $event)">
           <slot />
-          <DialogFooter class="flex-col sm:flex-row" :class="!props.showFooterSeparator && 'border-0 pt-0'">
+          <DialogFooter class="flex-col sm:flex-row" :class="[!props.showFooterSeparator && 'border-0 pt-0', props.footerClass]">
             <!--@lee-hlmilk > footer replaces default buttons > extraActions adds buttons while retaining the defaults-->
-            <slot name="footer">
+            <slot name="footer" :close="() => handleOpenChange(false)">
               <Button type="button" variant="outline" :disabled="submitting" @click="handleOpenChange(false)"><AppIcon name="cancel" />
                 Cancel
               </Button>

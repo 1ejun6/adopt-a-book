@@ -69,8 +69,8 @@ function preventClosing(event) {
         <DialogDescription>
           {{
             submitted
-              ? 'Track it in My Adoptions.'
-              : 'Review this copy before sending.'
+              ? 'follow your request in my adoptions.'
+              : 'check the book details before you send your request.'
           }}
         </DialogDescription>
       </DialogHeader>

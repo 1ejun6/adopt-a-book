@@ -1,5 +1,4 @@
 const { browse } = require("../models/adminpagination");
-const { requestids } = require("../utils/validation");
 const { errorstatus, errormessage } = require("../utils/errors");
 const adoptiondrivemodel = require("../models/adoptiondrives");
 
@@ -18,10 +17,11 @@ const getadminalldrives = async (req, res) => {
 
 const createadmindrive = async (req, res) => {
   try {
-    require("../utils/validation").rejectfields(req.body, ["title", "location", "mrtstationid", "eventdate", "starttime", "endtime", "description", "maxcapacity"]);
-    const { title, location, mrtstationid, eventdate, starttime, endtime, description, maxcapacity } = req.body;
+    require("../utils/validation").rejectfields(req.body, ["bookids", "title", "location", "mrtstationid", "eventdate", "starttime", "endtime", "description", "maxcapacity"]);
+    const { bookids, title, location, mrtstationid, eventdate, starttime, endtime, description, maxcapacity } = req.body;
 
     await adoptiondrivemodel.createdrive({
+      bookids,
       title,
       location,
       mrtstationid,
@@ -78,14 +78,4 @@ const updateadmindrive = async (req, res) => {
   }
 };
 
-const deleteadmindrive = async (req, res) => {
-  try {
-    await adoptiondrivemodel.removedrives(requestids(req), req.user.id);
-    return res.status(204).send();
-  } catch (error) {
-    console.log(error);
-    return res.status(errorstatus(error)).json({ error: errormessage(error, "error deleting drive") });
-  }
-};
-
-module.exports = { getadminalldrives, createadmindrive, getadminupdateform, updateadmindrive, deleteadmindrive };
+module.exports = { getadminalldrives, createadmindrive, getadminupdateform, updateadmindrive };

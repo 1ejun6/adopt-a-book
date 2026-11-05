@@ -2,9 +2,6 @@
 .adoption-dialog .adoption-actions {
   display: flex;
   gap: 12px;
-  border-top: 1px solid var(--border);
-  padding-top: 20px;
-  margin-top: 24px;
 }
 .adoption-dialog .adoption-actions > :is(button, a) {
   flex: 1;
@@ -26,12 +23,13 @@
   width: 100%;
   font-size: 0.875rem;
   text-align: left;
-  background: var(--card);
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 16px;
 }
-.adoption-row:focus-within {
+.adoption-row:hover,
+.adoption-row:focus-visible {
   background: var(--primary);
 }
 .adoption-row__book {
@@ -53,10 +51,6 @@
   align-items: baseline;
   gap: 8px;
   min-width: 0;
-}
-.adoption-row__mobile-label {
-  flex-shrink: 0;
-  color: var(--muted-foreground);
 }
 .adoption-row__date {
   overflow-wrap: anywhere;
@@ -105,9 +99,6 @@
   .adoption-row__pickup {
     display: block;
   }
-  .adoption-row__mobile-label {
-    display: none;
-  }
 }
 
 .adoption-row__date--past {
@@ -120,4 +111,43 @@
   color: var(--muted-foreground);
   font-size: 0.875rem;
   line-height: 1.5;
+}
+
+/* Match the customer lists while keeping all My Adoptions navigation intact. */
+.adoptions-page .adoption-task-rows > .min-w-0 + .min-w-0 {
+  border-top: 1px solid var(--border);
+}
+.adoptions-page .adoption-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'book status' 'pickup action';
+  gap: 12px 16px;
+  border: 0;
+  border-radius: 0;
+  padding: 16px;
+}
+.adoptions-page .adoption-row__status {
+  align-self: center;
+  text-align: center;
+  max-width: 9rem;
+}
+.adoptions-page .adoption-row__action {
+  justify-self: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+@media (min-width: 1024px) {
+  .adoptions-page .adoption-columns {
+    grid-template-columns: minmax(0, 1.8fr) minmax(6rem, 0.5fr) minmax(0, 1fr) 44px;
+    column-gap: 16px;
+  }
+  .adoptions-page .adoption-row { grid-template-areas: 'book status pickup action'; }
+  .adoptions-page .adoption-row__status { max-width: none; }
+  .adoptions-page .adoption-column-headings {
+    min-height: 48px;
+    align-items: center;
+    background: var(--primary);
+    color: var(--foreground);
+    border-bottom: 1px solid var(--border);
+  }
 }

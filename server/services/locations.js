@@ -229,4 +229,9 @@ async function nearby(input) {
   };
 }
 
-module.exports = { nearby };
+async function places(query) {
+  const [matches, stations] = await Promise.all([resolveplaces(query), require("../models/mrtstations").list()]);
+  if (!stations.length) throw failure("MRT catalogue unavailable; contact the administrator");
+  return matches.map(place => ({ ...place, nearestStation: neareststation(place, stations) }));
+}
+module.exports = { nearby, places };

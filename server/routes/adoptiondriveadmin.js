@@ -7,8 +7,6 @@ router.use(authenticated, admin);
 router.param("id", validateid);
 router.get("/", controller.getadminalldrives);
 router.post("/", controller.createadmindrive);
-router.delete("/", controller.deleteadmindrive);
 router.get("/:id", controller.getadminupdateform);
 router.patch("/:id", controller.updateadmindrive);
-router.delete("/:id", controller.deleteadmindrive);
 module.exports = { router };

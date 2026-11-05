@@ -15,15 +15,15 @@ const search = defineModel('search', { type: String, default: '' });
 </script>
 
 <template>
-    <section class="space-y-5">
+    <section class="space-y-5 text-sm font-normal">
         <slot name="tabs" />
         <slot name="search-label" />
 
         <!--@lee-hlmilk > search & page filters-->
         <!--@lee-hlmilk > stack controls on mobile > sm puts search &&& filters in one row > matching padding/leading aligns their heights-->
-        <div class="flex min-w-0 flex-col gap-2.5 lg:flex-row lg:flex-wrap lg:items-end">
+        <div class="flex min-w-0 flex-col gap-2.5 lg:flex-row lg:flex-wrap lg:items-stretch">
             <AppSearchInput v-model="search" class="lg:flex-1" :id="props.searchId" :aria-describedby="props.searchDescription" :aria-label="props.searchLabel || props.searchPlaceholder" :placeholder="props.searchPlaceholder" :disabled="props.searchDisabled" />
-            <div v-if="$slots.filters || $slots.actions" class="flex min-w-0 flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-end">
+            <div v-if="$slots.filters || $slots.actions" class="flex min-w-0 flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-stretch">
                 <slot name="filters" />
                 <slot name="actions" />
             </div>
@@ -32,7 +32,7 @@ const search = defineModel('search', { type: String, default: '' });
         <!--@lee-hlmilk > selected row count & page actions-->
         <div v-if="props.selectedRowCount > 0"
             class="flex flex-wrap items-center gap-2.5" role="status">
-            <strong>{{ props.selectedRowCount }} selected</strong>
+            <span>{{ props.selectedRowCount }} selected</span>
             <div v-if="$slots.selectionActions" class="flex w-full flex-wrap items-center gap-2.5 sm:ml-auto sm:w-auto" role="group">
                 <!--@lee-hlmilk > helper to disable single-record actions > eg. edit > when in multi select-->
                 <slot name="selectionActions" :selectedRowCount="props.selectedRowCount" :onlyOne="props.selectedRowCount === 1"></slot>

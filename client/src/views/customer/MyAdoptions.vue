@@ -7,6 +7,7 @@ import { computed, onMounted } from 'vue';
 import AppPage from '@/components/shared/AppPage.vue';
 
 import CustomerStatusTabs from '@/components/customer/CustomerStatusTabs.vue';
+import CustomerAdoptionLegend from '@/components/customer/CustomerAdoptionLegend.vue';
 
 import CustomerAdoptionDialog from '@/components/customer/CustomerAdoptionDialog.vue';
 
@@ -36,10 +37,11 @@ const {
 const loading = computed(() => applicationsLoading.value || appointmentsLoading.value);
 const refresh = () => adoptions.refresh();
 const grouping = useAdoptionGroups({ records, appointments });
-const { counts, stageCounts, actionCounts, waitingCounts } = grouping;
+const { counts, stageCounts, actionCounts, waitingCounts, historyCounts } = grouping;
 const navigation = useAdoptionNavigation(grouping);
 const {
   stage,
+  history,
   action,
   waiting,
   tab,
@@ -126,11 +128,11 @@ onMounted(refresh);
         :counts="counts"
         :showCounts="!loading && !loadError && !pickupError"
       />
+      <CustomerAdoptionLegend :tab="tab" :searching="searching" :entries="filtered" />
       <TabsContent :value="tab" class="space-y-3">
-        <component
-          :is="tab === 'active' ? Tabs : 'div'"
-          :modelValue="tab === 'active' ? stage : undefined"
-          @update:modelValue="stage = $event"
+        <Tabs
+          :modelValue="tab === 'active' ? stage : history"
+          @update:modelValue="tab === 'active' ? stage = $event : history = $event"
           class="space-y-3"
         >
           <CustomerAdoptionToolbar
@@ -138,6 +140,7 @@ onMounted(refresh);
             :tab="tab"
             :searching="searching"
             :stageCounts="stageCounts"
+            :historyCounts="historyCounts"
             :loading="loading"
             :loaded="loaded"
             :loadError="loadError"
@@ -160,6 +163,7 @@ onMounted(refresh);
               v-model:search="search"
               :searching="searching"
               :tab="tab"
+              :history="history"
               :loading="loading"
               :filtered="filtered"
               :hasUnlinked="hasUnlinked"
@@ -183,10 +187,11 @@ onMounted(refresh);
               @refresh="refresh"
             />
           </CustomerAdoptionLoadState>
-        </component>
+        </Tabs>
       </TabsContent>
     </Tabs>
     <CustomerAdoptionDialog
+      myAdoptionsPresentation
       ref="adoptionDialog"
       v-model:open="dialogOpen"
       :record="selectedRecord"

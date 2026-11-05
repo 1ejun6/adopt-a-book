@@ -138,12 +138,12 @@ watchEffect(() => {
       <p class="text-sm">You can request this book again if it is still available.</p>
       <div class="adoption-actions">
         <Button type="button" variant="outline" class="withdraw-button" :disabled="saving || uncertain || !ready || !record.canWithdraw"
-          @click="withdraw">{{ saving ? 'withdrawing…' : 'withdraw' }}</Button>
+          @click="withdraw" :loading="saving"><AppIcon name="close" />{{ saving ? 'Withdrawing…' : 'Withdraw' }}</Button>
         <Button type="button" variant="outline" :disabled="saving" @click="confirming = false"><AppIcon name="success" />Keep request</Button>
       </div>
     </section>
     <template v-else>
-      <section v-if="currentPickup" class="space-y-3 text-sm" aria-label="Current pickup details">
+      <section v-if="currentPickup" class="space-y-3 border-b pb-5 text-sm" aria-label="Current pickup details">
         <h3 class="font-body text-sm font-semibold">{{ pickupHeading }}</h3>
         <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2">
           <dt class="text-muted-foreground">Date</dt>
@@ -177,7 +177,7 @@ watchEffect(() => {
       </div>
       <Button v-if="record.canWithdraw && !uncertain" :disabled="!ready || saving" type="button" variant="outline"
         class="withdraw-button w-full" @click="confirming = true">
-        withdraw
+        <AppIcon name="close" />Withdraw
       </Button>
     </template>
   </div>

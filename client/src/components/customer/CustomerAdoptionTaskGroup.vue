@@ -13,8 +13,8 @@ defineProps({
     </header>
     <div class="adoption-task-rows">
       <div class="adoption-columns adoption-column-headings" aria-hidden="true">
-        <span>Book</span><span>Status</span><span>Pickup · SGT</span
-        ><span class="text-right">Action</span>
+        <span>Book</span><span class="text-center">Status</span><span>Pickup · SGT</span
+        ><span><span class="sr-only">Action</span></span>
       </div>
       <slot />
     </div>
@@ -41,6 +41,9 @@ defineProps({
 }
 .adoption-task-rows {
   display: grid;
-  gap: 8px;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 </style>

@@ -158,7 +158,7 @@ export function hasPickupOptions(appointment) {
 export function pickupStatus(appointment) {
   if (hasPickupOptions(appointment)) return {
     label: 'Waiting for pickup confirmation', variant: 'neutral',
-    description: 'Your available times have been sent. The team will confirm one. Wait for confirmation before travelling.',
+    description: 'your times have been sent. wait for the team to confirm one before you travel.',
   };
 
   return (
@@ -166,32 +166,32 @@ export function pickupStatus(appointment) {
       'pending confirmation': {
         label: 'Pickup awaiting confirmation',
         variant: 'neutral',
-        description: 'Your pickup request has been sent. The team will confirm it. Wait for confirmation before travelling.',
+        description: 'your pickup request has been sent. wait for confirmation before you travel.',
       },
       'appointment confirmed': {
         label: 'Pickup confirmed',
         variant: 'green',
-        description: 'Collect your book at the confirmed time and location below.',
+        description: 'collect your book at the confirmed time and location below.',
       },
       collected: {
         label: 'Collected',
         variant: 'neutral',
-        description: 'The team has marked this book as collected.',
+        description: 'the team has marked this book as collected.',
       },
       cancelled: {
         label: 'Pickup cancelled',
         variant: 'neutral',
-        description: 'This pickup was cancelled. Your adoption is still approved. You can arrange another pickup.',
+        description: 'this pickup was cancelled. your request is still approved. you can arrange another pickup.',
       },
       rejected: {
         label: 'Pickup declined',
         variant: 'purple',
-        description: 'This pickup was declined. Your adoption is still approved. You can propose another date and two available times.',
+        description: 'this pickup was declined. your request is still approved. choose another date and two times.',
       },
     }[getApplicationStatus(appointment)] || {
       label: 'Pickup status unavailable',
       variant: 'neutral',
-      description: 'Refresh to check this pickup before making changes.',
+      description: 'refresh to check this pickup before making changes.',
     }
   );
 }
@@ -244,16 +244,16 @@ export function adoptionJourney(
       code: 'withdrawn',
       label: 'Withdrawn',
       variant: 'neutral',
-      description: 'You withdrew this request.',
+      description: 'you withdrew this request.',
       history: true,
     };
   }
   if (status === 'rejected') {
     return {
       ...base,
-      label: 'Not approved',
+      label: 'Rejected',
       variant: 'purple',
-      description: 'Your adoption request was not approved.',
+      description: 'your book request was rejected.',
       history: true,
     };
   }
@@ -264,8 +264,8 @@ export function adoptionJourney(
       variant: 'neutral',
       warning: reliable ? '' : 'Needs checking',
       description: reliable
-        ? 'The team is reviewing your book request. No action is needed until approval. Check My Adoptions for updates.'
-        : 'Some request or pickup records need checking. Review the available records before making changes.',
+        ? 'the team is reviewing your request. check my adoptions for updates.'
+        : 'some request or pickup records need checking. review the available records before making changes.',
     };
   }
   if (status !== 'approved') {
@@ -273,7 +273,7 @@ export function adoptionJourney(
       ...base,
       label: 'Status unavailable',
       variant: 'neutral',
-      description: 'The request status is unavailable. Refresh to check for an update.',
+      description: 'the request status is unavailable. refresh to check for an update.',
     };
   }
   if (!pickupsReady && !appointment) {
@@ -283,7 +283,7 @@ export function adoptionJourney(
       warning: 'Pickup status unavailable',
       variant: 'green',
       description:
-        'Your request is approved, but pickup information could not be checked. Retry before arranging a time.',
+        'your request is approved, but pickup information could not be checked. retry before arranging a time.',
     };
   }
   if (!timestamp(getApplicationDate(application))) {
@@ -292,7 +292,7 @@ export function adoptionJourney(
       label: 'Approved',
       warning: 'Pickup status unavailable',
       variant: 'green',
-      description: 'The request date is missing. Check with the team before arranging collection.',
+      description: 'the request date is missing. check with the team before arranging collection.',
     };
   }
   if (!reliable) {
@@ -302,7 +302,7 @@ export function adoptionJourney(
       warning: 'Needs checking',
       variant: 'green',
       description:
-        'Pickup records could not be linked to this adoption request. Check the details with the team before arranging pickup.',
+        'pickup records could not be linked to this adoption request. check the details with the team before arranging pickup.',
     };
   }
   if (appointment) {
@@ -343,28 +343,28 @@ export function adoptionJourney(
               : 'View pickup request',
         ...(!pickupComplete(appointment)
           ? {
-              description: `Missing pickup details: ${pickupMissingDetails(appointment).join(', ')}. Submitting corrected details requires confirmation.`,
+              description: `missing pickup details: ${pickupMissingDetails(appointment).join(', ')}. the team must confirm any updated details.`,
             }
           : {}),
         ...(!pickupsReady
           ? {
               description:
-                'Previously loaded pickup details could not be checked. Retry pickup information before travelling or making changes.',
+                'previously loaded pickup details could not be checked. retry pickup information before travelling or making changes.',
             }
           : {}),
         ...(book?.status !== 'reserved'
           ? {
               description:
-                'The book’s availability and pickup record need checking. Check with the team before travelling.',
+                'the book’s availability and pickup record need checking. check with the team before travelling.',
             }
           : {}),
         ...(overdue
           ? {
               description: confirmed
-                ? 'The pickup date has passed, but this book hasn’t been marked as collected. Check with the team before you travel.'
+                ? 'the pickup date has passed, but this book hasn’t been marked as collected. check with the team before you travel.'
                 : timing === 'attention'
-                  ? 'Some pickup times are incomplete. Check the details or send new availability.'
-                  : 'All proposed pickup times have passed. Send new availability or check with the team before travelling.',
+                  ? 'some pickup times are incomplete. check the details or send new availability.'
+                  : 'all proposed pickup times have passed. send new availability or check with the team before travelling.',
             }
           : {}),
       };
@@ -391,7 +391,7 @@ export function adoptionJourney(
       warning: 'Pickup status unavailable',
       variant: 'green',
       description:
-        'An active pickup exists for this copy, but could not be linked to this request. Review the pickup record before arranging another time.',
+        'an active pickup exists for this copy, but could not be linked to this request. review the pickup record before arranging another time.',
     };
   }
   const canArrange = pickupsReady && !!base.id && !!base.bookId && book?.status === 'reserved';
@@ -408,9 +408,9 @@ export function adoptionJourney(
     actionLabel: appointment ? 'Arrange another pickup' : 'Arrange pickup',
     description: canArrange
       ? appointment
-        ? `${pickupStatus(appointment).label}. Your adoption is still approved. You can request another pickup.`
-        : 'Your next step is to choose a date and two available times for the book’s MRT station.'
-      : 'Your adoption is approved, but we couldn’t verify the pickup details. Refresh the page or check with the team before arranging pickup.',
+        ? `${pickupStatus(appointment).label.toLowerCase()}. your request is still approved. you can arrange another pickup.`
+        : 'choose a pickup date and two times at the book’s mrt station.'
+      : 'your adoption is approved, but we couldn’t verify the pickup details. refresh the page or check with the team before arranging pickup.',
   };
 }
 
@@ -513,10 +513,10 @@ export function journeyGroup(record) {
 }
 
 export const activeAdoptionStages = [
+  { value: 'all', label: 'All' },
   { value: 'needs-action', label: 'Needs action' },
   { value: 'waiting', label: 'Waiting' },
   { value: 'pickups', label: 'Pickups' },
-  { value: 'all', label: 'All' },
 ];
 
 // Each active adoption belongs to one task-based subtab; All remains an overview.

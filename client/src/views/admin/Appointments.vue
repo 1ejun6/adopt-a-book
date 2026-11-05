@@ -1,7 +1,6 @@
 <script setup>
 import AppIcon from '@/components/shared/AppIcon.vue';
-import AppCalendarButton from '@/components/shared/AppCalendarButton.vue';
-import { pickupEvent } from '@/lib/calendar';
+import { pickupEvent, eventCalendar } from '@/lib/calendar';
 import { useAdminRecord } from '@/composables/useAdminRecord';
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -16,24 +15,29 @@ import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
 import AdminPickupOptions from '@/components/admin/AdminPickupOptions.vue';
 import AdminList from '@/components/admin/AdminList.vue';
+import AppFilterSelect from '@/components/shared/AppFilterSelect.vue';
 import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue';
 import BookIdentity from '@/components/shared/AppBookIdentity.vue';
 import AppDatePicker from '@/components/shared/AppDatePicker.vue';
 import StatusBadge from '@/components/shared/AppStatusBadge.vue';
+import StatusLegend from '@/components/shared/AppStatusLegend.vue';
 import { Button } from '@/components/ui/button';
 
 const router = useRouter();
 const navigation = router.options.history.state;
 const selectedIds = ref([]);
 const selectedAppointment = ref(null);
+const calendarEvent = computed(() => pickupEvent(selectedAppointment.value, selectedAppointment.value?.booktitle, currentTime.value));
+const calendarDownloadUrl = computed(() => calendarEvent.value ? `data:text/calendar;charset=utf-8,${encodeURIComponent(eventCalendar(calendarEvent.value))}` : '');
+const choosingPickupTime = computed(() => selectedAppointment.value?.status === 'pending confirmation' && selectedAppointment.value.optionsby === 'customer' && [2, 3].includes(selectedAppointment.value.pickupoptions?.length) && selectedAppointment.value.book?.status === 'reserved');
 //@lee-hlmilk > collection fields &&& action availability stay in the view > shared dialog handles presentation
 const appointmentFields = computed(() => [
     { label: 'Customer', value: selectedAppointment.value?.customer },
     { label: 'Email', value: selectedAppointment.value?.email },
     { label: 'Collection date', value: selectedAppointment.value?.appointmentdate ? formatDate(selectedAppointment.value.appointmentdate) : null },
     { label: 'Time', value: selectedAppointment.value?.status === 'pending confirmation' && selectedAppointment.value?.optionsby === 'customer' ? 'Choose from the proposed times below' : selectedAppointment.value?.timeslot },
-    { label: 'Location', value: selectedAppointment.value?.location }
-]);
+    { key: 'location', label: 'Location', value: selectedAppointment.value?.location }
+].filter(field => field.label !== 'Time' || !choosingPickupTime.value));
 const detailsHint = computed(() => selectedAppointment.value ? actionHint([selectedAppointment.value], selectedAppointment.value.status === 'pending confirmation' ? 'appointment confirmed' : 'collected') : '');
 const detailsOpen = ref(false);
 const { detailError, detailLoading, refreshDetail } = useAdminRecord(selectedAppointment, detailsOpen, '/admin/appointments', 'appointment', { busy: () => saving.value });
@@ -42,22 +46,29 @@ const savingAction = ref('');
 const { confirm } = useConfirmation();
 
 const viewTabs = [
-    { value: 'awaiting', label: 'Awaiting confirmation' },
-    { value: 'today', label: "Today's pickup" },
-    { value: 'upcoming', label: 'Upcoming' },
-    { value: 'overdue', label: 'Overdue' },
-    { value: 'history', label: 'History' }
+    { value: 'awaiting', label: 'Action Needed', status: 'pending confirmation' },
+    { value: 'today', label: "Today's Pickup", status: 'appointment confirmed' },
+    { value: 'upcoming', label: 'Upcoming', status: 'appointment confirmed' },
+    { value: 'overdue', label: 'Overdue', status: 'overdue', tone: 'red' },
+    { value: 'history', label: 'History', status: 'history', tone: 'neutral' }
+];
+const appointmentStatuses = [
+    { value: 'pending confirmation', label: 'Pending' },
+    { value: 'appointment confirmed', label: 'Confirmed' },
+    { value: 'collected', label: 'Collected' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'rejected', label: 'Rejected' }
 ];
 //@lee-hlmilk > dashboard links choose the initial queue through navigation state > keep the URL clean
 const filters = reactive({ search: '', date: '', view: viewTabs.some(tab => tab.value === navigation.view) ? navigation.view : 'awaiting', status: 'all' });
 const columns = [
     { key: 'customer', label: 'Customer', class: 'w-1/5', mobileClass: 'col-span-2 flex items-baseline gap-2' },
-    { key: 'book', label: 'Requested copy', mobileClass: 'col-start-1 row-start-1', hideMobileLabel: true },
+    { key: 'book', label: 'Requested copy', mobileClass: 'col-start-1 row-start-1' },
     { key: 'collection', label: 'Collection', class: 'w-1/4' },
-    { key: 'status', label: 'Status', class: 'w-48', mobileClass: 'col-start-2 row-start-1', hideMobileLabel: true }
+    { key: 'status', label: 'Status', class: 'w-48 text-center', mobileClass: 'col-start-2 row-start-1' }
 ];
 const emptyTitles = {
-    awaiting: 'No appointments awaiting confirmation',
+    awaiting: 'No appointments need action',
     today: 'No pickups today',
     upcoming: 'No upcoming appointments',
     overdue: 'No overdue appointments',
@@ -67,7 +78,7 @@ const emptyTitles = {
 //@lee-hlmilk > today's pickups must be confirmed > pending requests due today ||| earlier belong in overdue
 async function pickupOptionsUpdated(appointment) {
     selectedAppointment.value = { ...selectedAppointment.value, ...appointment };
-    if (appointment.status === 'appointment confirmed') toast.success('Pickup confirmed. The customer can view the selected time in My Adoptions.');
+    if (appointment.status === 'appointment confirmed') toast.success('Pickup confirmed');
     await fetchAppointments();
         await refreshDetail();
 }
@@ -125,16 +136,12 @@ async function updateAppointments(status, rows = selectedAppointments.value) {
         rejected: 'Reject',
         collected: 'Mark collected'
     }[status];
-    const subject = single ? 'appointment' : 'appointments';
-    const title = status === 'collected' ? `Mark ${subject} collected?` : `${action} ${subject}?`;
-    const descriptions = {
-        'appointment confirmed': 'Confirm the requested collection details.',
-        rejected: 'The book stays reserved and the customer can propose another pickup time.',
-        collected: 'Confirm the customer received the book. The copy will become adopted.'
-    };
+    const subject = single ? 'appointment' : `${targets.length} appointments`;
+    const title = status === 'collected'
+        ? single ? 'Has the customer collected the book?' : `Have these ${targets.length} books been collected?`
+        : `${action} ${subject}?`;
     if (!await confirm(title, {
-        description: descriptions[status] + '\n' + targets.map(appointment => `${appointment.customer} — ${appointment.booktitle}\n${formatDate(appointment.appointmentdate)} · ${appointment.timeslot} · ${appointment.location}`).join('\n'),
-        actionLabel: action,
+        actionLabel: status === 'collected' ? 'Yes, collected' : action,
         destructive: status === 'rejected'
     })) { return; }
     if (loading.value || saving.value) { return; }
@@ -183,15 +190,19 @@ fetchAppointments().then(loadAppointmentLink);
 <template>
     <!--@lee-hlmilk > list models update local filters &&& page > History disables selection while keeping record details available-->
     <AdminList @retry="fetchAppointments" title="Appointments" description="Manage appointments and book collections."
+        :tabDescription="filters.view === 'awaiting' ? 'open each pending appointment and confirm one of the customer’s proposed pickup times.' : ''"
         v-model:search="filters.search" v-model:tab="filters.view" v-model:selectedIds="selectedIds" v-model:page="page"
         :rows="appointments" :columns="columns" :tabs="viewTabs" :counts="counts" :loading="loading" :disabled="saving"
         :selectable="filters.view !== 'history'"
-        :error="loadError" searchPlaceholder="Search by Customer, Email, Book, Location..."
+        :error="loadError" searchPlaceholder="Search by customer, email, book or location..."
+        :emptyKey="JSON.stringify(filters)" :emptyTitle="hasFilters ? 'No matching appointments' : emptyTitles[filters.view]"
+        :emptyDescription="hasFilters ? emptyFilterHint : 'Pickup bookings will appear in their corresponding view.'"
         :pagination="{ itemLabel: 'appointments', total, pageSize, pageCount }" @openRow="openAppointment">
+        <template #legend><StatusLegend :statuses="appointmentStatuses" /></template>
         <template #filters>
-            <AppDatePicker v-if="filters.view !== 'today'" v-model="filters.date" label="Collection date" />
-            <select v-if="!['awaiting', 'today'].includes(filters.view)" v-model="filters.status" aria-label="Appointment status" class="w-full min-w-0 rounded-lg border px-3 sm:w-auto text-base min-h-11">
-                <option value="all">All statuses</option>
+            <AppDatePicker filter v-model="filters.date" label="Collection date" :disabled="filters.view === 'today'" />
+            <AppFilterSelect v-model="filters.status" :disabled="['awaiting', 'today'].includes(filters.view)" aria-label="Appointment status">
+                <option value="all">All</option>
                 <template v-if="filters.view === 'history'">
                     <option value="collected">Collected</option>
                     <option value="cancelled">Cancelled</option>
@@ -201,14 +212,14 @@ fetchAppointments().then(loadAppointmentLink);
                     <option value="pending confirmation">Pending</option>
                     <option value="appointment confirmed">Confirmed</option>
                 </template>
-            </select>
+            </AppFilterSelect>
         </template>
         <template #selectionActions>
             <p v-if="confirmHint && collectHint" class="text-sm text-muted-foreground" role="status">
                 {{ selectionHint }}
             </p>
-            <Button :disabled="detailLoading || !!detailError || loading || saving || !!confirmHint" @click="updateAppointments('appointment confirmed')" :loading="saving && savingAction === 'appointment confirmed'"><AppIcon name="success" />Confirm</Button>
-            <Button variant="outline" :disabled="detailLoading || !!detailError || loading || saving || !!collectHint" @click="updateAppointments('collected')" :loading="saving && savingAction === 'collected'"><AppIcon name="success" />Mark collected</Button>
+            <Button title="Confirm" :disabled="detailLoading || !!detailError || loading || saving || !!confirmHint" @click="updateAppointments('appointment confirmed')" :loading="saving && savingAction === 'appointment confirmed'"><AppIcon name="success" class="text-success-foreground" /><span class="sr-only">Confirm</span></Button>
+            <Button title="Mark collected" variant="outline" :disabled="detailLoading || !!detailError || loading || saving || !!collectHint" @click="updateAppointments('collected')" :loading="saving && savingAction === 'collected'"><span>Mark collected</span></Button>
         </template>
         <template #cellCustomer="{ row }">
             <p class="break-words lg:truncate">{{ row.customer }}</p>
@@ -218,32 +229,36 @@ fetchAppointments().then(loadAppointmentLink);
             <BookIdentity :title="row.booktitle" :author="row.book?.authors?.join(', ') || 'Unknown Author'" :cover="row.book?.coverurl" />
         </template>
         <template #cellCollection="{ row }">
-            <p>{{ formatDate(row.appointmentdate) }} · {{ row.status === 'pending confirmation' && row.optionsby === 'customer' ? 'Times proposed' : row.timeslot }}</p>
+            <p>{{ formatDate(row.appointmentdate) }}<template v-if="!(row.status === 'pending confirmation' && row.optionsby === 'customer') && row.timeslot"> · {{ row.timeslot }}</template></p>
             <p class="text-muted-foreground">{{ row.location }}</p>
         </template>
-        <template #cellStatus="{ value, row }"><StatusBadge :status="value" /><p v-if="value === 'pending confirmation' && pendingPickupState(row, currentTime) !== 'awaiting'" class="hidden text-sm text-destructive lg:block">Needs attention: no future pickup time or incomplete details</p><p v-else-if="value === 'pending confirmation' && row.pickupoptions?.length" class="hidden text-sm text-muted-foreground lg:block">Select a proposed time</p></template>
-        <template #empty>
-            <h2>{{ hasFilters ? 'No matching appointments' : emptyTitles[filters.view] }}</h2>
-            <p class="text-sm text-muted-foreground">{{ hasFilters ? emptyFilterHint : 'Pickup bookings will appear in their corresponding view.' }}</p>
-        </template>
+        <template #cellStatus="{ value, row }"><div class="flex items-center justify-center"><StatusBadge :status="value" dot :title="value" /></div><p v-if="value === 'pending confirmation' && pendingPickupState(row, currentTime) !== 'awaiting'" class="hidden text-sm text-destructive lg:block">Needs attention: no future pickup time or incomplete details</p></template>
     </AdminList>
 
     <AdminDetailsDialog :loading="detailLoading" :error="detailError" :busy="saving || detailLoading" @retry="refreshDetail" v-if="selectedAppointment" :open="detailsOpen" title="Appointment details"
         :book="{ ...selectedAppointment.book, title: selectedAppointment.booktitle }" :status="selectedAppointment.status"
         :fields="appointmentFields" @update:open="!saving && (detailsOpen = $event)">
+        <template #field-location="{ field }">
+            <a v-if="field.value" :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(field.value)}`" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4 hover:text-primary" :aria-label="`${field.value} (opens in Google Maps)`">{{ field.value }} ↗</a>
+            <span v-else>Not provided</span>
+        </template>
         <!--@lee-hlmilk > completed ||| inactive appointments are read-only > active pickups show the next step-->
-        <p v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" class="text-muted-foreground">
-            {{ detailsHint || (selectedAppointment.status === 'pending confirmation' ? 'Confirm after checking the requested date, time, and location.' : 'Mark collected only after the customer has physically received the book.') }}
+        <p v-if="!choosingPickupTime && (detailsHint || selectedAppointment.status === 'pending confirmation') && ['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" class="text-muted-foreground">
+            {{ detailsHint || 'Confirm after checking the requested date, time, and location.' }}
         </p>
-        <AppCalendarButton :event="pickupEvent(selectedAppointment, selectedAppointment.booktitle, currentTime)" :disabled="detailLoading || !!detailError" />
-        <AdminPickupOptions v-if="selectedAppointment.status === 'pending confirmation' && selectedAppointment.optionsby === 'customer' && [2, 3].includes(selectedAppointment.pickupoptions?.length) && selectedAppointment.book?.status === 'reserved'"
-            :disabled="detailLoading || !!detailError" :key="selectedAppointment.id" :appointment="selectedAppointment" v-model:saving="saving" @updated="pickupOptionsUpdated" />
-        <template v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" #actions>
-            <template v-if="selectedAppointment.status === 'pending confirmation'">
-                <Button type="button" variant="destructive" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" />Reject</Button>
-                <Button v-if="!selectedAppointment.pickupoptions?.length" type="button" class="flex-1 " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])" :loading="saving && savingAction === 'appointment confirmed'"><AppIcon name="success" />Confirm</Button>
+        <a v-if="calendarEvent && !detailLoading && !detailError" :href="calendarDownloadUrl" :download="`${calendarEvent.id}.ics`" class="inline-block underline underline-offset-4 hover:text-primary">Add to calendar</a>
+        <AdminPickupOptions v-if="choosingPickupTime"
+            :disabled="detailLoading || !!detailError" :key="selectedAppointment.id" :appointment="selectedAppointment" v-model:saving="saving" @updated="pickupOptionsUpdated">
+            <template #actions="{ disabled }">
+                <Button type="button" title="Reject" variant="destructive" class="flex-1" :disabled="disabled || detailLoading || !!detailError || loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" /><span class="sr-only">Reject</span></Button>
             </template>
-            <Button v-else type="button" class="w-full " :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('collected', [selectedAppointment])" :loading="saving && savingAction === 'collected'"><AppIcon name="success" />Mark collected</Button>
+        </AdminPickupOptions>
+        <template v-if="!choosingPickupTime && ['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" #actions>
+            <template v-if="selectedAppointment.status === 'pending confirmation'">
+                <Button type="button" title="Reject" variant="destructive" class="flex-1" :disabled="detailLoading || !!detailError || loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])" :loading="saving && savingAction === 'rejected'"><AppIcon name="cancel" /><span class="sr-only">Reject</span></Button>
+                <Button v-if="!selectedAppointment.pickupoptions?.length" type="button" title="Confirm" class="flex-1 border-success-foreground text-success-foreground hover:bg-badge-green" :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])" :loading="saving && savingAction === 'appointment confirmed'"><AppIcon name="success" class="text-success-foreground" /><span class="sr-only">Confirm</span></Button>
+            </template>
+            <Button v-else type="button" title="Mark collected" class="w-full border-success-foreground text-success-foreground hover:bg-badge-green" :disabled="detailLoading || !!detailError || loading || saving || !!detailsHint" @click="updateAppointments('collected', [selectedAppointment])" :loading="saving && savingAction === 'collected'"><span>Mark collected</span></Button>
         </template>
     </AdminDetailsDialog>
 </template>

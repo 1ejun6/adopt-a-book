@@ -66,7 +66,7 @@ import genres from '../../../../shared/genres.json';
       <!--@sree-sanjana06 > choose a genre instead of typing it-->
       <label for="browse-genre" class="sr-only">Genre</label>
       <select id="browse-genre" v-model="filters.subject" class="min-h-11 w-full rounded-lg border p-2.5 text-sm sm:w-44">
-        <option value="">All genres</option>
+        <option value="">All</option>
         <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
       </select>
 

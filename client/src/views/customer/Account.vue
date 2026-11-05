@@ -138,7 +138,7 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
   <AppPage aria-labelledby="account-title">
     <header class="account-heading">
       <h1 id="account-title">My account</h1>
-      <p>Profile and sign-in settings</p>
+      <p>profile and sign-in settings</p>
     </header>
 
     <div v-if="loading" class="loading-state" role="status" aria-busy="true">

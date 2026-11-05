@@ -17,12 +17,12 @@ const sort = defineModel('sort', { type: String, default: 'asc' });
     <div class="flex flex-col gap-2.5 sm:flex-row">
       <AppSearchInput v-model="search" class="flex-1" placeholder="Search drives" />
       <div class="flex gap-2.5">
-        <select v-model="status" aria-label="Adoption drive status" class="min-w-0 flex-1 min-h-11 rounded-lg border bg-transparent px-3 text-base">
-          <option value="all">all statuses</option>
+        <select v-model="status" aria-label="Adoption drive status" class="min-w-0 flex-1 min-h-11 rounded-lg border bg-transparent px-3 text-sm font-normal">
+          <option value="all">All</option>
           <option v-for="value in statuses" :key="value" :value="value">{{ value }}</option>
         </select>
         <select v-model="sort" title="sort adoption drives by date"
-          class="min-w-0 flex-1 min-h-11 rounded-lg border bg-transparent px-3 text-base">
+          class="min-w-0 flex-1 min-h-11 rounded-lg border bg-transparent px-3 text-sm font-normal">
           <option value="asc">earliest first</option>
           <option value="desc">latest first</option>
         </select>

@@ -13,7 +13,7 @@ defineProps({
   saving: Boolean,
 });
 
-const emit = defineEmits(['edit', 'leave']);
+const emit = defineEmits(['edit']);
 </script>
 <template>
   <p v-if="getApplicationStatus(receipt) === 'appointment confirmed'" class="text-sm">
@@ -30,7 +30,7 @@ const emit = defineEmits(['edit', 'leave']);
   </p>
   <dl
     v-if="result !== 'cancelled'"
-    class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm"
+    class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 border-b pb-5 text-sm"
   >
     <dt class="text-muted-foreground">Date</dt>
     <dd>{{ displayDate(receipt.appointmentdate) }}</dd>
@@ -46,15 +46,13 @@ const emit = defineEmits(['edit', 'leave']);
     Your proposed times have been sent. The team will confirm one. Check My Adoptions for
     confirmation before travelling.
   </p>
-  <div class="adoption-actions">
+  <div v-if="result === 'current' && operation?.kind === 'save' && manageable" class="adoption-actions">
     <Button
-      v-if="result === 'current' && operation?.kind === 'save' && manageable"
       type="button"
       variant="outline"
       :disabled="saving"
       @click="emit('edit')"
       ><AppIcon name="next" />Continue editing request</Button
     >
-    <Button type="button" :disabled="saving" @click="emit('leave')"><AppIcon name="back" /> Back to my adoptions </Button>
   </div>
 </template>

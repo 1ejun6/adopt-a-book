@@ -12,6 +12,7 @@ import StatusBadge from '@/components/shared/AppStatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import AdminTabs from '@/components/admin/AdminTabs.vue';
 import genres from '../../../../shared/genres.json';
 
 //@lee-hlmilk > view supplies saved book &&& lookup results > this component owns draft &&& emits actions
@@ -41,6 +42,13 @@ let coverRequestId = 0;
 const importDraft = reactive({ selectedIds: [], addedIds: [], reviewBooks: [], reviewing: false, invalidIds: [] });
 //@lee-hlmilk > reactive draft state for editing book metadata
 const bookForm = reactive({title: '', authors: '', condition: '', mrtstationid: '', description: '', isbn: '', publicationyear: '', subject: '', openlibraryid: '', coverurl: ''});
+const descriptionWordCount = computed(() => bookForm.description.trim().split(/\s+/u).filter(Boolean).length);
+const maxDescriptionWords = 500;
+
+function validateDescription(event) {
+    event.target.setCustomValidity(descriptionWordCount.value > maxDescriptionWords ? `Use ${maxDescriptionWords} words or fewer.` : '');
+    clearInvalid(event);
+}
 const isFormDirty = computed(() => checkingCover.value || Boolean(coverFile.value) || importDraft.selectedIds.length > 0 || JSON.stringify(bookForm) !== initialForm.value);
 //@lee-hlmilk > keep current station in list even if no longer selectable for new writes
 const stationOptions = computed(() => withCurrentStation(props.stations, props.book?.mrtstation));
@@ -107,17 +115,15 @@ function resetCoverFile() {
     coverPreview.value = '';
 }
 
-function removeCover() { resetCoverFile(); bookForm.coverurl = ''; }
 onBeforeUnmount(resetCoverFile);
 
-function enterManually() {
-    emit('select'); //@lee-hlmilk > invalidate pending lookup before switching to manual entry
-    importDraft.selectedIds = [];
-    addMode.value = 'manual';
-    fillBookForm({});
+function selectAddMode(mode) {
+    if (props.submitting || checkingCover.value) { return; }
+    if (mode === 'manual') { emit('select'); }
+    addMode.value = mode;
 }
 
-//@lee-hlmilk > add &&& continue resets the manual draft after a successful save
+// Reset only when opening a fresh draft.
 function resetForm() {
     fillBookForm(props.book || {});
 }
@@ -125,12 +131,14 @@ function resetForm() {
 function submitBook(event) {
     if (props.submitting || checkingCover.value || (!props.book && addMode.value === 'search')) { return; }
     const form = event.target;
+    const descriptionField = form.querySelector('#edit-description');
+    descriptionField.setCustomValidity(descriptionWordCount.value > maxDescriptionWords ? `Use ${maxDescriptionWords} words or fewer.` : '');
     //@lee-hlmilk > noValidate allows submit event > still use native required &&& pattern &&& number validity
     if (!validate(form)) {
         if (invalidFields.value.includes('edit-year')) {
             metadataOpen.value = true;
         }
-        toast.error('Please check the highlighted fields. Title, collection area and subject are required.');
+        toast.error(descriptionWordCount.value > maxDescriptionWords ? `Description must be ${maxDescriptionWords} words or fewer.` : 'Please check the highlighted fields. Title, collection area and subject are required.');
         focusInvalid(form);
         return;
     }
@@ -147,8 +155,7 @@ function submitBook(event) {
         openlibraryid: bookForm.openlibraryid,
         coverurl: bookForm.coverurl
     };
-    //@lee-hlmilk > submitter identifies Add and continue > view saves data before resetting ||| closing form
-    emit('submit', data, !props.book && event?.submitter?.value === 'continue', coverFile.value);
+    emit('submit', data, coverFile.value);
 }
 
 //@lee-hlmilk > reopening starts a fresh draft from saved book ||| blank fields > failed saves keep current draft
@@ -160,32 +167,32 @@ watch(open, isOpen => {
     } else { resetCoverFile(); }
 }, { immediate: true });
 
-defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref only after a successful Add and continue
+defineExpose({ selectAddMode });
 </script>
 <template>
     <!--@lee-hlmilk > edit book dialog form-->
     <AdminFormDialog v-model:open="open" :title="props.book ? 'Edit book' : 'Add book'"
-        submitLabel="Add book" :submittingLabel="submittingLabel"
-        :contentClass="!props.book && addMode === 'search' ? 'max-w-5xl' : null"
+        :description="props.book ? 'update the book details and cover photo' : 'find books on Open Library or enter the details manually'"
+        submitLabel="Add book" :submittingLabel="submittingLabel" footerClass="grid grid-cols-2"
         :hideForm="!props.book && addMode === 'search'"
         :showFooterSeparator="!props.book"
         :submitting="props.submitting || checkingCover" :dirty="isFormDirty" noValidate @submit="submitBook">
+        <template #headerAside>
+            <StatusBadge v-if="props.book" :status="props.book.status" dot :title="props.book.status" class="shrink-0 leading-none" />
+        </template>
         <template v-if="!props.book" #top>
+            <AdminTabs :modelValue="addMode" :tabs="[{ value: 'search', label: 'Open Library' }, { value: 'manual', label: 'Manual entry' }]"
+                label="How to add books" :disabled="props.submitting || checkingCover" @update:modelValue="selectAddMode" />
             <!--@lee-hlmilk > relay query updates &&& lookup actions > import submission becomes the view's import event-->
-            <BookImportSelection v-if="addMode === 'search'" v-model:query="query" :lookup="props.lookup" :draft="importDraft"
+            <BookImportSelection v-show="addMode === 'search'" v-model:query="query" :lookup="props.lookup" :draft="importDraft"
                 :stations="props.stations" :submitting="props.submitting" :importedIds="props.importedIds"
-                @search="emit('search')" @select="emit('select')" @manual="enterManually" @submit="emit('import', $event)" />
+                @search="emit('search')" @select="emit('select')" @submit="emit('import', $event)" />
         </template>
-        <template v-if="!props.book" #extraActions>
-            <Button type="submit" value="continue" variant="outline" :disabled="props.submitting || checkingCover" :loading="props.submitting || checkingCover"><AppIcon name="add" />Add and continue</Button>
+        <template #footer="{ close }">
+            <Button type="button" variant="outline" class="w-full" :disabled="props.submitting || checkingCover" @click="close"><AppIcon name="cancel" />Cancel</Button>
+            <Button type="submit" class="w-full" :disabled="props.submitting || checkingCover" :loading="props.submitting || checkingCover"
+                :title="props.book ? 'Save changes' : 'Add book'"><AppIcon name="save" /><span class="sr-only">{{ props.submitting || checkingCover ? submittingLabel : props.book ? 'Save changes' : 'Add book' }}</span></Button>
         </template>
-        <template v-if="props.book" #footer>
-            <Button type="submit" class="w-full " :disabled="props.submitting || checkingCover" :loading="props.submitting || checkingCover"><AppIcon name="save" />{{ props.submitting || checkingCover ? submittingLabel : 'Save changes' }}</Button>
-        </template>
-        <div class="flex items-center justify-between gap-2.5 text-sm">
-            <p class="text-muted-foreground"><span class="text-destructive" aria-hidden="true">*</span> Required</p>
-            <StatusBadge v-if="props.book" :status="props.book.status" />
-        </div>
         <!--@lee-hlmilk > grid gap separates fields > Field supplies label/control spacing > wide fields span both sm columns-->
         <div class="grid gap-5 sm:grid-cols-2">
             <Field class="sm:col-span-2">
@@ -200,25 +207,25 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
             <Field class="min-w-0 sm:col-span-2">
                 <FieldLabel for="edit-cover-file">Cover photo</FieldLabel>
                 <input id="edit-cover-file" ref="coverInput" type="file" accept="image/jpeg,image/png,image/webp" :disabled="props.submitting"
-                    class="hidden" aria-describedby="cover-photo-help cover-file-help" @change="selectCover" />
-                <!--@lee-hlmilk > group photo actions with the uncropped preview > keep native chooser text out of the layout-->
-                <div class="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
-                    <img v-if="coverPreview || bookForm.coverurl" :src="coverPreview || bookForm.coverurl" alt="Preview of the book’s front cover"
-                        class="h-36 w-24 shrink-0 self-start object-contain" />
-                    <div class="min-w-0 flex-1 space-y-2.5">
-                        <div class="flex flex-wrap gap-2.5">
-                            <Button type="button" variant="outline" :disabled="props.submitting"
-                                :aria-describedby="coverError ? 'cover-photo-help cover-file-help cover-photo-error' : 'cover-photo-help cover-file-help'"
-                                :aria-invalid="Boolean(coverError)" @click="coverInput?.click()">{{ coverPreview || bookForm.coverurl ? 'Change photo' : 'Choose photo' }}</Button>
-                            <Button v-if="coverPreview || bookForm.coverurl" type="button" variant="outline" :disabled="props.submitting" @click="removeCover">Remove photo</Button>
-                        </div>
-                        <p v-if="coverFile" :title="coverFile.name" class="truncate text-sm text-muted-foreground">{{ coverFile.name }}</p>
-                        <p v-if="checkingCover" role="status" class="text-sm text-muted-foreground">Checking photo…</p>
-                        <p v-else-if="props.uploadingCover" role="status" class="text-sm text-muted-foreground">Uploading photo…</p>
-                        <p v-else-if="coverFile" class="text-sm text-muted-foreground">Photo will be saved when you save the book.</p>
-                    </div>
+                    class="hidden" aria-describedby="cover-file-help" @change="selectCover" />
+                <div class="w-fit pb-2 pr-2">
+                    <button type="button" class="relative flex h-36 w-24 items-center justify-center rounded-lg border bg-primary/20 hover:bg-primary/40"
+                        :disabled="props.submitting || checkingCover"
+                        :aria-describedby="coverError ? 'cover-file-help cover-photo-error' : 'cover-file-help'"
+                        :aria-invalid="Boolean(coverError)" :title="coverPreview || bookForm.coverurl ? 'Replace photo' : 'Upload photo'"
+                        @click="coverInput?.click()">
+                        <img v-if="coverPreview || bookForm.coverurl" :src="coverPreview || bookForm.coverurl" alt="Preview of the book’s front cover"
+                            class="h-full w-full rounded-lg object-contain" />
+                        <AppIcon v-else name="upload" :size="24" />
+                        <span v-if="coverPreview || bookForm.coverurl" class="absolute -bottom-2 -right-2 grid size-11 place-items-center rounded-lg bg-background"><AppIcon name="upload" /></span>
+                        <span class="sr-only">{{ coverPreview || bookForm.coverurl ? 'Replace photo' : 'Upload photo' }}</span>
+                    </button>
                 </div>
                 <p id="cover-file-help" class="text-sm text-muted-foreground">JPG, PNG or WebP · Maximum 5 MB</p>
+                <p v-if="coverFile" :title="coverFile.name" class="truncate text-sm text-muted-foreground">{{ coverFile.name }}</p>
+                <p v-if="checkingCover" role="status" class="text-sm text-muted-foreground">Checking photo…</p>
+                <p v-else-if="props.uploadingCover" role="status" class="text-sm text-muted-foreground">Uploading photo…</p>
+                <p v-else-if="coverFile" class="text-sm text-muted-foreground">Photo will be saved when you save the book.</p>
                 <p v-if="coverError" id="cover-photo-error" role="alert" class="text-sm text-destructive">{{ coverError }}</p>
             </Field>
             <Field class="sm:col-span-2">
@@ -246,13 +253,15 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
             </Field>
             <Field class="sm:col-span-2">
                 <FieldLabel for="edit-description">Description</FieldLabel>
-                <AppTextarea id="edit-description" v-model="bookForm.description" rows="3"
+                <AppTextarea id="edit-description" v-model="bookForm.description" rows="3" aria-describedby="edit-description-count"
+                    :aria-invalid="invalidFields.includes('edit-description')" @input="validateDescription"
                     class="w-full min-w-0 rounded-lg border p-2.5 text-base" />
+                <p id="edit-description-count" class="text-right text-sm" :class="descriptionWordCount > maxDescriptionWords ? 'text-destructive' : 'text-muted-foreground'">{{ descriptionWordCount }} / {{ maxDescriptionWords }} words max</p>
             </Field>
         </div>
 
         <!--@lee-hlmilk > collapsible secondary book metadata fields-->
-        <details :open="metadataOpen" class="border p-2.5" @toggle="metadataOpen = $event.target.open">
+        <details :open="metadataOpen" @toggle="metadataOpen = $event.target.open">
             <summary class="cursor-pointer">ISBN and other metadata</summary>
             <div class="mt-5 grid gap-5 sm:grid-cols-2">
                 <Field>
@@ -274,6 +283,5 @@ defineExpose({ resetForm }); //@lee-hlmilk > parent calls through template ref o
                 </Field>
             </div>
         </details>
-
     </AdminFormDialog>
 </template>

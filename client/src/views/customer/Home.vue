@@ -157,15 +157,15 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
 <template>
   <AppPage class="customer-home">
     <header class="intro">
-      <p>Your reading corner</p>
+      <p>your reading corner</p>
       <h1>What will you read next?</h1>
-      <p>Find your next read.</p>
+      <p>find your next read.</p>
     </header>
     <section aria-labelledby="shelf-heading" class="discovery">
       <div class="section-heading">
         <div>
           <h2 id="shelf-heading">On the shelf</h2>
-          <p class="shelf-note">{{ preferredgenres.length ? 'Based on your favourite genres' : 'Discover your next favourite read' }}</p>
+          <p class="shelf-note">{{ preferredgenres.length ? 'based on your favourite genres' : 'discover your next favourite read' }}</p>
         </div>
         <button
           type="button"

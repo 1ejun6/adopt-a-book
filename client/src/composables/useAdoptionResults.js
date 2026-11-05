@@ -1,10 +1,11 @@
 import { computed, watch } from 'vue';
+import { historyAdoptionTabs } from '@/lib/myAdoptionsPresentation';
 import { recordId, bookAuthors, actionPriority } from '@/lib/adoptions';
 
 export function useAdoptionResults({ grouping, navigation, loading, loadError, pickupError }) {
-  const { entries, entryDate, entrySection, groups, stageGroups, stageCounts, actionGroups, waitingGroups } =
+  const { entries, entryDate, entrySection, stageGroups, stageCounts, actionGroups, waitingGroups, historyGroups } =
     grouping;
-  const { search, searching, tab, stage, action, waiting, page, pageSize, updateQuery } = navigation;
+  const { search, searching, tab, stage, action, waiting, history, page, pageSize, updateQuery } = navigation;
   function matchesSearch(entry, query = search.value.trim().toLocaleLowerCase()) {
     if (!query) return true;
     const book = entry.kind === 'request' ? entry.record.book : null;
@@ -25,7 +26,7 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
         ? stage.value === 'needs-action'
           ? actionGroups.value[action.value]
           : stage.value === 'waiting' ? waitingGroups.value[waiting.value] : stageGroups.value[stage.value]
-        : groups.value.history
+        : historyGroups.value[history.value]
     ).filter((entry) => matchesSearch(entry)),
   );
   const paged = computed(() =>
@@ -61,41 +62,41 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
         {
           key: 'past',
           title: 'Check your pickup',
-          description: 'These pickup times have passed. Check with the team before travelling.',
+          description: 'these pickup times have passed. check with the team before you travel.',
         },
         {
           key: 'check',
           title: 'Check these details',
-          description: 'Some information needs checking. Open a book to see what needs attention.',
+          description: 'open a book to see which details need checking.',
         },
         {
           key: 'unlinked',
           title: 'Pickup records to check',
           description:
-            'These pickups couldn’t be linked to a book request. Check the details with the team.',
+            'we couldn’t match these pickups to a book request. check with the team.',
         },
         {
           key: 'arrange',
           title: 'Arrange a pickup',
-          description: 'Your book is approved. Choose a date and two times for pickup at its MRT station.',
+          description: 'your request is approved. choose a pickup date and two times at the book’s mrt station.',
         },
         {
           key: 'confirmed',
           title: 'Your confirmed pickups',
           description:
-            'Your pickup is confirmed. Open a book to view the details or request a different time.',
+            'your pickup is confirmed. open a book to check the details or change the time.',
         },
         {
           key: 'confirmation',
           title: 'Waiting for pickup confirmation',
           description:
-            'The team is choosing one of your available times. Wait for confirmation before travelling.',
+            'the team will confirm one of your times. wait for confirmation before you travel.',
         },
         {
           key: 'review',
           title: 'Waiting for book approval',
           description:
-            'The team is reviewing your request. No action is needed until approval. Check My Adoptions for updates.',
+            'the team is reviewing your request. check my adoptions for updates.',
         },
       ].map((group) => ({ ...group, matches: (entry) => entryTask(entry) === group.key }));
     }
@@ -108,9 +109,16 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
   });
   const listHint = computed(() => {
     if (searching.value && overdueCount.value)
-      return 'Past pickup dates are marked below. Check with the team before travelling.';
+      return 'past pickup dates are marked below. check with the team before travelling.';
     if (searching.value) return '';
-    if (tab.value === 'history') return 'Collected books and requests that have ended.';
+    if (tab.value === 'history') return {
+      all: 'collected books and requests that have ended.',
+      collected: 'books you have collected.',
+      withdrawn: 'book requests you withdrew.',
+      rejected: 'book requests that were rejected.',
+      'cancelled-pickups': 'cancelled pickups without a linked book request.',
+      'declined-pickups': 'declined pickups without a linked book request.',
+    }[history.value];
     return '';
   });
   const maxPage = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageSize)));
@@ -119,7 +127,7 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
     searching.value
       ? 'Search results'
       : tab.value === 'history'
-        ? 'History'
+        ? historyAdoptionTabs.find(item => item.value === history.value).label
         : {
             'needs-action': 'Your next steps',
             waiting: waiting.value === 'approval' ? 'Waiting for adoption approval' : 'Waiting for pickup confirmation',
@@ -149,37 +157,39 @@ export function useAdoptionResults({ grouping, navigation, loading, loadError, p
   );
   const emptyCopy = computed(() => {
     if (searching.value)
-      return ['No matching results', 'Try a different title, author or reference number.'];
+      return ['No matching results', 'try a different title, author or reference number.'];
     if (pickupError.value)
       return [
         'Pickup status unavailable',
-        'Retry pickup information before arranging a collection or travelling.',
+        'retry pickup information before arranging a collection or travelling.',
       ];
     if (tab.value === 'history')
-      return ['No history yet', 'Collected books and requests that have ended will appear here.'];
+      return history.value === 'all'
+        ? ['No history yet', 'collected books and requests that have ended will appear here.']
+        : ['No matching history', 'requests with this outcome will appear here.'];
     if (stage.value === 'needs-action')
       return action.value === 'arrange'
         ? [
             'No pickups to arrange',
-            'Approved books that are ready for a pickup request will appear here.',
+            'approved books that are ready for a pickup request will appear here.',
           ]
         : [
             'No pickups to check',
-            'Pickup dates or details needing your attention will appear here.',
+            'pickup dates or details needing your attention will appear here.',
           ];
     if (stage.value === 'waiting')
       return [
         waiting.value === 'approval' ? 'No adoptions awaiting approval' : 'No pickups awaiting confirmation',
-        waiting.value === 'approval' ? 'Book requests appear here while the team reviews them.' : 'Pickup requests appear here while the team chooses a time.',
+        waiting.value === 'approval' ? 'book requests appear here while the team reviews them.' : 'pickup requests appear here while the team chooses a time.',
       ];
     if (stage.value === 'pickups')
       return [
         'No confirmed pickups',
-        'Once a pickup is confirmed, its time and location appear here.',
+        'once a pickup is confirmed, its time and location appear here.',
       ];
     return [
       'No active adoptions',
-      'Find a book you’d like to adopt. Follow your request and arrange pickup here.',
+      'find a book you’d like to adopt. follow your request and arrange pickup here.',
     ];
   });
 
