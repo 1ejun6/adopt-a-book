@@ -9,6 +9,11 @@ export function getApplicationStatus(record, fallback = 'unknown') {
   );
 }
 
+// These states already represent a request or completed adoption for this copy.
+export function hasExistingAdoption(application) {
+  return ['pending', 'pending review', 'approved', 'pickup requested', 'pickup confirmed', 'collected', 'completed'].includes(getApplicationStatus(application));
+}
+
 export function getApplicationDate(application) {
   return (
     application?.createdat ||
@@ -144,7 +149,16 @@ export function adoptionJourneys(applications, appointments, ready = true) {
   );
 }
 
+export function hasPickupOptions(appointment) {
+  return getApplicationStatus(appointment) === 'pending confirmation' && appointment.pickupoptions?.length === 3;
+}
+
 export function pickupStatus(appointment) {
+  if (hasPickupOptions(appointment)) return {
+    label: 'Choose a pickup time', variant: 'amber',
+    description: 'The team suggested three pickup times. Choose one to confirm your collection.',
+  };
+
   return (
     {
       'pending confirmation': {
@@ -297,17 +311,17 @@ export function adoptionJourney(
     if (activePickup(appointment)) {
       const confirmed = appointmentStatus === 'appointment confirmed';
       const overdue =
-        appointment.appointmentdate && appointment.appointmentdate < todayInSingapore();
+        !hasPickupOptions(appointment) && appointment.appointmentdate && appointment.appointmentdate < todayInSingapore();
       return {
         ...base,
         ...pickupStatus(appointment),
         code: confirmed ? 'pickup confirmed' : 'pickup requested',
         group: confirmed
           ? 'confirmed'
-          : overdue || !pickupComplete(appointment)
+          : hasPickupOptions(appointment) || overdue || !pickupComplete(appointment)
             ? 'attention'
             : 'waiting',
-        priority: overdue || !pickupComplete(appointment) ? -1 : confirmed ? 1 : 3,
+        priority: hasPickupOptions(appointment) || overdue || !pickupComplete(appointment) ? -1 : confirmed ? 1 : 3,
         warning: !pickupsReady
           ? 'Pickup status unavailable'
           : book?.status !== 'reserved'
@@ -321,6 +335,7 @@ export function adoptionJourney(
         actionLabel:
           book?.status !== 'reserved' || overdue || !pickupComplete(appointment)
             ? 'Check details'
+            : hasPickupOptions(appointment) ? 'Choose a pickup time'
             : confirmed
               ? 'Manage pickup'
               : 'View pickup request',
@@ -511,6 +526,7 @@ export function adoptionSection(record) {
 }
 
 export function actionPriority(record) {
+  if (hasPickupOptions(record.appointment)) return 0;
   if (
     record.warning ||
     (!record.history &&

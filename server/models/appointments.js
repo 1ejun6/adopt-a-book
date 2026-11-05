@@ -2,6 +2,15 @@ const { z } = require("zod");
 const { readall } = require("./query");
 const supabase = require("../supabase/supabase");
 
+const pickupslots = Array.from({ length: 9 }, (_, i) =>
+  `${String(i + 9).padStart(2, "0")}:00–${String(i + 10).padStart(2, "0")}:00`);
+const pickupoptionsschema = z.object({
+  pickupoptions: z.array(z.object({ appointmentdate: z.iso.date(), timeslot: z.enum(pickupslots) }).strict()).length(3)
+    .refine(options => new Set(options.map(option => `${option.appointmentdate}|${option.timeslot}`)).size === 3, "Choose three different pickup slots"),
+  expectedupdatedat: z.iso.datetime({ offset: true })
+}).strict();
+const pickupchoiceschema = z.object({ proposalversion: z.string().uuid(), slot: z.number().int().min(0).max(2) }).strict();
+
 const appointmentstatusschema = z.enum([
   "pending confirmation",
   "appointment confirmed",
@@ -65,4 +74,4 @@ async function adminappointment(id) {
   return data && { ...mapappointment(data), customer: data.customer?.name || "Unknown customer", email: data.customer?.email };
 }
 
-module.exports = { adminappointment, appointmentschema, showappointments, createappointment, listallappointments, changecollection, ownercollections, findappointment, bookcollections };
+module.exports = { pickupoptionsschema, pickupchoiceschema, adminappointment, appointmentschema, showappointments, createappointment, listallappointments, changecollection, ownercollections, findappointment, bookcollections };

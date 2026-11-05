@@ -9,7 +9,7 @@ defineProps({
 </script>
 
 <template>
-  <TabsList aria-label="Your adoptions" class="w-full sm:w-auto">
+  <TabsList aria-label="Your adoptions" class="w-full">
     <TabsTrigger v-for="item in journeyTabs" :key="item.value" :value="item.value"
       class="min-h-11 flex-1 gap-2.5 sm:flex-none">
       <span>{{ item.label }}</span>

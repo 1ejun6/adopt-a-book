@@ -4,7 +4,7 @@ import { Alert02Icon } from '@hugeicons/core-free-icons';
 import { Badge } from '@/components/ui/badge';
 import AppBookIdentity from '@/components/shared/AppBookIdentity.vue';
 import CustomerAdoptionRow from './CustomerAdoptionRow.vue';
-import { bookAuthors, displayDate, getApplicationStatus, pickupStatus } from '@/lib/adoptions';
+import { bookAuthors, displayDate, getApplicationStatus, pickupStatus, hasPickupOptions } from '@/lib/adoptions';
 
 const props = defineProps({
   record: { type: Object, required: true },
@@ -72,7 +72,8 @@ function openRecord() {
       </p>
     </template>
     <template #pickup>
-      <template v-if="showPickup">
+      <p v-if="hasPickupOptions(record.appointment)" class="text-sm">Three pickup times to choose from</p>
+      <template v-else-if="showPickup">
         <p
           class="adoption-row__date"
           :class="{ 'adoption-row__date--past': overdue }"

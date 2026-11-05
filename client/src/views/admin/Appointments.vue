@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { formatDate, todayInSingapore } from '@/lib/date';
 import { useServerPagination } from '@/composables/useServerPagination';
 import { useConfirmation } from '@/lib/confirmation';
+import AdminPickupOptions from '@/components/admin/AdminPickupOptions.vue';
 import AdminList from '@/components/admin/AdminList.vue';
 import AdminDetailsDialog from '@/components/admin/AdminDetailsDialog.vue';
 import BookIdentity from '@/components/shared/AppBookIdentity.vue';
@@ -55,6 +56,10 @@ const emptyTitles = {
 };
 
 //@lee-hlmilk > today's pickups must be confirmed > pending requests due today ||| earlier belong in overdue
+async function pickupOptionsUpdated(appointment) {
+    selectedAppointment.value = { ...selectedAppointment.value, ...appointment };
+    await fetchAppointments();
+}
 function matchesView(appointment, view) {
     const active = ['pending confirmation', 'appointment confirmed'].includes(appointment.status);
     if (view === 'awaiting') { return appointment.status === 'pending confirmation' && appointment.appointmentdate > today.value; }
@@ -79,6 +84,7 @@ const selectedAppointments = computed(() => appointments.value.filter(appointmen
 
 //@lee-hlmilk > mirror action availability for feedback > SQL remains responsible for validating each transition
 function actionHint(rows, status) {
+    if (status !== 'rejected' && rows.some(appointment => appointment.pickupoptions?.length)) return 'Waiting for the customer to choose a pickup time.';
     const requiredStatus = status === 'collected' ? 'appointment confirmed' : 'pending confirmation';
     if (rows.some(appointment => appointment.status !== requiredStatus)) {
         if (status === 'rejected') { return 'Only pending appointments can be rejected.'; }
@@ -208,7 +214,7 @@ fetchAppointments().then(loadAppointmentLink);
             <p>{{ formatDate(row.appointmentdate) }} · {{ row.timeslot }}</p>
             <p class="text-muted-foreground">{{ row.location }}</p>
         </template>
-        <template #cellStatus="{ value }"><StatusBadge :status="value" /></template>
+        <template #cellStatus="{ value, row }"><StatusBadge :status="value" /><p v-if="value === 'pending confirmation' && row.pickupoptions?.length" class="text-sm text-muted-foreground">Waiting for customer choice</p></template>
         <template #empty>
             <h2>{{ hasFilters ? 'No matching appointments' : emptyTitles[filters.view] }}</h2>
             <p class="text-sm text-muted-foreground">{{ hasFilters ? emptyFilterHint : 'Pickup bookings will appear in their corresponding view.' }}</p>
@@ -217,17 +223,19 @@ fetchAppointments().then(loadAppointmentLink);
 
     <AdminDetailsDialog v-if="selectedAppointment" :open="detailsOpen" title="Appointment details"
         :book="{ ...selectedAppointment.book, title: selectedAppointment.booktitle }" :status="selectedAppointment.status"
-        :fields="appointmentFields" @update:open="detailsOpen = $event">
+        :fields="appointmentFields" @update:open="!saving && (detailsOpen = $event)">
         <!--@lee-hlmilk > completed ||| inactive appointments are read-only > active pickups show the next step-->
         <p v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" class="text-muted-foreground">
             {{ detailsHint || (selectedAppointment.status === 'pending confirmation' ? 'Confirm after checking the requested date, time, and location.' : 'Mark collected only after the customer has physically received the book.') }}
         </p>
+        <AdminPickupOptions v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status) && selectedAppointment.book?.status === 'reserved'"
+            :key="selectedAppointment.id" :appointment="selectedAppointment" v-model:saving="saving" @updated="pickupOptionsUpdated" />
         <template v-if="['pending confirmation', 'appointment confirmed'].includes(selectedAppointment.status)" #actions>
             <template v-if="selectedAppointment.status === 'pending confirmation'">
                 <Button type="button" variant="destructive" class="flex-1 min-h-11" :disabled="loading || saving || !!rejectHint" @click="updateAppointments('rejected', [selectedAppointment])">Reject appointment</Button>
                 <Button type="button" class="flex-1 min-h-11" :disabled="loading || saving || !!detailsHint" @click="updateAppointments('appointment confirmed', [selectedAppointment])">Confirm appointment</Button>
             </template>
-            <Button v-else type="button" class="w-full min-h-11" :disabled="!!detailsHint" @click="updateAppointments('collected', [selectedAppointment])">Mark collected</Button>
+            <Button v-else type="button" class="w-full min-h-11" :disabled="loading || saving || !!detailsHint" @click="updateAppointments('collected', [selectedAppointment])">Mark collected</Button>
         </template>
     </AdminDetailsDialog>
 </template>

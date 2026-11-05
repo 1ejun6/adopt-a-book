@@ -1,3 +1,4 @@
+const { z } = require("zod");
 const appointments = require("../models/appointments");
 const { removecustomerrecords } = require("../models/records");
 const { requestids } = require("../utils/validation");
@@ -33,7 +34,7 @@ async function createappointment(req, res) {
 }
 async function updatecustomerappointment(req, res) {
   try {
-    const fields = proposalschema.omit({ bookid: true }).partial().refine((value) => Object.keys(value).length > 0).parse(req.body);
+    const fields = z.union([appointments.pickupchoiceschema, proposalschema.omit({ bookid: true }).partial().refine((value) => Object.keys(value).length > 0)]).parse(req.body);
     return res.json({ appointment: await appointments.changecollection(req.params.id, req.user.id, fields) });
   } catch (error) {
     return res.status(errorstatus(error)).json({ error: errormessage(error, "only your active appointments can be rescheduled") });

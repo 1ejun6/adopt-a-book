@@ -2,7 +2,11 @@
 import { ref, computed, nextTick, watch, onBeforeUnmount } from 'vue';
 import { RouterLink } from 'vue-router';
 import { api } from '@/lib/api';
-import { bookId, getApplicationStatus, recordId } from '@/lib/adoptions';
+import { storeToRefs } from 'pinia';
+import { useAdoptionsStore } from '@/stores/adoptions';
+const adoptions = useAdoptionsStore();
+const { applicationsForBook, applicationsLoading, applicationsError } = storeToRefs(adoptions);
+import { hasExistingAdoption, getApplicationStatus, recordId } from '@/lib/adoptions';
 import { useAuthStore } from '@/stores/auth'
 const auth = useAuthStore();
 import { toast } from 'vue-sonner';
@@ -28,36 +32,14 @@ const requestUncertain = ref(false);
 const receiptWarning = ref('');
 const submittedApplication = ref(null);
 const actionLoading = ref(false);
-const applications = ref([]);
-const applicationsLoading = ref(false);
-const applicationsError = ref('');
-const activeStatuses = [
-  'pending',
-  'pending review',
-  'approved',
-  'pickup requested',
-  'pickup confirmed',
-  'collected',
-  'completed',
-];
 let loadid = 0;
 let controller;
 let dialogTrigger;
 const returnToAdoption = ref(null);
 
-async function getapplications(signal) {
-  const response = await api('/applications', { method: 'GET', signal });
-  if (!Array.isArray(response.adoptionapplications)) {
-    throw new Error('Could not check your requests. Please try again.');
-  }
-  return response.adoptionapplications;
-}
+const getapplications = () => adoptions.fetchApplications({ force: true });
 const matchingApplications = computed(() =>
-  applications.value.filter(
-    application =>
-      bookId(application) === dialogBook.value?.id &&
-      activeStatuses.includes(getApplicationStatus(application)),
-  ),
+  applicationsForBook.value(dialogBook.value?.id).filter(hasExistingAdoption),
 );
 const hasExistingRequest = computed(() => matchingApplications.value.length > 0);
 const existingApplication = computed(() => {
@@ -138,9 +120,6 @@ async function openBookDetails(book, options = {}) {
   receiptWarning.value = '';
   submittedApplication.value = null;
   actionLoading.value = false;
-  applications.value = [];
-  applicationsError.value = '';
-  applicationsLoading.value = !viewOnly.value;
 
   const details = api(`/books/${book.id}`, { method: 'GET', signal: request.signal })
     .then(response => {
@@ -165,22 +144,7 @@ async function openBookDetails(book, options = {}) {
     });
   const requests = viewOnly.value
     ? Promise.resolve()
-    : getapplications(request.signal)
-      .then(records => {
-        if (current()) {
-          applications.value = records;
-        }
-      })
-      .catch(error => {
-        if (current()) {
-          applicationsError.value = error.message;
-        }
-      })
-      .finally(() => {
-        if (current()) {
-          applicationsLoading.value = false;
-        }
-      });
+    : getapplications().catch(() => { });
   await Promise.all([details, requests]);
 }
 async function openRequestDialog() {
@@ -215,9 +179,8 @@ async function checkRequestStatus() {
   const book = dialogBook.value;
   actionLoading.value = true;
   try {
-    const records = await getapplications();
+    await getapplications();
     if (id !== loadid) return;
-    applications.value = records;
     if (hasExistingRequest.value) {
       submittedApplication.value = existingApplication.value;
       requestSubmitted.value = true;
@@ -250,13 +213,11 @@ async function requestCopy() {
   controller = request;
   actionLoading.value = true;
   requestError.value = '';
-  applicationsError.value = '';
   try {
-    const records = await getapplications(request.signal);
+    await getapplications();
     if (id !== loadid) {
       return;
     }
-    applications.value = records;
     if (hasExistingRequest.value) {
       requestError.value =
         'You already have a request for this book. View your request in My Adoptions.';
@@ -266,32 +227,12 @@ async function requestCopy() {
       requestError.value = 'This book is no longer available for requests.';
       return;
     }
-    await api('/applications', {
-      method: 'POST',
-      body: { bookid: book.id },
-      signal: request.signal,
-    });
-    if (id !== loadid) {
-      return;
-    }
+    const { refreshed } = await adoptions.submitApplication(book.id);
+    if (id !== loadid) return;
     requestSubmitted.value = true;
-    // A failed tracking refresh must not turn an accepted submission into a retryable request.
-    try {
-      const saved = await getapplications(request.signal);
-      if (id !== loadid) {
-        return;
-      }
-      applications.value = saved;
-      submittedApplication.value = existingApplication.value;
-      if (!applicationId.value) {
-        receiptWarning.value =
-          'Your request was sent. View My Adoptions to check its tracking details.';
-      }
-    } catch {
-      if (id === loadid) {
-        receiptWarning.value =
-          'Your request was sent, but we couldn’t refresh its details. View My Adoptions to check.';
-      }
+    submittedApplication.value = existingApplication.value;
+    if (!refreshed || !applicationId.value) {
+      receiptWarning.value = 'Your request was sent, but we couldn’t refresh its details. View My Adoptions to check.';
     }
   } catch {
     if (id === loadid) {

@@ -471,9 +471,12 @@ begin
 end;
 $$;
 
+alter table public.appointments add column if not exists pickupoptions jsonb not null default '[]'::jsonb;
+alter table public.appointments add column if not exists proposalversion uuid;
+
 create or replace function public.change_collection(appointment_id uuid, actor_id uuid, changes jsonb)
 returns public.appointments language plpgsql set search_path = '' as $$
-declare selectedbook public.books; booking public.appointments; book_id uuid; next_status text;
+declare selectedbook public.books; booking public.appointments; book_id uuid; next_status text; choice jsonb; option_value jsonb; singapore_now timestamp := now() at time zone 'Asia/Singapore';
 begin
   select bookid into book_id from public.appointments where id = appointment_id;
   select * into selectedbook from public.books where id = book_id for update;
@@ -483,29 +486,86 @@ begin
     raise exception 'collection is no longer active';
   end if;
   if booking.userid = actor_id then
-    if changes ? 'status' or changes - array['location','appointmentdate','timeslot'] <> '{}'::jsonb then
-      raise exception 'readers can only reschedule their collection' using errcode = 'PT422';
+    if changes ? 'proposalversion' then
+      if changes - array['proposalversion','slot'] <> '{}'::jsonb or
+         booking.proposalversion is distinct from (changes->>'proposalversion')::uuid or
+         booking.status <> 'pending confirmation' or jsonb_array_length(booking.pickupoptions) <> 3 or
+         coalesce(changes->>'slot','') not in ('0','1','2') then
+        raise exception 'These pickup choices have changed. Refresh and choose again.' using errcode = 'PT409';
+      end if;
+      choice := booking.pickupoptions->((changes->>'slot')::integer);
+      if (choice->>'appointmentdate')::date + split_part(choice->>'timeslot','–',1)::time <= singapore_now then
+        raise exception 'That pickup time has passed. Choose another time.' using errcode = 'PT422';
+      end if;
+      booking.appointmentdate := (choice->>'appointmentdate')::date;
+      booking.timeslot := choice->>'timeslot';
+      booking.status := 'appointment confirmed';
+      booking.pickupoptions := '[]'::jsonb;
+    else
+      if changes ? 'status' or changes - array['location','appointmentdate','timeslot'] <> '{}'::jsonb then
+        raise exception 'readers can only reschedule their collection' using errcode = 'PT422';
+      end if;
+      booking := jsonb_populate_record(booking, changes);
+      if booking.appointmentdate < singapore_now::date then raise exception 'collection date must be today or later' using errcode = 'PT422'; end if;
+      booking.status := 'pending confirmation';
+      booking.pickupoptions := '[]'::jsonb;
+      booking.proposalversion := null;
     end if;
-    booking := jsonb_populate_record(booking, changes);
-    if booking.appointmentdate < (now() at time zone 'Asia/Singapore')::date then raise exception 'collection date must be today or later' using errcode = 'PT422'; end if;
-    booking.status := 'pending confirmation';
   else
     if not public.can_manage_book(actor_id, selectedbook.ownerid) then raise exception 'appointment not found' using errcode = 'PT404'; end if;
-    next_status := changes->>'status';
-    if changes - 'status' <> '{}'::jsonb or next_status is null or
-       not ((next_status = 'appointment confirmed' and booking.status = 'pending confirmation' and booking.appointmentdate >= (now() at time zone 'Asia/Singapore')::date)
-         or (next_status = 'rejected' and booking.status = 'pending confirmation')
-         or (next_status = 'collected' and booking.status = 'appointment confirmed')) then
-      raise exception 'invalid collection transition';
+    if changes ? 'pickupoptions' then
+      if selectedbook.ownerid is not null or changes - array['pickupoptions','expectedupdatedat'] <> '{}'::jsonb then
+        raise exception 'Only organisation admins can suggest pickup slots.' using errcode = 'PT403';
+      end if;
+      if booking.updatedat is distinct from (changes->>'expectedupdatedat')::timestamptz then
+        raise exception 'This appointment changed. Refresh before suggesting times.' using errcode = 'PT409';
+      end if;
+      if jsonb_typeof(changes->'pickupoptions') is distinct from 'array' then
+        raise exception 'Suggest exactly three pickup slots.' using errcode = 'PT422';
+      end if;
+      if jsonb_array_length(changes->'pickupoptions') <> 3 or
+         (select count(distinct value) from jsonb_array_elements(changes->'pickupoptions')) <> 3 then
+        raise exception 'Suggest three different pickup slots.' using errcode = 'PT422';
+      end if;
+      for option_value in select value from jsonb_array_elements(changes->'pickupoptions') loop
+        if jsonb_typeof(option_value) <> 'object' or option_value - array['appointmentdate','timeslot'] <> '{}'::jsonb or
+           coalesce(option_value->>'timeslot','') not in ('09:00–10:00','10:00–11:00','11:00–12:00','12:00–13:00','13:00–14:00','14:00–15:00','15:00–16:00','16:00–17:00','17:00–18:00') or
+           option_value->>'appointmentdate' is null then
+          raise exception 'Choose hourly slots between 9am and 6pm SGT.' using errcode = 'PT422';
+        end if;
+        if (option_value->>'appointmentdate')::date + split_part(option_value->>'timeslot','–',1)::time <= singapore_now then
+          raise exception 'All suggested pickup slots must be in the future.' using errcode = 'PT422';
+        end if;
+      end loop;
+      booking.pickupoptions := changes->'pickupoptions';
+      booking.proposalversion := gen_random_uuid();
+      booking.status := 'pending confirmation';
+    else
+      next_status := changes->>'status';
+      if changes - 'status' <> '{}'::jsonb or next_status is null or
+         not ((next_status = 'appointment confirmed' and booking.status = 'pending confirmation' and booking.appointmentdate >= (now() at time zone 'Asia/Singapore')::date)
+           or (next_status = 'rejected' and booking.status = 'pending confirmation')
+           or (next_status = 'collected' and booking.status = 'appointment confirmed')) then
+        raise exception 'invalid collection transition';
+      end if;
+      if not exists (select 1 from public.adoptionapplications where bookid = book_id and userid = booking.userid and status = 'approved') then
+        raise exception 'approved application required';
+      end if;
+      if jsonb_array_length(booking.pickupoptions) > 0 and next_status <> 'rejected' then
+        raise exception 'Wait for the customer to choose a pickup time.' using errcode = 'PT409';
+      end if;
+      booking.pickupoptions := '[]'::jsonb;
+      booking.proposalversion := null;
+      booking.status := next_status;
+      if next_status = 'collected' then update public.books set status = 'adopted', updatedat = now() where id = book_id; end if;
     end if;
-    if not exists (select 1 from public.adoptionapplications where bookid = book_id and userid = booking.userid and status = 'approved') then
-      raise exception 'approved application required';
-    end if;
-    booking.status := next_status;
-    if next_status = 'collected' then update public.books set status = 'adopted', updatedat = now() where id = book_id; end if;
+  end if;
+  if not exists (select 1 from public.adoptionapplications where bookid = book_id and userid = booking.userid and status = 'approved') then
+    raise exception 'approved application required' using errcode = 'PT409';
   end if;
   update public.appointments set status = booking.status, location = booking.location,
-    appointmentdate = booking.appointmentdate, timeslot = booking.timeslot, updatedat = now()
+    appointmentdate = booking.appointmentdate, timeslot = booking.timeslot,
+    pickupoptions = booking.pickupoptions, proposalversion = booking.proposalversion, updatedat = now()
     where id = appointment_id returning * into booking;
   return booking;
 end;

@@ -10,6 +10,7 @@ const router = createRouter({
       path: '/',
       component: AppLayout,
       children: [
+        { path: '/:pathMatch(.*)*', name: 'notFound', component: () => import('../views/NotFound.vue') },
         { path: 'sample', name: 'adoptionSample', component: () => import('../views/AdoptionSample.vue'), meta: { preview: true } },
         { path: '', name: 'guestHome', component: () => import('../views/guest/Home.vue'), label: 'Browse Books', meta: { roles: ['guest'] } },
         { path: 'drives', name: 'guestDrives', component: () => import('../views/guest/AdoptionDrives.vue'), label: 'Adoption Drives', meta: { roles: ['guest'] } },
@@ -49,7 +50,7 @@ const pages = router.options.routes.flatMap((group) => group.children);
 export function loginDestination(target, auth = useAuthStore()) {
   if (typeof target !== 'string' || !target.startsWith('/') || target.startsWith('//') || /[\\\s]/.test(target)) return auth.homeRoute;
   const resolved = router.resolve(target);
-  if (!resolved.matched.length || !resolved.meta.roles?.includes(auth.role)) return auth.homeRoute;
+  if (resolved.name === 'notFound' || !resolved.matched.length || !resolved.meta.roles?.includes(auth.role)) return auth.homeRoute;
   return resolved.fullPath;
 }
 
