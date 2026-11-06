@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('guest browses the bookshelf and opens a book', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Different shelves');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Different ShelvesShared Stories');
 
   // the shelf shows 5 books
   const books = page.locator('.book-spine');
