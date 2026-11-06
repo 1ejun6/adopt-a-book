@@ -4,14 +4,18 @@ import { defineConfig, devices } from '@playwright/test'
 import { loadEnv } from 'vite'
 
 const workspaceRoot = fileURLToPath(new URL('../', import.meta.url))
-const { clienturl } = loadEnv('development', workspaceRoot, '')
+const { clienturl, serverurl, e2e_url } = loadEnv('development', workspaceRoot, '')
 
-if (!clienturl) { throw new Error('clienturl must be set in the root .env file') }
+//@ChitanyaBharathi > e2e_url in the root .env → test that deployed site, nothing starts locally > remove it to test localhost
+const deployedUrl = e2e_url ? new URL(e2e_url) : null
 
-const clientUrl = new URL(clienturl)
+if (!deployedUrl && !clienturl) { throw new Error('clienturl must be set in the root .env file') }
+if (!deployedUrl && !serverurl) { throw new Error('serverurl must be set in the root .env file') }
+
+const clientUrl = deployedUrl || new URL(clienturl)
 const clientPort = Number(clientUrl.port)
 
-if (!clientPort) { throw new Error('clienturl in the root .env file must include a port') }
+if (!deployedUrl && !clientPort) { throw new Error('clienturl in the root .env file must include a port') }
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -49,69 +53,62 @@ export default defineConfig({
     headless: true,
   },
 
-  /* Configure projects for major browsers */
+  //@ChitanyaBharathi > chrome only for now > phone-sized journeys switch device inside their own file
+  //@ChitanyaBharathi > customer &&& admin tests share one real account each from the .env > run them one at a time
   projects: [
     {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-      },
+      name: 'guest',
+      testMatch: 'guest/**/*.spec.js',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    //@ChitanyaBharathi > reset runs first &&& undoes whatever a half-finished run left on the shared account
+    {
+      name: 'customer reset',
+      testMatch: 'customer/reset.setup.js',
+      use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-      },
+      name: 'customer',
+      testMatch: 'customer/**/*.spec.js',
+      dependencies: ['customer reset'],
+      workers: 1,
+      use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-      },
+      name: 'admin reset',
+      testMatch: 'admin/reset.setup.js',
+      use: { ...devices['Desktop Chrome'] },
     },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: {
-    //     ...devices['Pixel 5'],
-    //   },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: {
-    //     ...devices['iPhone 12'],
-    //   },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: {
-    //     channel: 'msedge',
-    //   },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: {
-    //     channel: 'chrome',
-    //   },
-    // },
+    {
+      name: 'admin',
+      testMatch: 'admin/**/*.spec.js',
+      dependencies: ['admin reset'],
+      workers: 1,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   // outputDir: 'test-results/',
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    /**
-     * Use the dev server by default for faster feedback loop.
-     * Use the preview server on CI for more realistic testing.
-     * Playwright will re-use the local server if there is already a dev-server running.
-     */
-    command: process.env.CI ? 'pnpm run preview' : 'pnpm run dev',
-    host: clientUrl.hostname,
-    port: clientPort,
-    reuseExistingServer: !process.env.CI,
-  },
+  //@ChitanyaBharathi > journeys need the real backend too > start express before vite > skipped for a deployed site
+  webServer: deployedUrl ? undefined : [
+    {
+      command: 'node server.js',
+      cwd: fileURLToPath(new URL('../server', import.meta.url)),
+      url: new URL('/', serverurl).href,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      /**
+       * Use the dev server by default for faster feedback loop.
+       * Use the preview server on CI for more realistic testing.
+       * Playwright will re-use the local server if there is already a dev-server running.
+       */
+      command: process.env.CI ? 'pnpm run preview' : 'pnpm run dev',
+      host: clientUrl.hostname,
+      port: clientPort,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 })
