@@ -40,12 +40,14 @@ const tableSlots = computed(() => Object.keys(slots).filter(name => name.startsW
 </script>
 
 <template>
-  <!--@lee-hlmilk > AppLayout owns page padding > this shell only centres &&& limits width &&& spaces sections-->
-  <AppPage class="space-y-5">
-    <header class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+  <!--@lee-hlmilk > AppLayout owns page padding > this shell aligns &&& limits width &&& spaces sections-->
+  <AppPage align="left" class="space-y-5">
+    <header class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
       <div class="min-w-0">
-        <h1>{{ props.title }}</h1>
-        <p v-if="props.description" class="text-muted-foreground">{{ props.description }}</p>
+        <div class="app-page-heading text-left">
+          <h1>{{ props.title }}</h1>
+          <p v-if="props.description">{{ props.description }}</p>
+        </div>
         <div v-if="$slots.legend" class="mt-3"><slot name="legend" /></div>
       </div>
       <slot name="headerActions" />

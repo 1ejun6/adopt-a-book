@@ -156,9 +156,9 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
 
 <template>
   <AppPage class="customer-home">
-    <header class="intro">
+    <header class="intro app-page-heading text-center">
       <p>your reading corner</p>
-      <h1>What will you read next?</h1>
+      <h1>What Will You Read Next?</h1>
       <p>find your next read.</p>
     </header>
     <section aria-labelledby="shelf-heading" class="discovery">
@@ -236,16 +236,10 @@ useVisibleRefresh(loadShelf, { busy: () => loading.value });
 .customer-home {
   display: grid;
   align-content: start;
-  gap: 3rem;
+  gap: 1.25rem;
 }
 .saved-section {
   min-width: 0;
-}
-.intro {
-  text-align: center;
-  display: grid;
-  gap: 0.75rem;
-  padding-top: 1rem;
 }
 .section-heading {
   display: flex;

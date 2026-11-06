@@ -53,7 +53,7 @@ async function register() {
 <template>
     <section class="m-auto w-full max-w-md py-5 md:max-w-7xl md:py-8">
         <div class="space-y-5">
-            <h1>Create account</h1>
+            <h1>Create Account</h1>
             <form @submit.prevent="register">
                 <p v-if="errorMessage" role="alert" class="text-destructive">{{ errorMessage }}</p>
                 <fieldset :disabled="form.loading" class="grid items-start gap-6 md:grid-cols-2 md:gap-x-12">

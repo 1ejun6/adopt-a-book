@@ -136,8 +136,8 @@ onBeforeUnmount(() => { requestId++; controller?.abort(); for (const request of 
 
 <template>
   <AppPage class="account-page" aria-labelledby="account-title">
-    <header class="account-heading">
-      <h1 id="account-title">My account</h1>
+    <header class="account-heading app-page-heading text-center">
+      <h1 id="account-title">My Account</h1>
       <p>profile and sign-in settings</p>
     </header>
 

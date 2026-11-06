@@ -1,14 +1,7 @@
 const express = require("express");
 const controller = require("../controllers/useradmincontroller");
-const { validateid } = require("../utils/validation");
 const { authenticated, admin } = require("../authmiddleware");
 const router = express.Router();
 router.use(authenticated, admin);
-router.param("id", validateid);
 router.get("/", controller.home);
-router.get("/users", controller.index);
-router.post("/users", controller.create);
-router.get("/users/:id", controller.updateview);
-router.patch("/users/:id", controller.saveupdate);
-router.delete("/users/:id", controller.deleteaccounts);
 module.exports = { router };

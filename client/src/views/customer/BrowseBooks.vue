@@ -185,10 +185,10 @@ useVisibleRefresh(fetchBooks, { busy: () => loading.value });
 </script>
 
 <template>
-  <AppPage class="browse-books space-y-8">
-    <header class="space-y-2 text-center">
-      <h1 class="text-4xl">Find your next read</h1>
-      <p class="text-muted-foreground text-sm">find a book to take home</p>
+  <AppPage class="browse-books space-y-5">
+    <header class="app-page-heading text-center">
+      <h1>Find Your Next Read</h1>
+      <p>find a book to take home</p>
     </header>
 
     <Tabs v-model="genreGroup" class="gap-5">

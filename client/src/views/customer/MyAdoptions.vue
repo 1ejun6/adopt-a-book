@@ -115,10 +115,11 @@ onMounted(refresh);
 
 <template>
   <AppPage class="adoptions-page space-y-5" aria-labelledby="adoptions-title">
-    <header class="space-y-2 text-center">
-      <h1 id="adoptions-title" ref="titleNode" tabindex="-1" class="text-4xl sm:text-[42px]">
+    <header class="app-page-heading text-center">
+      <h1 id="adoptions-title" ref="titleNode" tabindex="-1">
         My Adoptions
       </h1>
+      <p>track your requests and pickups</p>
     </header>
     <p class="sr-only" role="status">{{ updateAnnouncement }}</p>
     <p v-if="routeNotice" class="rounded-lg border p-4 text-sm" role="status">{{ routeNotice }}</p>
