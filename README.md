@@ -7,6 +7,7 @@ Adopt a Book is a book adoption and sharing application built with a Vue/Vite fr
 - First page of the hosted application — [Adopt a Book](https://adopt-a-book.vercel.app/)
 - Public Git repository — [lee-hlmilk/adopt-a-book](https://github.com/lee-hlmilk/adopt-a-book)
 - Hosted backend — [Adopt a Book API](https://adopt-a-book-api.vercel.app/)
+- [Youtube Demo](https://youtu.be/iCXvRWMa2sQ)
 
 ## Test accounts
 
@@ -129,12 +130,7 @@ The generated frontend files are written to `client/dist`. The hosted deployment
 
 ## How to test the application
 
-The guest, customer, and admin Playwright test suites are on the repository's `test` branch. From the project root, fetch and switch to that branch before running the tests.
-
-```bash
-git fetch origin
-git switch test
-```
+The guest, customer, and admin Playwright test suites are included in `client/e2e`.
 
 1. Add the following variables to the root `.env` file. Preserve the lowercase variable names.
 
@@ -153,13 +149,13 @@ git switch test
    pnpm install
    ```
 
-3. Install the Playwright browser binaries on the first run if they are not already installed.
+3. Install the Chromium browser binary on the first run if it is not already installed. The test projects use Desktop Chrome settings, with phone layouts covered by individual test files.
 
    ```bash
-   npx playwright install
+   npx playwright install chromium
    ```
 
-4. Run each test suite from the `client` directory.
+4. Run each test suite from the `client` directory, one command at a time. Customer and admin projects run their reset setup before the corresponding tests. These tests create and modify demonstration data, so use the designated test accounts and database. Keep `supabaseurl` and the corresponding Supabase secret/service-role key configured in the root `.env` for test account cleanup.
 
    ```bash
    # Guest tests
@@ -178,4 +174,12 @@ git switch test
    npx playwright show-report
    ```
 
-The supplied `e2e_url` targets the hosted application. To test locally, replace its value with `http://localhost:5174` and start the frontend and backend by running `pnpm dev` from the project root in a separate terminal before running the tests.
+The supplied `e2e_url` targets the hosted application, whose backend is accessed through `/api`. For local testing, leave `e2e_url` empty and use the following root `.env` values.
+
+```dotenv
+e2e_url=
+clienturl=http://localhost:5174
+serverurl=http://localhost:3000
+```
+
+When `e2e_url` is empty, Playwright starts the local backend and frontend automatically, or reuses running services outside CI. You can also start them in a separate terminal with `pnpm dev`. Setting `e2e_url` to a localhost address selects the deployed-site `/api` behavior, so leave it empty for the standard local setup. In CI, run `pnpm build` before local tests because the frontend uses the preview server.
